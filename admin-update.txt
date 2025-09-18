@@ -1,0 +1,8 @@
+﻿// Add this import after the existing imports
+import { MockOneDriveService } from '../services/mockOneDriveService';
+
+// Add this after the multer configuration
+// Use mock service in development, real service in production
+const DocumentService = process.env.NODE_ENV === 'development' 
+  ? MockOneDriveService 
+  : OneDriveService;
