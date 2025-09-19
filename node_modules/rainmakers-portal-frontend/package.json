@@ -4,10 +4,10 @@
   "description": "Rainmakers Portal Frontend - React + TypeScript + Tailwind",
   "type": "module",
   "scripts": {
-    "dev": "npm run build && npm run preview",
+    "dev": "node ../node_modules/vite/bin/vite.js",
     "build": "node ../node_modules/typescript/bin/tsc --noEmit && node ../node_modules/vite/bin/vite.js build",
     "preview": "node ../node_modules/vite/bin/vite.js preview --port $PORT --host 0.0.0.0",
-    "start": "npm run build && npm run preview",
+    "start": "npm run build && npx serve -s dist -l $PORT",
     "serve": "npx serve -s dist -l $PORT",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
