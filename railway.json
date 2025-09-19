@@ -28,7 +28,7 @@
         "builder": "NIXPACKS"
       },
       "deploy": {
-        "startCommand": "cd frontend && npm start",
+        "startCommand": "cd frontend && npm run build && npx serve -s dist -l $PORT",
         "healthcheckPath": "/",
         "healthcheckTimeout": 100,
         "restartPolicyType": "ON_FAILURE",
