@@ -230,8 +230,7 @@ export function MatrixLoginPage() {
   }, [])
 
   const redirectToDiscord = () => {
-    const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://rainmakers-portal-backend-production.up.railway.app'
-    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(`${backendUrl}/auth/discord/callback`)}&scope=identify%20email`
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent("https://rainmakers-portal-backend-production.up.railway.app/auth/discord/callback")}&scope=identify%20email`
     window.location.href = discordAuthUrl
   }
 
