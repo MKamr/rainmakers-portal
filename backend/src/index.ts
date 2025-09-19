@@ -76,6 +76,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth',
+      authCallback: '/auth/discord/callback',
       deals: '/api/deals',
       documents: '/api/documents',
       admin: '/api/admin'
