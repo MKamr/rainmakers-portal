@@ -94,7 +94,7 @@ app.use(errorHandler);
 // Start server
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
   console.log(`🔥 Database: Firebase Firestore`);
   console.log(`🌐 Frontend URL: https://rainmakers-portal-frontend-production.up.railway.app`);
