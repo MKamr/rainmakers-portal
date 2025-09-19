@@ -92,7 +92,7 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
