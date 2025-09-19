@@ -24,7 +24,10 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://rainmakers-portal-frontend-production.up.railway.app'
+  ],
   credentials: true
 }));
 
@@ -75,7 +78,7 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
   console.log(`🔥 Database: Firebase Firestore`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  console.log(`🌐 Frontend URL: https://rainmakers-portal-frontend-production.up.railway.app`);
 });
 
 export default app;
