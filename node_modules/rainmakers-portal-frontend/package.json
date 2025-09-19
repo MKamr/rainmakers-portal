@@ -7,7 +7,8 @@
     "dev": "node ../node_modules/vite/bin/vite.js",
     "build": "node ../node_modules/typescript/bin/tsc --noEmit && node ../node_modules/vite/bin/vite.js build",
     "preview": "node ../node_modules/vite/bin/vite.js preview --port $PORT --host 0.0.0.0",
-    "start": "npx serve -s dist -l $PORT",
+    "start": "node start.js",
+    "serve": "npx serve -s dist -l $PORT",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
