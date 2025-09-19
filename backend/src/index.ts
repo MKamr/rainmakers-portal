@@ -21,6 +21,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for Railway deployment (needed for rate limiting and real IP detection)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
