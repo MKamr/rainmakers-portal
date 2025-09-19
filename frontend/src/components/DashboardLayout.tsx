@@ -7,7 +7,6 @@ import { RainmakersLogo } from './RainmakersLogo'
 import {
   Home,
   FileText,
-  Settings,
   Users,
   Menu,
   X,

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Deal, Document, Analytics, CreateDealData, AuthResponse } from '../types';
+import { User, Deal, Document, Analytics, AuthResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -130,9 +130,6 @@ export const adminAPI = {
   
   connectOneDrive: (code: string): Promise<{ message: string; user: { email: string; name: string } }> =>
     api.post('/admin/onedrive/connect', { code }).then(res => res.data),
-  
-  getOneDriveStatus: (): Promise<{ connected: boolean; expired?: boolean; expiresAt?: string }> =>
-    api.get('/admin/onedrive/status').then(res => res.data),
   
   testGHL: (): Promise<{ connected: boolean; pipelines?: any[] }> =>
     api.get('/admin/ghl/test').then(res => res.data),

@@ -37,21 +37,6 @@ export function DealsPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Under Review':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'In Underwriting':
-        return 'bg-blue-100 text-blue-800'
-      case 'LOE Sent':
-        return 'bg-purple-100 text-purple-800'
-      case 'Closed':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
