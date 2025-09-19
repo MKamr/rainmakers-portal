@@ -8,7 +8,6 @@ import { requireAdmin } from '../middleware/auth';
 import { Timestamp } from 'firebase-admin/firestore';
 import axios from 'axios';
 import multer from 'multer';
-import { Multer } from 'multer';
 
 const router = express.Router();
 
@@ -18,7 +17,7 @@ const upload = multer({
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
-  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  fileFilter: (req: Request, file: any, cb: any) => {
     const allowedTypes = [
       'application/pdf',
       'application/msword',
