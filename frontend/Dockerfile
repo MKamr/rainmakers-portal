@@ -1,27 +1,26 @@
-# Frontend Dockerfile
+# Use Node.js 18 Alpine image
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY frontend/package*.json ./frontend/
 
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy frontend source code
-COPY frontend/ ./frontend/
+# Copy source code
+COPY . .
 
-# Build frontend
-WORKDIR /app/frontend
+# Build the application
 RUN npm run build
 
-# Install serve for production
+# Install serve globally
 RUN npm install -g serve
 
-# Expose port
-EXPOSE $PORT
+# Expose port (Railway will override with PORT env var)
+EXPOSE 3000
 
-# Start frontend
-CMD ["serve", "-s", "dist", "-l", "$PORT"]
+# Start the application
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-3000}"]
