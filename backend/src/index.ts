@@ -67,6 +67,22 @@ app.use('/api/deals', authenticateToken, dealRoutes);
 app.use('/api/documents', authenticateToken, documentRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 
+// Root route for testing
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '🚀 Rainmakers Portal Backend is running!',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      deals: '/api/deals',
+      documents: '/api/documents',
+      admin: '/api/admin'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
