@@ -12,6 +12,9 @@
     "start": "cd backend && npm start",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
+  "dependencies": {
+    "typescript": "^5.3.3"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
