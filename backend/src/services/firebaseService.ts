@@ -161,19 +161,32 @@ export class FirebaseService {
     return snapshot.docs.map(doc => doc.data() as User);
   }
 
-  // Deal methods
-  static async createDeal(dealData: Omit<Deal, 'id' | 'createdAt' | 'updatedAt' | 'documents'>): Promise<Deal> {
-    const newDealRef = FirebaseService.dealsCollection.doc();
-    const now = Timestamp.now();
-    const newDeal: Deal = {
-      id: newDealRef.id,
-      ...dealData,
-      documents: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    await newDealRef.set(newDeal);
-    return newDeal;
+  // Deal methods - Updated to handle flexible data structure
+  static async createDeal(dealData: any): Promise<any> {
+    try {
+      console.log('🔥 [FIREBASE] Creating deal with data:', dealData);
+      
+      const newDealRef = FirebaseService.dealsCollection.doc();
+      const now = Timestamp.now();
+      
+      // Create deal with flexible structure - include all provided fields
+      const newDeal = {
+        id: newDealRef.id,
+        ...dealData,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      console.log('🔥 [FIREBASE] Deal to be saved:', newDeal);
+      
+      await newDealRef.set(newDeal);
+      console.log('✅ [FIREBASE] Deal created successfully with ID:', newDealRef.id);
+      
+      return newDeal;
+    } catch (error) {
+      console.error('❌ [FIREBASE] Error creating deal:', error);
+      throw error;
+    }
   }
 
   static async getDealById(id: string): Promise<Deal | null> {
