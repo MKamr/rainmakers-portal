@@ -5,6 +5,19 @@ import { FirebaseService } from '../services/firebaseService';
 
 const router = express.Router();
 
+// Test endpoint to verify backend is working
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Auth routes are working!',
+    timestamp: new Date().toISOString(),
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      FRONTEND_URL: process.env.FRONTEND_URL,
+      DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID ? 'SET' : 'NOT_SET'
+    }
+  });
+});
+
 // Discord OAuth callback (GET route for browser redirect)
 router.get('/discord/callback', async (req, res) => {
   try {
