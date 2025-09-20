@@ -11,9 +11,20 @@ import { LoadingSpinner } from './components/LoadingSpinner'
 function App() {
   const { user, isLoading } = useAuth()
 
-  console.log('App render:', { user, isLoading })
+  console.log('🎯 App render:', { 
+    user: user ? {
+      id: user.id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      isWhitelisted: user.isWhitelisted,
+      typeOfIsAdmin: typeof user.isAdmin,
+      typeOfIsWhitelisted: typeof user.isWhitelisted
+    } : null,
+    isLoading 
+  })
 
   if (isLoading) {
+    console.log('⏳ App: Still loading, showing spinner')
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <LoadingSpinner size="lg" />
@@ -23,10 +34,15 @@ function App() {
 
   // Check if user is logged in - if no token or no user, show login
   const token = localStorage.getItem('token')
-  console.log('Token check:', { token: !!token, user: !!user })
+  console.log('🔑 App: Token check:', { 
+    hasToken: !!token,
+    hasUser: !!user,
+    userIsWhitelisted: user?.isWhitelisted,
+    userIsAdmin: user?.isAdmin
+  })
   
   if (!user || !token) {
-    console.log('No user or token, showing login')
+    console.log('❌ App: No user or token, showing login')
     return (
       <ThemeProvider>
         <LoginPage />
@@ -34,12 +50,26 @@ function App() {
     )
   }
 
-  console.log('User data:', user)
-  console.log('isWhitelisted:', user.isWhitelisted)
-  console.log('isAdmin:', user.isAdmin)
+  console.log('✅ App: User authenticated, checking whitelist status')
+  console.log('📊 App: User analysis:', {
+    id: user.id,
+    username: user.username,
+    isAdmin: user.isAdmin,
+    isWhitelisted: user.isWhitelisted,
+    typeOfIsAdmin: typeof user.isAdmin,
+    typeOfIsWhitelisted: typeof user.isWhitelisted,
+    isWhitelistedStrict: user.isWhitelisted === true,
+    isAdminStrict: user.isAdmin === true
+  })
 
   if (!user.isWhitelisted) {
-    console.log('User not whitelisted, showing pending modal')
+    console.log('⚠️ App: User not whitelisted, showing pending modal')
+    console.log('🔍 App: Debug info for modal:', {
+      isWhitelisted: user.isWhitelisted,
+      isAdmin: user.isAdmin,
+      isWhitelistedUndefined: user.isWhitelisted === undefined,
+      isAdminUndefined: user.isAdmin === undefined
+    })
     return (
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -71,6 +101,7 @@ function App() {
               {/* Sign Out Button */}
               <button
                 onClick={() => {
+                  console.log('🚪 App: Sign out clicked')
                   localStorage.removeItem('token')
                   localStorage.removeItem('user')
                   window.location.reload()
@@ -86,7 +117,7 @@ function App() {
     )
   }
 
-  console.log('User is whitelisted, showing dashboard')
+  console.log('🎉 App: User is whitelisted, showing dashboard')
   return (
     <ThemeProvider>
       <DashboardLayout>
