@@ -19,7 +19,14 @@ export function DealsPage() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  const { data: deals, isLoading } = useQuery('deals', dealsAPI.getDeals)
+  const { data: deals, isLoading, error } = useQuery('deals', dealsAPI.getDeals, {
+    onSuccess: (data) => {
+      console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
+    },
+    onError: (error) => {
+      console.error('❌ [DEALS PAGE] Failed to load deals:', error);
+    }
+  })
 
   const deleteDealMutation = useMutation(dealsAPI.deleteDeal, {
     onSuccess: () => {
@@ -44,6 +51,32 @@ export function DealsPage() {
       </div>
     )
   }
+
+  if (error) {
+    console.error('❌ [DEALS PAGE] Error state:', error);
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Failed to load deals</h2>
+          <p className="text-gray-600 mb-4">Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('📋 [DEALS PAGE] Render state:', { 
+    deals: deals, 
+    dealsLength: deals?.length, 
+    isLoading, 
+    error,
+    user: user?.id 
+  });
 
   return (
     <div className="space-y-6 matrix-deals-container">

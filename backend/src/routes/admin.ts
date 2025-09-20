@@ -87,6 +87,10 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
     const configSnapshot = await db.collection('config').limit(1).get();
     console.log('🔥 [FIREBASE TEST] Config collection accessible:', configSnapshot.docs.length >= 0);
     
+    // Test GHL API key in config
+    const ghlApiKeyDoc = await db.collection('config').doc('ghl_api_key').get();
+    console.log('🔥 [FIREBASE TEST] GHL API key exists:', ghlApiKeyDoc.exists);
+    
     res.json({
       success: true,
       message: 'Firebase connection successful',
@@ -94,7 +98,8 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
         users: usersSnapshot.docs.length,
         deals: dealsSnapshot.docs.length,
         config: configSnapshot.docs.length
-      }
+      },
+      ghlApiKeyExists: ghlApiKeyDoc.exists
     });
   } catch (error) {
     console.error('🔥 [FIREBASE TEST] Firebase test failed:', error);
@@ -426,9 +431,10 @@ router.get('/ghl/test', async (req: Request, res: Response) => {
     
     const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
     console.log('🔑 GHL API key exists:', !!ghlApiKey);
+    console.log('🔑 GHL API key preview:', ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none');
     
     if (!ghlApiKey) {
-      console.log('❌ GHL API key not configured');
+      console.log('❌ GHL API key not configured in Firebase config');
       return res.status(400).json({ 
         connected: false,
         error: 'GHL API key not configured',

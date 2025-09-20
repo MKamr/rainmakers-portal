@@ -335,11 +335,20 @@ router.get('/', async (req: Request, res: Response) => {
       isWhitelisted: req.user!.isWhitelisted
     });
     
+    // Debug: Check all deals in Firebase
+    const allDeals = await FirebaseService.getAllDeals();
+    console.log('🔍 [DEALS DEBUG] Total deals in Firebase:', allDeals.length);
+    console.log('🔍 [DEALS DEBUG] All deals userIds:', allDeals.map(deal => ({
+      id: deal.id,
+      userId: deal.userId,
+      clientName: (deal as any).clientName || 'No client name'
+    })));
+    
     const deals = await FirebaseService.getDealsByUserId(req.user!.id);
-    console.log('📋 [DEALS] Found deals:', deals.length);
+    console.log('📋 [DEALS] Found deals for user:', deals.length);
     console.log('📋 [DEALS] Deal details:', deals.map(deal => ({
       id: deal.id,
-      clientName: deal.clientName,
+      clientName: (deal as any).clientName || 'No client name',
       status: deal.status,
       createdAt: deal.createdAt
     })));
