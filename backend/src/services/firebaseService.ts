@@ -6,8 +6,8 @@ if (!admin.apps.length) {
   console.log('Initializing Firebase Admin...');
   
   // In production (Vercel), use environment variables
-  if (process.env.NODE_ENV === 'production') {
-    console.log('Production environment detected, using environment variables...');
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    console.log('Production environment detected (NODE_ENV:', process.env.NODE_ENV, 'VERCEL:', !!process.env.VERCEL, '), using environment variables...');
     
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
