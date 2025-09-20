@@ -58,7 +58,7 @@ router.get('/discord/callback', async (req, res) => {
           search: urlObj.search
         });
       } catch (urlError) {
-        console.error('URL validation failed:', urlError.message);
+        console.error('URL validation failed:', urlError instanceof Error ? urlError.message : String(urlError));
       }
       
       console.log('About to redirect...');
@@ -127,7 +127,7 @@ router.get('/discord/callback', async (req, res) => {
     res.redirect(finalRedirectUrl);
   } catch (error) {
     console.error('Discord auth error:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
     
     // Same debug logging for error case
     let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
