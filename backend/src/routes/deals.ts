@@ -338,11 +338,20 @@ router.get('/', async (req: Request, res: Response) => {
     // Debug: Check all deals in Firebase
     const allDeals = await FirebaseService.getAllDeals();
     console.log('🔍 [DEALS DEBUG] Total deals in Firebase:', allDeals.length);
-    console.log('🔍 [DEALS DEBUG] All deals userIds:', allDeals.map(deal => ({
+    console.log('🔍 [DEALS DEBUG] All deals details:', allDeals.map(deal => ({
       id: deal.id,
       userId: deal.userId,
-      clientName: (deal as any).clientName || 'No client name'
+      title: deal.title,
+      status: deal.status,
+      stage: deal.stage,
+      value: deal.value
     })));
+    
+    // Debug: Check if any deals have the current user's ID
+    const userDeals = allDeals.filter(deal => deal.userId === req.user!.id);
+    console.log('🔍 [DEALS DEBUG] Deals matching current user ID:', userDeals.length);
+    console.log('🔍 [DEALS DEBUG] Current user ID:', req.user!.id);
+    console.log('🔍 [DEALS DEBUG] User ID type:', typeof req.user!.id);
     
     const deals = await FirebaseService.getDealsByUserId(req.user!.id);
     console.log('📋 [DEALS] Found deals for user:', deals.length);

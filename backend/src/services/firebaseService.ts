@@ -126,11 +126,11 @@ export class FirebaseService {
 
   static async getUserByDiscordId(discordId: string): Promise<User | null> {
     try {
-      const usersSnapshot = await db.collection('users')
-        .where('discordId', '==', discordId)
-        .limit(1)
-        .get();
-      
+    const usersSnapshot = await db.collection('users')
+      .where('discordId', '==', discordId)
+      .limit(1)
+      .get();
+    
       if (usersSnapshot.empty) {
         return null;
       }
@@ -145,12 +145,12 @@ export class FirebaseService {
   static async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
     try {
       const userRef = db.collection('users').doc(userId);
-      const updateData = {
+    const updateData = {
         ...updates,
         updatedAt: Timestamp.now()
-      };
-      
-      await userRef.update(updateData);
+    };
+    
+    await userRef.update(updateData);
       return await this.getUserById(userId);
     } catch (error) {
       console.error('Error updating user:', error);
@@ -160,7 +160,7 @@ export class FirebaseService {
 
   static async getAllUsers(): Promise<User[]> {
     try {
-      const usersSnapshot = await db.collection('users').get();
+    const usersSnapshot = await db.collection('users').get();
       return usersSnapshot.docs.map(doc => doc.data() as User);
     } catch (error) {
       console.error('Error getting all users:', error);
@@ -187,7 +187,7 @@ export class FirebaseService {
   static async getDealById(dealId: string): Promise<Deal | null> {
     try {
       const dealDoc = await db.collection('deals').doc(dealId).get();
-      return dealDoc.exists ? (dealDoc.data() as Deal) : null;
+    return dealDoc.exists ? (dealDoc.data() as Deal) : null;
     } catch (error) {
       console.error('Error getting deal by ID:', error);
       return null;
@@ -203,17 +203,19 @@ export class FirebaseService {
         .orderBy('createdAt', 'desc')
         .get();
       
-      console.log('🔥 [FIREBASE] Query executed, found documents:', dealsSnapshot.docs.length);
+      console.log('🔥 [FIREBASE] Query executed in deals collection, found documents:', dealsSnapshot.docs.length);
       
       const deals = dealsSnapshot.docs.map(doc => {
-        const data = doc.data() as Deal;
+        const data = doc.data();
         console.log('🔥 [FIREBASE] Deal document:', {
-          id: data.id,
-          clientName: data.clientName,
+          id: doc.id,
           userId: data.userId,
-          status: data.status
+          status: data.status,
+          stage: data.stage,
+          title: data.title,
+          value: data.value
         });
-        return data;
+        return data as Deal;
       });
       
       console.log('🔥 [FIREBASE] Returning deals:', deals.length);
@@ -230,13 +232,20 @@ export class FirebaseService {
 
   static async getAllDeals(): Promise<Deal[]> {
     try {
+      console.log('🔥 [FIREBASE] Getting all deals from deals collection...');
+      
       const dealsSnapshot = await db.collection('deals')
         .orderBy('createdAt', 'desc')
         .get();
       
-      return dealsSnapshot.docs.map(doc => doc.data() as Deal);
+      console.log('🔥 [FIREBASE] Found total documents in deals collection:', dealsSnapshot.docs.length);
+      
+      const deals = dealsSnapshot.docs.map(doc => doc.data() as Deal);
+      
+      console.log('🔥 [FIREBASE] Returning all deals:', deals.length);
+      return deals;
     } catch (error) {
-      console.error('Error getting all deals:', error);
+      console.error('❌ [FIREBASE] Error getting all deals:', error);
       return [];
     }
   }
@@ -244,12 +253,12 @@ export class FirebaseService {
   static async updateDeal(dealId: string, updates: Partial<Deal>): Promise<Deal | null> {
     try {
       const dealRef = db.collection('deals').doc(dealId);
-      const updateData = {
+    const updateData = {
         ...updates,
         updatedAt: Timestamp.now()
-      };
-      
-      await dealRef.update(updateData);
+    };
+    
+    await dealRef.update(updateData);
       return await this.getDealById(dealId);
     } catch (error) {
       console.error('Error updating deal:', error);
@@ -549,10 +558,10 @@ export class FirebaseService {
   } | null> {
     try {
       const snapshot = await db.collection('onedrive_tokens')
-        .orderBy('createdAt', 'desc')
-        .limit(1)
-        .get();
-      
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+    
       if (snapshot.empty) {
         return null;
       }
