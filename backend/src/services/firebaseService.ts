@@ -478,23 +478,47 @@ export class FirebaseService {
   // Configuration methods
   static async getConfiguration(key: string): Promise<string | null> {
     try {
-      const configDoc = await db.collection('config').doc(key).get();
-      return configDoc.exists ? configDoc.data()?.value || null : null;
+      console.log('🔧 [CONFIG] Getting configuration for key:', key);
+      
+      // Try configurations collection first (new structure)
+      const configDoc = await db.collection('configurations').doc(key).get();
+      if (configDoc.exists) {
+        const data = configDoc.data();
+        console.log('🔧 [CONFIG] Found in configurations collection:', { key, hasValue: !!data?.value });
+        return data?.value || null;
+      }
+      
+      // Fallback to config collection (old structure)
+      const oldConfigDoc = await db.collection('config').doc(key).get();
+      if (oldConfigDoc.exists) {
+        const data = oldConfigDoc.data();
+        console.log('🔧 [CONFIG] Found in config collection (fallback):', { key, hasValue: !!data?.value });
+        return data?.value || null;
+      }
+      
+      console.log('🔧 [CONFIG] Configuration not found:', key);
+      return null;
     } catch (error) {
-      console.error('Error getting configuration:', error);
+      console.error('❌ [CONFIG] Error getting configuration:', error);
       return null;
     }
   }
 
   static async setConfiguration(key: string, value: string, description?: string): Promise<void> {
     try {
-      await db.collection('config').doc(key).set({
+      console.log('🔧 [CONFIG] Setting configuration:', { key, hasValue: !!value, description });
+      
+      await db.collection('configurations').doc(key).set({
+        key,
         value,
         description: description || '',
+        createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       });
+      
+      console.log('🔧 [CONFIG] Configuration set successfully:', key);
     } catch (error) {
-      console.error('Error setting configuration:', error);
+      console.error('❌ [CONFIG] Error setting configuration:', error);
       throw error;
     }
   }

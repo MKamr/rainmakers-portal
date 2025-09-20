@@ -87,9 +87,26 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
     const configSnapshot = await db.collection('config').limit(1).get();
     console.log('🔥 [FIREBASE TEST] Config collection accessible:', configSnapshot.docs.length >= 0);
     
+    // Test configurations collection (new structure)
+    const configurationsSnapshot = await db.collection('configurations').limit(1).get();
+    console.log('🔥 [FIREBASE TEST] Configurations collection accessible:', configurationsSnapshot.docs.length >= 0);
+    
     // Test GHL API key in config
     const ghlApiKeyDoc = await db.collection('config').doc('ghl_api_key').get();
-    console.log('🔥 [FIREBASE TEST] GHL API key exists:', ghlApiKeyDoc.exists);
+    console.log('🔥 [FIREBASE TEST] GHL API key exists in config:', ghlApiKeyDoc.exists);
+    
+    // Test GHL API key in configurations (new structure)
+    const ghlApiKeyConfigDoc = await db.collection('configurations').doc('ghl_api_key').get();
+    console.log('🔥 [FIREBASE TEST] GHL API key exists in configurations:', ghlApiKeyConfigDoc.exists);
+    
+    if (ghlApiKeyConfigDoc.exists) {
+      const ghlData = ghlApiKeyConfigDoc.data();
+      console.log('🔥 [FIREBASE TEST] GHL API key data:', {
+        hasValue: !!ghlData?.value,
+        description: ghlData?.description,
+        isEncrypted: ghlData?.isEncrypted
+      });
+    }
     
     res.json({
       success: true,
@@ -97,9 +114,11 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
       collections: {
         users: usersSnapshot.docs.length,
         deals: dealsSnapshot.docs.length,
-        config: configSnapshot.docs.length
+        config: configSnapshot.docs.length,
+        configurations: configurationsSnapshot.docs.length
       },
-      ghlApiKeyExists: ghlApiKeyDoc.exists
+      ghlApiKeyExists: ghlApiKeyDoc.exists || ghlApiKeyConfigDoc.exists,
+      ghlApiKeyInConfigurations: ghlApiKeyConfigDoc.exists
     });
   } catch (error) {
     console.error('🔥 [FIREBASE TEST] Firebase test failed:', error);
@@ -421,6 +440,30 @@ router.delete('/onedrive/document/:fileId', async (req: Request, res: Response) 
   } catch (error) {
     console.error('Delete document error:', error);
     res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
+// Set GHL API key
+router.post('/ghl/api-key', async (req: Request, res: Response) => {
+  try {
+    const { apiKey } = req.body;
+    
+    if (!apiKey) {
+      return res.status(400).json({ error: 'API key is required' });
+    }
+    
+    await FirebaseService.setConfiguration('ghl_api_key', apiKey, 'GHL API Key for authentication');
+    
+    res.json({ 
+      success: true, 
+      message: 'GHL API key configured successfully' 
+    });
+  } catch (error) {
+    console.error('Set GHL API key error:', error);
+    res.status(500).json({ 
+      error: 'Failed to set GHL API key',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
