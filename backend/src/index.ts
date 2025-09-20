@@ -29,7 +29,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
-    'https://rainmakers-portal-frontend-production.up.railway.app'
+    'https://rainmakers-portal-frontend.vercel.app'
   ],
   credentials: true
 }));
@@ -98,7 +98,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
   console.log(`🔥 Database: Firebase Firestore`);
-  console.log(`🌐 Frontend URL: https://rainmakers-portal-frontend-production.up.railway.app`);
+  console.log(`🌐 Frontend URL: https://rainmakers-portal-frontend.vercel.app`);
 });
 
 export default app;
