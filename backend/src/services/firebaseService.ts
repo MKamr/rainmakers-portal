@@ -161,7 +161,7 @@ export class FirebaseService {
     return snapshot.docs.map(doc => doc.data() as User);
   }
 
-  // Deal methods - Updated to handle flexible data structure
+  // Deal methods - Updated to handle flexible data structure and filter undefined values
   static async createDeal(dealData: any): Promise<any> {
     try {
       console.log('🔥 [FIREBASE] Creating deal with data:', dealData);
@@ -169,10 +169,17 @@ export class FirebaseService {
       const newDealRef = FirebaseService.dealsCollection.doc();
       const now = Timestamp.now();
       
+      // Filter out undefined values to prevent Firestore errors
+      const cleanDealData = Object.fromEntries(
+        Object.entries(dealData).filter(([key, value]) => value !== undefined)
+      );
+      
+      console.log('🔥 [FIREBASE] Cleaned deal data (removed undefined):', cleanDealData);
+      
       // Create deal with flexible structure - include all provided fields
       const newDeal = {
         id: newDealRef.id,
-        ...dealData,
+        ...cleanDealData,
         createdAt: now,
         updatedAt: now,
       };
