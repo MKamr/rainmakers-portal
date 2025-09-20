@@ -29,11 +29,11 @@ const MatrixRain = () => {
     }
 
     const draw = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.04)"
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = "#0F4"
-      ctx.font = fontSize + "px monospace"
+      ctx.fillStyle = "#0F0" // Green text
+      ctx.font = `${fontSize}px monospace`
 
       for (let i = 0; i < drops.length; i++) {
         const text = matrixArray[Math.floor(Math.random() * matrixArray.length)]
@@ -46,43 +46,62 @@ const MatrixRain = () => {
       }
     }
 
-    const interval = setInterval(draw, 35)
+    const interval = setInterval(draw, 33)
 
-    return () => clearInterval(interval)
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      const newColumns = canvas.width / fontSize
+      drops.length = 0 // Clear existing drops
+      for (let x = 0; x < newColumns; x++) {
+        drops[x] = 1
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
+  return <canvas id="matrix-canvas" className="absolute inset-0 z-0"></canvas>
+}
+
+// Glitch Text Component
+const GlitchText: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className,
+}) => {
   return (
-    <canvas
-      id="matrix-canvas"
-      className="fixed inset-0 w-full h-full z-0"
-      style={{ background: "black" }}
-    />
+    <h1 className={`glitch ${className}`}>
+      <span aria-hidden="true">{children}</span>
+      {children}
+      <span aria-hidden="true">{children}</span>
+    </h1>
   )
 }
 
 // Matrix Logo Component
-const MatrixLogo = () => {
+const MatrixLogo: React.FC = () => {
   return (
-    <div className="text-center mb-8">
-      <div className="matrix-logo-container inline-block">
-        <div className="matrix-logo text-6xl font-bold text-yellow-400 font-mono mb-4">
-          RAINMAKERS
-        </div>
-        <div className="matrix-logo-subtitle text-yellow-400 font-mono text-sm">
-          &gt; PORTAL.EXE INITIALIZED
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Glitch Text Component
-const GlitchText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-  return (
-    <div className={`glitch-text ${className}`}>
-      <span className="glitch-text-main">{children}</span>
-      <span className="glitch-text-shadow glitch-text-shadow-1">{children}</span>
-      <span className="glitch-text-shadow glitch-text-shadow-2">{children}</span>
+    <div className="flex justify-center mb-8">
+      <svg
+        width="100"
+        height="100"
+        viewBox="0 0 200 200"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="animate-pulse"
+      >
+        <rect x="25" y="25" width="150" height="150" rx="20" fill="#FFD700" />
+        <path
+          d="M70 70L100 130L130 70H70ZM100 130L70 170H130L100 130Z"
+          fill="#000000"
+        />
+        <circle cx="100" cy="100" r="10" fill="#0F0" />
+      </svg>
     </div>
   )
 }
@@ -170,80 +189,76 @@ export function MatrixLoginPage() {
           padding: 3rem;
           box-shadow: 
             0 0 30px rgba(255, 215, 0, 0.6),
-            inset 0 0 30px rgba(255, 215, 0, 0.1);
+            0 0 60px rgba(255, 215, 0, 0.4);
+          animation: fadeIn 1s ease-out;
         }
 
         .matrix-button {
-          background: linear-gradient(45deg, #FFD700, #FFA500);
-          color: #000;
-          border: 2px solid #FFD700;
-          position: relative;
-          overflow: hidden;
+          background: linear-gradient(90deg, #00BFFF, #1E90FF);
+          color: #fff;
+          box-shadow: 0 0 15px rgba(30, 144, 255, 0.6);
+          text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
 
         .matrix-button:hover {
-          background: linear-gradient(45deg, #FFA500, #FFD700);
-          box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+          background: linear-gradient(90deg, #1E90FF, #00BFFF);
+          box-shadow: 0 0 25px rgba(30, 144, 255, 0.8);
           transform: translateY(-2px);
         }
 
-        .matrix-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          transition: left 0.5s;
+        .matrix-subtitle p, .matrix-footer p {
+          text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
         }
 
-        .matrix-button:hover::before {
-          left: 100%;
-        }
-
-        .glitch-text {
+        .glitch {
+          font-family: 'Press Start 2P', cursive; /* Example retro font */
+          color: #0F0;
           position: relative;
-          display: inline-block;
+          animation: glitch-anim 2s infinite linear alternate-reverse;
+          text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0;
         }
 
-        .glitch-text-main {
-          position: relative;
-          z-index: 1;
-        }
-
-        .glitch-text-shadow {
+        .glitch span {
           position: absolute;
           top: 0;
           left: 0;
-          z-index: 0;
-          opacity: 0.7;
         }
 
-        .glitch-text-shadow-1 {
-          color: #ff0040;
+        .glitch span:first-child {
+          animation: glitch-anim-text 2s infinite linear alternate-reverse;
+          clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
           transform: translate(-2px, -2px);
-          animation: glitch1 0.3s infinite;
+          opacity: 0.8;
         }
 
-        .glitch-text-shadow-2 {
-          color: #00ff40;
+        .glitch span:last-child {
+          animation: glitch-anim-text 2s infinite linear alternate-reverse;
+          clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
           transform: translate(2px, 2px);
-          animation: glitch2 0.3s infinite;
+          opacity: 0.8;
         }
 
-        @keyframes glitch1 {
-          0%, 100% { transform: translate(-2px, -2px); }
-          25% { transform: translate(2px, -2px); }
-          50% { transform: translate(-2px, 2px); }
-          75% { transform: translate(2px, 2px); }
+        @keyframes glitch-anim {
+          0% { text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0; }
+          20% { text-shadow: 2px 0 10px #F00, -2px 0 20px #00F, 0 0 30px #0F0; }
+          40% { text-shadow: -2px 0 10px #00F, 2px 0 20px #F00, 0 0 30px #0F0; }
+          60% { text-shadow: 0 2px 10px #0F0, 0 -2px 20px #F00, 0 0 30px #00F; }
+          80% { text-shadow: 0 -2px 10px #F00, 0 2px 20px #0F0, 0 0 30px #00F; }
+          100% { text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0; }
         }
 
-        @keyframes glitch2 {
-          0%, 100% { transform: translate(2px, 2px); }
-          25% { transform: translate(-2px, 2px); }
-          50% { transform: translate(2px, -2px); }
-          75% { transform: translate(-2px, -2px); }
+        @keyframes glitch-anim-text {
+          0% { transform: translate(0, 0); }
+          20% { transform: translate(-5px, -5px); }
+          40% { transform: translate(5px, 5px); }
+          60% { transform: translate(-5px, 5px); }
+          80% { transform: translate(5px, -5px); }
+          100% { transform: translate(0, 0); }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
