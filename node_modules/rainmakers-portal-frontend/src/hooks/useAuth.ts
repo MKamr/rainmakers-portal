@@ -13,18 +13,26 @@ export function useAuth() {
     {
       enabled: !!localStorage.getItem('token'),
       retry: false,
-      onError: () => {
+      onError: (error) => {
+        console.error('Auth API Error:', error)
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         setUser(null)
+      },
+      onSuccess: (data) => {
+        console.log('Auth API Success:', data)
       }
     }
   )
 
   useEffect(() => {
+    console.log('useAuth useEffect:', { userData, isQueryLoading, error })
+    
     const token = localStorage.getItem('token')
+    console.log('Token exists:', !!token)
     
     if (!token) {
+      console.log('No token, setting user to null')
       setUser(null)
       setIsLoading(false)
       return
@@ -32,10 +40,12 @@ export function useAuth() {
 
     // If we have a token, wait for the API call to complete
     if (isQueryLoading) {
+      console.log('Still loading API call...')
       return // Still loading, don't set user yet
     }
 
     if (error) {
+      console.log('API call failed, clearing auth')
       // API call failed, clear everything
       localStorage.removeItem('token')
       localStorage.removeItem('user')
@@ -45,16 +55,21 @@ export function useAuth() {
     }
 
     if (userData) {
+      console.log('Using fresh API data:', userData)
       // API call succeeded, use fresh data
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
     } else {
+      console.log('No userData from API, checking localStorage')
       // No user data from API, check localStorage as fallback
       const savedUser = localStorage.getItem('user')
       if (savedUser) {
         try {
-          setUser(JSON.parse(savedUser))
+          const parsedUser = JSON.parse(savedUser)
+          console.log('Using localStorage data:', parsedUser)
+          setUser(parsedUser)
         } catch (error) {
+          console.error('Error parsing localStorage user:', error)
           localStorage.removeItem('token')
           localStorage.removeItem('user')
           setUser(null)

@@ -11,6 +11,8 @@ import { LoadingSpinner } from './components/LoadingSpinner'
 function App() {
   const { user, isLoading } = useAuth()
 
+  console.log('App render:', { user, isLoading })
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -21,7 +23,10 @@ function App() {
 
   // Check if user is logged in - if no token or no user, show login
   const token = localStorage.getItem('token')
+  console.log('Token check:', { token: !!token, user: !!user })
+  
   if (!user || !token) {
+    console.log('No user or token, showing login')
     return (
       <ThemeProvider>
         <LoginPage />
@@ -29,7 +34,12 @@ function App() {
     )
   }
 
+  console.log('User data:', user)
+  console.log('isWhitelisted:', user.isWhitelisted)
+  console.log('isAdmin:', user.isAdmin)
+
   if (!user.isWhitelisted) {
+    console.log('User not whitelisted, showing pending modal')
     return (
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -53,6 +63,11 @@ function App() {
                 Your account is pending approval. Please contact an administrator to get access to the Rainmakers Portal.
               </p>
               
+              {/* Debug Info */}
+              <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-100 rounded">
+                Debug: isWhitelisted={String(user.isWhitelisted)}, isAdmin={String(user.isAdmin)}
+              </div>
+              
               {/* Sign Out Button */}
               <button
                 onClick={() => {
@@ -71,6 +86,7 @@ function App() {
     )
   }
 
+  console.log('User is whitelisted, showing dashboard')
   return (
     <ThemeProvider>
       <DashboardLayout>
