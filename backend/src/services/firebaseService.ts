@@ -445,4 +445,70 @@ export class FirebaseService {
       };
     }
   }
+
+  // Configuration methods
+  static async getConfiguration(key: string): Promise<string | null> {
+    try {
+      const configDoc = await db.collection('config').doc(key).get();
+      return configDoc.exists ? configDoc.data()?.value || null : null;
+    } catch (error) {
+      console.error('Error getting configuration:', error);
+      return null;
+    }
+  }
+
+  static async setConfiguration(key: string, value: string, description?: string): Promise<void> {
+    try {
+      await db.collection('config').doc(key).set({
+        value,
+        description: description || '',
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error setting configuration:', error);
+      throw error;
+    }
+  }
+
+  // OneDrive token methods
+  static async saveOneDriveToken(tokenData: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Timestamp;
+    scope: string;
+  }): Promise<void> {
+    try {
+      await db.collection('onedrive_tokens').add({
+        ...tokenData,
+        createdAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error saving OneDrive token:', error);
+      throw error;
+    }
+  }
+
+  static async getLatestOneDriveToken(): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Timestamp;
+    scope: string;
+  } | null> {
+    try {
+      const snapshot = await db.collection('onedrive_tokens')
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const tokenDoc = snapshot.docs[0];
+      return tokenDoc.data() as any;
+    } catch (error) {
+      console.error('Error getting latest OneDrive token:', error);
+      return null;
+    }
+  }
 }

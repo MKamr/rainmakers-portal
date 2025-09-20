@@ -180,23 +180,43 @@ router.post('/onedrive/connect', async (req: Request, res: Response) => {
 // Get OneDrive connection status
 router.get('/onedrive/status', async (req: Request, res: Response) => {
   try {
+    console.log('🔍 Checking OneDrive connection status...');
+    
     const token = await FirebaseService.getLatestOneDriveToken();
+    console.log('🔑 OneDrive token exists:', !!token);
     
     if (!token) {
-      return res.json({ connected: false });
+      console.log('❌ No OneDrive token found');
+      return res.json({ 
+        connected: false,
+        message: 'OneDrive not connected',
+        error: 'No OneDrive token found'
+      });
     }
 
     // Check if token is expired
-    const isExpired = new Date() >= (token.expiresAt instanceof Date ? token.expiresAt : token.expiresAt.toDate());
+    const expiresAt = token.expiresAt instanceof Date ? token.expiresAt : token.expiresAt.toDate();
+    const isExpired = new Date() >= expiresAt;
+    
+    console.log('⏰ Token expiration check:', {
+      expiresAt: expiresAt.toISOString(),
+      isExpired,
+      currentTime: new Date().toISOString()
+    });
     
     res.json({
       connected: true,
       expired: isExpired,
-      expiresAt: token.expiresAt instanceof Date ? token.expiresAt : token.expiresAt.toDate()
+      expiresAt: expiresAt,
+      message: isExpired ? 'OneDrive token expired' : 'OneDrive connected successfully'
     });
   } catch (error) {
-    console.error('OneDrive status error:', error);
-    res.status(500).json({ error: 'Failed to check OneDrive status' });
+    console.error('❌ OneDrive status error:', error);
+    res.status(500).json({ 
+      connected: false,
+      error: 'Failed to check OneDrive status',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
@@ -307,27 +327,52 @@ router.delete('/onedrive/document/:fileId', async (req: Request, res: Response) 
 // Test GHL connection
 router.get('/ghl/test', async (req: Request, res: Response) => {
   try {
+    console.log('🔍 Testing GHL connection...');
+    
     const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+    console.log('🔑 GHL API key exists:', !!ghlApiKey);
     
     if (!ghlApiKey) {
-      return res.status(400).json({ error: 'GHL API key not configured' });
+      console.log('❌ GHL API key not configured');
+      return res.status(400).json({ 
+        connected: false,
+        error: 'GHL API key not configured',
+        message: 'Please configure GHL API key in admin settings'
+      });
     }
 
+    const ghlBaseUrl = process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1';
+    console.log('🌐 GHL Base URL:', ghlBaseUrl);
+
     // Test API key by fetching pipelines
-    const response = await axios.get(`${process.env.GHL_BASE_URL}/pipelines/`, {
+    const response = await axios.get(`${ghlBaseUrl}/pipelines/`, {
       headers: {
         'Authorization': `Bearer ${ghlApiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28'
       }
     });
 
+    console.log('✅ GHL connection successful');
     res.json({
       connected: true,
-      pipelines: response.data.pipelines || []
+      pipelines: response.data.pipelines || [],
+      message: 'GHL connection successful'
     });
   } catch (error) {
-    console.error('GHL test error:', error);
-    res.status(500).json({ error: 'Failed to connect to GHL' });
+    console.error('❌ GHL test error:', error);
+    console.error('🔍 Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      status: (error as any)?.response?.status,
+      data: (error as any)?.response?.data
+    });
+    
+    res.status(500).json({ 
+      connected: false,
+      error: 'Failed to connect to GHL',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: (error as any)?.response?.data || null
+    });
   }
 });
 
@@ -434,6 +479,8 @@ router.get('/ghl/calendars', async (req: Request, res: Response) => {
 // Get GHL configuration
 router.get('/ghl/config', async (req: Request, res: Response) => {
   try {
+    console.log('🔍 Fetching GHL configuration...');
+    
     const config = {
       apiKey: await FirebaseService.getConfiguration('ghl_api_key'),
       v2Token: await FirebaseService.getConfiguration('ghl_v2_token'),
@@ -450,10 +497,18 @@ router.get('/ghl/config', async (req: Request, res: Response) => {
       skipGHL: await FirebaseService.getConfiguration('skip_ghl_sync')
     };
 
-    res.json(config);
+    console.log('✅ GHL config fetched successfully');
+    res.json({
+      ...config,
+      configured: !!config.apiKey,
+      message: config.apiKey ? 'GHL is configured' : 'GHL API key not configured'
+    });
   } catch (error) {
-    console.error('Get GHL config error:', error);
-    res.status(500).json({ error: 'Failed to fetch GHL configuration' });
+    console.error('❌ Get GHL config error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch GHL configuration',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
