@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 
 // Matrix Rain Animation Component
 const MatrixRain = () => {
@@ -88,10 +88,6 @@ const GlitchText = ({ children, className = "" }: { children: React.ReactNode; c
 }
 
 export function MatrixLoginPage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<any>(null)
-
   useEffect(() => {
     // Check if we have a token from Discord OAuth callback
     const urlParams = new URLSearchParams(window.location.search)
@@ -101,7 +97,6 @@ export function MatrixLoginPage() {
 
     if (error) {
       console.error("Discord auth error:", error)
-      setIsCheckingAuth(false)
       return
     }
 
@@ -113,241 +108,15 @@ export function MatrixLoginPage() {
         window.location.href = "/"
       } catch (error) {
         console.error("Failed to parse user data:", error)
-        setIsCheckingAuth(false)
       }
-    } else {
-      // Check if user is already authenticated
-      checkExistingAuth()
     }
   }, [])
-
-  const checkExistingAuth = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const userData = localStorage.getItem('user')
-      
-      if (token && userData) {
-        // Verify token is still valid by making a request to backend
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const user = JSON.parse(userData)
-          setUser(user)
-          setIsAuthenticated(true)
-          
-          // If user is whitelisted/admin, redirect to dashboard
-          if (user.isWhitelisted || user.isAdmin) {
-            window.location.href = "/"
-            return
-          }
-        } else {
-          // Token is invalid, clear storage
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-        }
-      }
-    } catch (error) {
-      console.error('Error checking existing auth:', error)
-      // Clear invalid data
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-    } finally {
-      setIsCheckingAuth(false)
-    }
-  }
 
   const redirectToDiscord = () => {
     const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent("https://rainmakers-portal-backend.vercel.app/auth/discord/callback")}&scope=identify%20email`
     window.location.href = discordAuthUrl
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setIsAuthenticated(false)
-    setUser(null)
-  }
-
-  // Show loading state while checking authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        <MatrixRain />
-        <div className="relative z-10 min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="matrix-logo text-4xl font-bold text-yellow-400 font-mono mb-4">
-              RAINMAKERS
-            </div>
-            <div className="text-yellow-400 font-mono text-sm">
-              &gt; CHECKING AUTHENTICATION STATUS...
-            </div>
-            <div className="mt-4">
-              <div className="matrix-loading-bar w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
-                <div className="matrix-loading-progress h-full bg-yellow-400 animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Show authenticated user info if they're not whitelisted
-  if (isAuthenticated && user && !user.isWhitelisted && !user.isAdmin) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        <MatrixRain />
-
-        {/* Main Content */}
-        <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-          <div className="matrix-login-container max-w-md w-full space-y-8">
-            {/* Logo */}
-            <MatrixLogo />
-
-            {/* Header */}
-            <div className="text-center">
-              <GlitchText className="text-3xl font-bold mb-6">ACCESS DENIED</GlitchText>
-              <div className="matrix-subtitle">
-                <p className="text-red-400 font-mono text-sm mb-2">&gt; USER: {user.username}</p>
-                <p className="text-red-400 font-mono text-sm mb-2">&gt; STATUS: NOT WHITELISTED</p>
-                <p className="text-yellow-400 font-mono text-sm">&gt; CONTACT ADMINISTRATOR</p>
-              </div>
-            </div>
-
-            {/* Logout Button */}
-            <div className="space-y-6">
-              <button
-                onClick={logout}
-                className="matrix-button group relative w-full flex justify-center py-4 px-6 text-lg font-bold rounded-lg transition-all duration-300"
-              >
-                <div className="flex items-center">
-                  <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>
-                  </svg>
-                  LOGOUT
-                </div>
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center">
-              <div className="matrix-footer">
-                <p className="text-red-400 font-mono text-xs mb-2">&gt; ACCESS DENIED</p>
-                <p className="text-red-400 font-mono text-xs">&gt; INSUFFICIENT PERMISSIONS</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Styles */}
-        <style>{`
-          .matrix-login-container {
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid #FFD700;
-            border-radius: 15px;
-            padding: 3rem;
-            box-shadow: 
-              0 0 30px rgba(255, 215, 0, 0.6),
-              inset 0 0 30px rgba(255, 215, 0, 0.1);
-          }
-
-          .matrix-button {
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            color: #000;
-            border: 2px solid #FFD700;
-            position: relative;
-            overflow: hidden;
-          }
-
-          .matrix-button:hover {
-            background: linear-gradient(45deg, #FFA500, #FFD700);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-            transform: translateY(-2px);
-          }
-
-          .matrix-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s;
-          }
-
-          .matrix-button:hover::before {
-            left: 100%;
-          }
-
-          .glitch-text {
-            position: relative;
-            display: inline-block;
-          }
-
-          .glitch-text-main {
-            position: relative;
-            z-index: 1;
-          }
-
-          .glitch-text-shadow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 0;
-            opacity: 0.7;
-          }
-
-          .glitch-text-shadow-1 {
-            color: #ff0040;
-            transform: translate(-2px, -2px);
-            animation: glitch1 0.3s infinite;
-          }
-
-          .glitch-text-shadow-2 {
-            color: #00ff40;
-            transform: translate(2px, 2px);
-            animation: glitch2 0.3s infinite;
-          }
-
-          @keyframes glitch1 {
-            0%, 100% { transform: translate(-2px, -2px); }
-            25% { transform: translate(2px, -2px); }
-            50% { transform: translate(-2px, 2px); }
-            75% { transform: translate(2px, 2px); }
-          }
-
-          @keyframes glitch2 {
-            0%, 100% { transform: translate(2px, 2px); }
-            25% { transform: translate(-2px, 2px); }
-            50% { transform: translate(2px, -2px); }
-            75% { transform: translate(-2px, -2px); }
-          }
-
-          .matrix-loading-bar {
-            position: relative;
-          }
-
-          .matrix-loading-progress {
-            width: 100%;
-            animation: loading 2s ease-in-out infinite;
-          }
-
-          @keyframes loading {
-            0% { width: 0%; }
-            50% { width: 100%; }
-            100% { width: 0%; }
-          }
-        `}</style>
-      </div>
-    )
-  }
-
-  // Show login form for unauthenticated users
   return (
     <div className="min-h-screen relative overflow-hidden">
       <MatrixRain />
