@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect } from "react"
 
 // Matrix Rain Animation Component
@@ -16,8 +15,7 @@ const MatrixRain = () => {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const matrix =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン"
+    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}"
     const matrixArray = matrix.split("")
 
     const fontSize = 10
@@ -29,11 +27,11 @@ const MatrixRain = () => {
     }
 
     const draw = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)"
+      ctx.fillStyle = "rgba(0, 0, 0, 0.04)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = "#0F0" // Green text
-      ctx.font = `${fontSize}px monospace`
+      ctx.fillStyle = "#FFD700" // Golden color
+      ctx.font = fontSize + "px monospace"
 
       for (let i = 0; i < drops.length; i++) {
         const text = matrixArray[Math.floor(Math.random() * matrixArray.length)]
@@ -46,16 +44,11 @@ const MatrixRain = () => {
       }
     }
 
-    const interval = setInterval(draw, 33)
+    const interval = setInterval(draw, 35)
 
     const handleResize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      const newColumns = canvas.width / fontSize
-      drops.length = 0 // Clear existing drops
-      for (let x = 0; x < newColumns; x++) {
-        drops[x] = 1
-      }
     }
 
     window.addEventListener("resize", handleResize)
@@ -66,42 +59,38 @@ const MatrixRain = () => {
     }
   }, [])
 
-  return <canvas id="matrix-canvas" className="absolute inset-0 z-0"></canvas>
-}
-
-// Glitch Text Component
-const GlitchText: React.FC<{ children: React.ReactNode; className?: string }> = ({
-  children,
-  className,
-}) => {
   return (
-    <h1 className={`glitch ${className}`}>
-      <span aria-hidden="true">{children}</span>
-      {children}
-      <span aria-hidden="true">{children}</span>
-    </h1>
+    <canvas
+      id="matrix-canvas"
+      className="fixed top-0 left-0 w-full h-full pointer-events-none z-0"
+      style={{ background: "black" }}
+    />
   )
 }
 
-// Matrix Logo Component
-const MatrixLogo: React.FC = () => {
+// Glitch Text Component
+const GlitchText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  return (
+    <div className={`relative ${className}`}>
+      <div className="glitch-text" data-text={children}>{children}</div>
+    </div>
+  )
+}
+
+// Rainmakers Logo Component
+const RainmakersLogo = () => {
   return (
     <div className="flex justify-center mb-8">
-      <svg
-        width="100"
-        height="100"
-        viewBox="0 0 200 200"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="animate-pulse"
-      >
-        <rect x="25" y="25" width="150" height="150" rx="20" fill="#FFD700" />
-        <path
-          d="M70 70L100 130L130 70H70ZM100 130L70 170H130L100 130Z"
-          fill="#000000"
-        />
-        <circle cx="100" cy="100" r="10" fill="#0F0" />
-      </svg>
+      <div className="rainmakers-logo-container">
+        <div className="rainmakers-icon">
+          <div className="bar bar-1"></div>
+          <div className="bar bar-2"></div>
+          <div className="bar bar-3"></div>
+          <div className="bar bar-4"></div>
+          <div className="bar bar-5"></div>
+        </div>
+        <div className="rainmakers-text">Rainmakers</div>
+      </div>
     </div>
   )
 }
@@ -137,18 +126,18 @@ export function MatrixLoginPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-black">
       <MatrixRain />
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="matrix-login-container max-w-md w-full space-y-8">
           {/* Logo */}
-          <MatrixLogo />
+          <RainmakersLogo />
 
           {/* Header */}
           <div className="text-center">
-            <GlitchText className="text-3xl font-bold mb-6">NEURAL INTERFACE</GlitchText>
+            <GlitchText className="text-4xl font-bold mb-6">NEURAL INTERFACE</GlitchText>
             <div className="matrix-subtitle">
               <p className="text-yellow-400 font-mono text-sm mb-2">&gt; ESTABLISHING SECURE CONNECTION...</p>
               <p className="text-yellow-400 font-mono text-sm">&gt; DISCORD AUTHENTICATION REQUIRED</p>
@@ -189,76 +178,205 @@ export function MatrixLoginPage() {
           padding: 3rem;
           box-shadow: 
             0 0 30px rgba(255, 215, 0, 0.6),
-            0 0 60px rgba(255, 215, 0, 0.4);
-          animation: fadeIn 1s ease-out;
-        }
-
-        .matrix-button {
-          background: linear-gradient(90deg, #00BFFF, #1E90FF);
-          color: #fff;
-          box-shadow: 0 0 15px rgba(30, 144, 255, 0.6);
-          text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-        }
-
-        .matrix-button:hover {
-          background: linear-gradient(90deg, #1E90FF, #00BFFF);
-          box-shadow: 0 0 25px rgba(30, 144, 255, 0.8);
-          transform: translateY(-2px);
-        }
-
-        .matrix-subtitle p, .matrix-footer p {
-          text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
-        }
-
-        .glitch {
-          font-family: 'Press Start 2P', cursive; /* Example retro font */
-          color: #0F0;
+            inset 0 0 30px rgba(255, 215, 0, 0.1),
+            0 0 60px rgba(255, 215, 0, 0.3);
+          backdrop-filter: blur(15px);
           position: relative;
-          animation: glitch-anim 2s infinite linear alternate-reverse;
-          text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0;
+          overflow: hidden;
         }
 
-        .glitch span {
+        .matrix-login-container::before {
+          content: '';
           position: absolute;
           top: 0;
           left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.1) 50%, transparent 70%);
+          animation: scan-line 3s linear infinite;
+          pointer-events: none;
         }
 
-        .glitch span:first-child {
-          animation: glitch-anim-text 2s infinite linear alternate-reverse;
-          clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
-          transform: translate(-2px, -2px);
-          opacity: 0.8;
+        @keyframes scan-line {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
         }
 
-        .glitch span:last-child {
-          animation: glitch-anim-text 2s infinite linear alternate-reverse;
-          clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
-          transform: translate(2px, 2px);
-          opacity: 0.8;
+        .matrix-subtitle {
+          border: 1px solid #FFD700;
+          background: rgba(255, 215, 0, 0.1);
+          padding: 1rem;
+          border-radius: 5px;
+          margin: 1rem 0;
         }
 
-        @keyframes glitch-anim {
-          0% { text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0; }
-          20% { text-shadow: 2px 0 10px #F00, -2px 0 20px #00F, 0 0 30px #0F0; }
-          40% { text-shadow: -2px 0 10px #00F, 2px 0 20px #F00, 0 0 30px #0F0; }
-          60% { text-shadow: 0 2px 10px #0F0, 0 -2px 20px #F00, 0 0 30px #00F; }
-          80% { text-shadow: 0 -2px 10px #F00, 0 2px 20px #0F0, 0 0 30px #00F; }
-          100% { text-shadow: 0 0 10px #0F0, 0 0 20px #0F0, 0 0 30px #0F0; }
+        .matrix-button {
+          background: linear-gradient(90deg, #0066CC, #0099FF);
+          border: 2px solid #FFD700;
+          color: #fff;
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+          box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.5),
+            inset 0 0 20px rgba(255, 215, 0, 0.1);
+          position: relative;
+          overflow: hidden;
         }
 
-        @keyframes glitch-anim-text {
-          0% { transform: translate(0, 0); }
-          20% { transform: translate(-5px, -5px); }
-          40% { transform: translate(5px, 5px); }
-          60% { transform: translate(-5px, 5px); }
-          80% { transform: translate(5px, -5px); }
-          100% { transform: translate(0, 0); }
+        .matrix-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.4), transparent);
+          transition: left 0.5s;
         }
 
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
+        .matrix-button:hover::before {
+          left: 100%;
+        }
+
+        .matrix-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 5px 25px rgba(255, 215, 0, 0.7),
+            inset 0 0 25px rgba(255, 215, 0, 0.2);
+        }
+
+        .matrix-footer {
+          border: 1px solid #FFD700;
+          background: rgba(255, 215, 0, 0.05);
+          padding: 0.75rem;
+          border-radius: 5px;
+        }
+
+        /* Rainmakers Logo Styles */
+        .rainmakers-logo-container {
+          display: flex;
+          align-items: center;
+          background: rgba(0, 0, 0, 0.8);
+          padding: 1rem 2rem;
+          border-radius: 10px;
+          border: 1px solid #FFD700;
+        }
+
+        .rainmakers-icon {
+          display: flex;
+          align-items: end;
+          margin-right: 1rem;
+          height: 40px;
+        }
+
+        .bar {
+          width: 8px;
+          background: linear-gradient(to top, #FFD700, #FFA500);
+          margin-right: 3px;
+          border-radius: 2px;
+          animation: bar-glow 2s ease-in-out infinite alternate;
+        }
+
+        .bar-1 { height: 20px; animation-delay: 0s; }
+        .bar-2 { height: 35px; animation-delay: 0.2s; }
+        .bar-3 { height: 25px; animation-delay: 0.4s; }
+        .bar-4 { height: 40px; animation-delay: 0.6s; }
+        .bar-5 { height: 30px; animation-delay: 0.8s; }
+
+        @keyframes bar-glow {
+          from { box-shadow: 0 0 5px #FFD700; }
+          to { box-shadow: 0 0 15px #FFD700, 0 0 25px #FFD700; }
+        }
+
+        .rainmakers-text {
+          font-family: 'Arial', sans-serif;
+          font-size: 24px;
+          font-weight: bold;
+          color: #FFD700;
+          text-shadow: 0 0 10px #FFD700;
+        }
+
+        /* Glitch Text Styles */
+        .glitch-text {
+          position: relative;
+          color: #FFD700;
+          font-weight: bold;
+          font-family: 'Courier New', monospace;
+          text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700;
+          animation: glitch 2s infinite;
+        }
+        
+        .glitch-text::before,
+        .glitch-text::after {
+          content: attr(data-text);
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+        
+        .glitch-text::before {
+          animation: glitch-1 0.5s infinite;
+          color: #FF6B6B;
+          z-index: -1;
+        }
+        
+        .glitch-text::after {
+          animation: glitch-2 0.5s infinite;
+          color: #4ECDC4;
+          z-index: -2;
+        }
+        
+        @keyframes glitch {
+          0%, 100% { transform: translate(0); }
+          20% { transform: translate(-2px, 2px); }
+          40% { transform: translate(-2px, -2px); }
+          60% { transform: translate(2px, 2px); }
+          80% { transform: translate(2px, -2px); }
+        }
+        
+        @keyframes glitch-1 {
+          0%, 100% { transform: translate(0); }
+          10% { transform: translate(-2px, -2px); }
+          20% { transform: translate(2px, 2px); }
+          30% { transform: translate(-2px, 2px); }
+          40% { transform: translate(2px, -2px); }
+          50% { transform: translate(-2px, -2px); }
+          60% { transform: translate(2px, 2px); }
+          70% { transform: translate(-2px, 2px); }
+          80% { transform: translate(2px, -2px); }
+          90% { transform: translate(-2px, -2px); }
+        }
+        
+        @keyframes glitch-2 {
+          0%, 100% { transform: translate(0); }
+          10% { transform: translate(2px, 2px); }
+          20% { transform: translate(-2px, -2px); }
+          30% { transform: translate(2px, -2px); }
+          40% { transform: translate(-2px, 2px); }
+          50% { transform: translate(2px, 2px); }
+          60% { transform: translate(-2px, -2px); }
+          70% { transform: translate(2px, -2px); }
+          80% { transform: translate(-2px, 2px); }
+          90% { transform: translate(2px, 2px); }
+        }
+
+        /* Cyberpunk scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #FFD700;
+          border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: #FFA500;
         }
       `}</style>
     </div>
