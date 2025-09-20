@@ -11,6 +11,101 @@ import multer from 'multer';
 
 const router = express.Router();
 
+// Test environment variables
+router.get('/env/test', async (req: Request, res: Response) => {
+  try {
+    console.log('🔧 [ENV TEST] Testing environment variables...');
+    
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      PORT: process.env.PORT,
+      JWT_SECRET: !!process.env.JWT_SECRET,
+      FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+      DISCORD_CLIENT_ID: !!process.env.DISCORD_CLIENT_ID,
+      DISCORD_CLIENT_SECRET: !!process.env.DISCORD_CLIENT_SECRET,
+      DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI,
+      FRONTEND_URL: process.env.FRONTEND_URL,
+      GHL_BASE_URL: process.env.GHL_BASE_URL,
+      MICROSOFT_CLIENT_ID: !!process.env.MICROSOFT_CLIENT_ID,
+      MICROSOFT_CLIENT_SECRET: !!process.env.MICROSOFT_CLIENT_SECRET,
+      SESSION_SECRET: !!process.env.SESSION_SECRET
+    };
+    
+    console.log('🔧 [ENV TEST] Environment variables:', envVars);
+    
+    res.json({
+      success: true,
+      message: 'Environment variables check',
+      environment: envVars
+    });
+  } catch (error) {
+    console.error('🔧 [ENV TEST] Environment test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Environment test failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Test Firebase connection
+router.get('/firebase/test', async (req: Request, res: Response) => {
+  try {
+    console.log('🔥 [FIREBASE TEST] Testing Firebase connection...');
+    
+    // Import db here to avoid circular imports
+    const { getFirestore } = require('firebase-admin/firestore');
+    const db = getFirestore();
+    
+    // Test basic Firebase operations
+    const testDoc = await db.collection('test').doc('connection-test').get();
+    console.log('🔥 [FIREBASE TEST] Document exists:', testDoc.exists);
+    
+    // Test writing to Firebase
+    await db.collection('test').doc('connection-test').set({
+      timestamp: new Date().toISOString(),
+      test: true
+    });
+    console.log('🔥 [FIREBASE TEST] Write test successful');
+    
+    // Test reading from Firebase
+    const testRead = await db.collection('test').doc('connection-test').get();
+    console.log('🔥 [FIREBASE TEST] Read test successful:', testRead.exists);
+    
+    // Test users collection
+    const usersSnapshot = await db.collection('users').limit(1).get();
+    console.log('🔥 [FIREBASE TEST] Users collection accessible:', usersSnapshot.docs.length >= 0);
+    
+    // Test deals collection
+    const dealsSnapshot = await db.collection('deals').limit(1).get();
+    console.log('🔥 [FIREBASE TEST] Deals collection accessible:', dealsSnapshot.docs.length >= 0);
+    
+    // Test config collection
+    const configSnapshot = await db.collection('config').limit(1).get();
+    console.log('🔥 [FIREBASE TEST] Config collection accessible:', configSnapshot.docs.length >= 0);
+    
+    res.json({
+      success: true,
+      message: 'Firebase connection successful',
+      collections: {
+        users: usersSnapshot.docs.length,
+        deals: dealsSnapshot.docs.length,
+        config: configSnapshot.docs.length
+      }
+    });
+  } catch (error) {
+    console.error('🔥 [FIREBASE TEST] Firebase test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Firebase connection failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),

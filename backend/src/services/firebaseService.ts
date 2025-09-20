@@ -3,15 +3,24 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
-  console.log('Initializing Firebase Admin...');
+  console.log('🔥 [FIREBASE] Initializing Firebase Admin...');
   
   // Try environment variables first (for production)
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   
+  console.log('🔥 [FIREBASE] Environment check:', {
+    hasPrivateKey: !!privateKey,
+    hasClientEmail: !!clientEmail,
+    hasProjectId: !!projectId,
+    projectId: projectId,
+    nodeEnv: process.env.NODE_ENV,
+    vercel: process.env.VERCEL
+  });
+  
   if (privateKey && clientEmail && projectId) {
-    console.log('Using Firebase environment variables...');
+    console.log('🔥 [FIREBASE] Using Firebase environment variables...');
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: projectId,
@@ -20,9 +29,9 @@ if (!admin.apps.length) {
       }),
       projectId: projectId
     });
-    console.log('Firebase initialized with environment variables');
+    console.log('🔥 [FIREBASE] Firebase initialized with environment variables');
   } else {
-    console.log('Environment variables not found, trying service account file...');
+    console.log('🔥 [FIREBASE] Environment variables not found, trying service account file...');
     try {
       // Fallback to service account file
       const serviceAccount = require('../../firebase-service-account.json');
@@ -30,10 +39,10 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
         projectId: serviceAccount.project_id
       });
-      console.log('Firebase initialized with service account file');
+      console.log('🔥 [FIREBASE] Firebase initialized with service account file');
     } catch (error) {
-      console.error('Both environment variables and service account file are not available.');
-      console.error('Missing Firebase credentials:', {
+      console.error('🔥 [FIREBASE] Both environment variables and service account file are not available.');
+      console.error('🔥 [FIREBASE] Missing Firebase credentials:', {
         privateKey: !!privateKey,
         clientEmail: !!clientEmail,
         projectId: !!projectId
@@ -187,14 +196,34 @@ export class FirebaseService {
 
   static async getDealsByUserId(userId: string): Promise<Deal[]> {
     try {
+      console.log('🔥 [FIREBASE] Getting deals for user ID:', userId);
+      
       const dealsSnapshot = await db.collection('deals')
         .where('userId', '==', userId)
         .orderBy('createdAt', 'desc')
         .get();
       
-      return dealsSnapshot.docs.map(doc => doc.data() as Deal);
+      console.log('🔥 [FIREBASE] Query executed, found documents:', dealsSnapshot.docs.length);
+      
+      const deals = dealsSnapshot.docs.map(doc => {
+        const data = doc.data() as Deal;
+        console.log('🔥 [FIREBASE] Deal document:', {
+          id: data.id,
+          clientName: data.clientName,
+          userId: data.userId,
+          status: data.status
+        });
+        return data;
+      });
+      
+      console.log('🔥 [FIREBASE] Returning deals:', deals.length);
+      return deals;
     } catch (error) {
-      console.error('Error getting deals by user ID:', error);
+      console.error('❌ [FIREBASE] Error getting deals by user ID:', error);
+      console.error('❌ [FIREBASE] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        userId
+      });
       return [];
     }
   }

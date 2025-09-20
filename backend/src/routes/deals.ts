@@ -289,12 +289,61 @@ const generateDealId = (): string => {
   return `RM-${timestamp}-${random}`.toUpperCase();
 };
 
+// Test endpoint to check all deals in Firebase
+router.get('/debug/all-deals', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [DEBUG] Fetching all deals from Firebase...');
+    
+    const allDeals = await FirebaseService.getAllDeals();
+    console.log('🔍 [DEBUG] Total deals in Firebase:', allDeals.length);
+    
+    const dealsByUser = allDeals.reduce((acc, deal) => {
+      if (!acc[deal.userId]) {
+        acc[deal.userId] = [];
+      }
+      acc[deal.userId].push(deal);
+      return acc;
+    }, {} as { [userId: string]: Deal[] });
+    
+    console.log('🔍 [DEBUG] Deals by user:', Object.keys(dealsByUser).map(userId => ({
+      userId,
+      count: dealsByUser[userId].length,
+      deals: dealsByUser[userId].map(d => ({ id: d.id, title: d.title, status: d.status }))
+    })));
+    
+    res.json({
+      totalDeals: allDeals.length,
+      dealsByUser,
+      currentUser: req.user?.id,
+      currentUserDeals: dealsByUser[req.user?.id || ''] || []
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error fetching all deals:', error);
+    res.status(500).json({ error: 'Failed to fetch debug data' });
+  }
+});
+
 // Get user's deals
 router.get('/', async (req: Request, res: Response) => {
   try {
     console.log('📋 [DEALS] Fetching deals for user:', req.user!.id);
+    console.log('🔍 [DEALS] User details:', {
+      id: req.user!.id,
+      username: req.user!.username,
+      email: req.user!.email,
+      isAdmin: req.user!.isAdmin,
+      isWhitelisted: req.user!.isWhitelisted
+    });
+    
     const deals = await FirebaseService.getDealsByUserId(req.user!.id);
     console.log('📋 [DEALS] Found deals:', deals.length);
+    console.log('📋 [DEALS] Deal details:', deals.map(deal => ({
+      id: deal.id,
+      clientName: deal.clientName,
+      status: deal.status,
+      createdAt: deal.createdAt
+    })));
+    
     res.json(deals);
   } catch (error) {
     console.error('❌ [DEALS] Get deals error:', error);
