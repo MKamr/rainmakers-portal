@@ -5,27 +5,13 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 if (!admin.apps.length) {
   console.log('Initializing Firebase Admin...');
   
-  try {
-    // Always try to use service account file first (works in both dev and production)
-    const serviceAccount = require('../../firebase-service-account.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id
-    });
-    console.log('Firebase initialized with service account file');
-  } catch (error) {
-    console.warn('Service account file not found, trying environment variables...');
-    
-    // Fallback to environment variables
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    
-    if (!privateKey || !clientEmail || !projectId) {
-      console.error('Missing Firebase credentials. Both service account file and environment variables are not available.');
-      throw new Error('Firebase credentials not properly configured');
-    }
-    
+  // Try environment variables first (for production)
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  
+  if (privateKey && clientEmail && projectId) {
+    console.log('Using Firebase environment variables...');
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: projectId,
@@ -35,6 +21,25 @@ if (!admin.apps.length) {
       projectId: projectId
     });
     console.log('Firebase initialized with environment variables');
+  } else {
+    console.log('Environment variables not found, trying service account file...');
+    try {
+      // Fallback to service account file
+      const serviceAccount = require('../../firebase-service-account.json');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id
+      });
+      console.log('Firebase initialized with service account file');
+    } catch (error) {
+      console.error('Both environment variables and service account file are not available.');
+      console.error('Missing Firebase credentials:', {
+        privateKey: !!privateKey,
+        clientEmail: !!clientEmail,
+        projectId: !!projectId
+      });
+      throw new Error('Firebase credentials not properly configured');
+    }
   }
 }
 
