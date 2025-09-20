@@ -192,18 +192,20 @@ export class FirebaseService {
     await FirebaseService.dealsCollection.doc(id).delete();
   }
 
+  // ✅ EXACT MATCH TO YOUR QUERY STRUCTURE
   static async getDealsByUserId(userId: string): Promise<Deal[]> {
     try {
       console.log('🔥 [FIREBASE] Getting deals for user ID:', userId);
       
-      const dealsSnapshot = await db.collection('deals')
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .get();
+      // Match your exact Firebase query structure
+      const dealsRef = db.collection('deals');
+      const q = dealsRef.where('userId', '==', userId);
       
-      console.log('🔥 [FIREBASE] Query executed in deals collection, found documents:', dealsSnapshot.docs.length);
+      const querySnapshot = await q.get();
+      console.log('🔥 [FIREBASE] Query executed, found documents:', querySnapshot.docs.length);
       
-      const deals = dealsSnapshot.docs.map(doc => {
+      const userDeals: Deal[] = [];
+      querySnapshot.forEach((doc) => {
         const data = doc.data();
         console.log('🔥 [FIREBASE] Deal document:', {
           id: doc.id,
@@ -214,12 +216,12 @@ export class FirebaseService {
           value: data.value
         });
         
-        // ✅ FIX: Include document ID in the response
-        return { id: doc.id, ...data } as Deal;
+        // Match your exact structure: { id: doc.id, ...doc.data() }
+        userDeals.push({ id: doc.id, ...data } as Deal);
       });
       
-      console.log('🔥 [FIREBASE] Returning deals:', deals.length);
-      return deals;
+      console.log('🔥 [FIREBASE] Deals for user:', userDeals.length);
+      return userDeals;
     } catch (error) {
       console.error('❌ [FIREBASE] Error getting deals by user ID:', error);
       console.error('❌ [FIREBASE] Error details:', {
