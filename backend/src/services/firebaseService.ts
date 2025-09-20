@@ -86,112 +86,110 @@ export interface Deal {
 
 export interface Document {
   id: string;
-  dealId: string;
-  userId: string;
-  fileName: string;
+  name: string;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: Timestamp;
+  fileType: string;
   fileSize: number;
-  mimeType: string;
-  oneDriveFileId?: string;
-  oneDriveWebUrl?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+}
+
+export interface Analytics {
+  totalDeals: number;
+  totalValue: number;
+  dealsByStatus: { [status: string]: number };
+  dealsByMonth: { [month: string]: number };
 }
 
 export class FirebaseService {
-  // User operations
+  private static usersCollection = db.collection('users');
+  private static dealsCollection = db.collection('deals');
+
+  // User methods
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
-    const userRef = db.collection('users').doc();
+    const newUserRef = FirebaseService.usersCollection.doc();
     const now = Timestamp.now();
-    
-    const user: User = {
-      id: userRef.id,
+    const newUser: User = {
+      id: newUserRef.id,
       ...userData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
-    
-    await userRef.set(user);
-    return user;
+    await newUserRef.set(newUser);
+    return newUser;
   }
 
-  static async getUserById(userId: string): Promise<User | null> {
-    try {
-      const userDoc = await db.collection('users').doc(userId).get();
-      return userDoc.exists ? (userDoc.data() as User) : null;
-    } catch (error) {
-      console.error('Error getting user by ID:', error);
-      return null;
-    }
+  static async getUserById(id: string): Promise<User | null> {
+    const userDoc = await FirebaseService.usersCollection.doc(id).get();
+    return userDoc.exists ? (userDoc.data() as User) : null;
   }
 
   static async getUserByDiscordId(discordId: string): Promise<User | null> {
     try {
-    const usersSnapshot = await db.collection('users')
-      .where('discordId', '==', discordId)
-      .limit(1)
-      .get();
-    
-      if (usersSnapshot.empty) {
+      const snapshot = await FirebaseService.usersCollection.where('discordId', '==', discordId).limit(1).get();
+      if (snapshot.empty) {
         return null;
       }
-      
-      return usersSnapshot.docs[0].data() as User;
+      return snapshot.docs[0].data() as User;
     } catch (error) {
       console.error('Error getting user by Discord ID:', error);
-      return null;
+      throw error;
     }
   }
 
-  static async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
-    try {
-      const userRef = db.collection('users').doc(userId);
-    const updateData = {
-        ...updates,
-        updatedAt: Timestamp.now()
-    };
-    
-    await userRef.update(updateData);
-      return await this.getUserById(userId);
-    } catch (error) {
-      console.error('Error updating user:', error);
+  static async getUserByEmail(email: string): Promise<User | null> {
+    const snapshot = await FirebaseService.usersCollection.where('email', '==', email).limit(1).get();
+    if (snapshot.empty) {
       return null;
     }
+    return snapshot.docs[0].data() as User;
+  }
+
+  static async updateUser(id: string, userData: Partial<Omit<User, 'id' | 'createdAt'>>): Promise<User | null> {
+    const userRef = FirebaseService.usersCollection.doc(id);
+    const now = Timestamp.now();
+    await userRef.update({ ...userData, updatedAt: now });
+    return this.getUserById(id);
+  }
+
+  static async deleteUser(id: string): Promise<void> {
+    await FirebaseService.usersCollection.doc(id).delete();
   }
 
   static async getAllUsers(): Promise<User[]> {
-    try {
-    const usersSnapshot = await db.collection('users').get();
-      return usersSnapshot.docs.map(doc => doc.data() as User);
-    } catch (error) {
-      console.error('Error getting all users:', error);
-      return [];
-    }
+    const snapshot = await FirebaseService.usersCollection.get();
+    return snapshot.docs.map(doc => doc.data() as User);
   }
 
-  // Deal operations
-  static async createDeal(dealData: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Deal> {
-    const dealRef = db.collection('deals').doc();
+  // Deal methods
+  static async createDeal(dealData: Omit<Deal, 'id' | 'createdAt' | 'updatedAt' | 'documents'>): Promise<Deal> {
+    const newDealRef = FirebaseService.dealsCollection.doc();
     const now = Timestamp.now();
-    
-    const deal: Deal = {
-      id: dealRef.id,
+    const newDeal: Deal = {
+      id: newDealRef.id,
       ...dealData,
+      documents: [],
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
-    
-    await dealRef.set(deal);
-    return deal;
+    await newDealRef.set(newDeal);
+    return newDeal;
   }
 
-  static async getDealById(dealId: string): Promise<Deal | null> {
-    try {
-      const dealDoc = await db.collection('deals').doc(dealId).get();
+  static async getDealById(id: string): Promise<Deal | null> {
+    const dealDoc = await FirebaseService.dealsCollection.doc(id).get();
     return dealDoc.exists ? (dealDoc.data() as Deal) : null;
-    } catch (error) {
-      console.error('Error getting deal by ID:', error);
-      return null;
-    }
+  }
+
+  static async updateDeal(id: string, dealData: Partial<Omit<Deal, 'id' | 'createdAt'>>): Promise<Deal | null> {
+    const dealRef = FirebaseService.dealsCollection.doc(id);
+    const now = Timestamp.now();
+    await dealRef.update({ ...dealData, updatedAt: now });
+    return this.getDealById(id);
+  }
+
+  static async deleteDeal(id: string): Promise<void> {
+    await FirebaseService.dealsCollection.doc(id).delete();
   }
 
   static async getDealsByUserId(userId: string): Promise<Deal[]> {
@@ -215,7 +213,9 @@ export class FirebaseService {
           title: data.title,
           value: data.value
         });
-        return data as Deal;
+        
+        // ✅ FIX: Include document ID in the response
+        return { id: doc.id, ...data } as Deal;
       });
       
       console.log('🔥 [FIREBASE] Returning deals:', deals.length);
@@ -240,7 +240,10 @@ export class FirebaseService {
       
       console.log('🔥 [FIREBASE] Found total documents in deals collection:', dealsSnapshot.docs.length);
       
-      const deals = dealsSnapshot.docs.map(doc => doc.data() as Deal);
+      const deals = dealsSnapshot.docs.map(doc => {
+        // ✅ FIX: Include document ID in the response
+        return { id: doc.id, ...doc.data() } as Deal;
+      });
       
       console.log('🔥 [FIREBASE] Returning all deals:', deals.length);
       return deals;
@@ -250,238 +253,57 @@ export class FirebaseService {
     }
   }
 
-  static async updateDeal(dealId: string, updates: Partial<Deal>): Promise<Deal | null> {
-    try {
-      const dealRef = db.collection('deals').doc(dealId);
-    const updateData = {
-        ...updates,
-        updatedAt: Timestamp.now()
+  static async getDealAnalytics(): Promise<Analytics> {
+    const deals = await this.getAllDeals();
+    const totalDeals = deals.length;
+    const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+
+    const dealsByStatus = deals.reduce((acc, deal) => {
+      acc[deal.status] = (acc[deal.status] || 0) + 1;
+      return acc;
+    }, {} as { [status: string]: number });
+
+    const dealsByMonth = deals.reduce((acc, deal) => {
+      const month = deal.createdAt.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {} as { [month: string]: number });
+
+    return {
+      totalDeals,
+      totalValue,
+      dealsByStatus,
+      dealsByMonth,
     };
-    
-    await dealRef.update(updateData);
-      return await this.getDealById(dealId);
-    } catch (error) {
-      console.error('Error updating deal:', error);
-      return null;
-    }
   }
 
-  static async deleteDeal(dealId: string): Promise<boolean> {
-    try {
-      await db.collection('deals').doc(dealId).delete();
-      return true;
-    } catch (error) {
-      console.error('Error deleting deal:', error);
-      return false;
-    }
-  }
+  // Document methods
+  static async addDocumentToDeal(dealId: string, documentData: Omit<Document, 'id' | 'uploadedAt'>): Promise<Document | null> {
+    const deal = await this.getDealById(dealId);
+    if (!deal) return null;
 
-  // Document operations
-  static async createDocument(documentData: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>): Promise<Document> {
-    const documentRef = db.collection('documents').doc();
-    const now = Timestamp.now();
-    
-    const document: Document = {
-      id: documentRef.id,
+    const newDocument: Document = {
+      id: db.collection('temp').doc().id, // Generate a unique ID for the document
       ...documentData,
-      createdAt: now,
-      updatedAt: now
+      uploadedAt: Timestamp.now(),
     };
-    
-    await documentRef.set(document);
-    return document;
+
+    await FirebaseService.dealsCollection.doc(dealId).update({
+      documents: admin.firestore.FieldValue.arrayUnion(newDocument)
+    });
+
+    return newDocument;
   }
 
-  static async getDocumentById(documentId: string): Promise<Document | null> {
-    try {
-      const documentDoc = await db.collection('documents').doc(documentId).get();
-      return documentDoc.exists ? (documentDoc.data() as Document) : null;
-    } catch (error) {
-      console.error('Error getting document by ID:', error);
-      return null;
-    }
-  }
+  static async deleteDocumentFromDeal(dealId: string, documentId: string): Promise<void> {
+    const deal = await this.getDealById(dealId);
+    if (!deal) return;
 
-  static async getDocumentsByDealId(dealId: string): Promise<Document[]> {
-    try {
-      const documentsSnapshot = await db.collection('documents')
-        .where('dealId', '==', dealId)
-        .orderBy('createdAt', 'desc')
-        .get();
-      
-      return documentsSnapshot.docs.map(doc => doc.data() as Document);
-    } catch (error) {
-      console.error('Error getting documents by deal ID:', error);
-      return [];
-    }
-  }
+    const updatedDocuments = deal.documents?.filter(doc => doc.id !== documentId) || [];
 
-  static async getDocumentsByUserId(userId: string): Promise<Document[]> {
-    try {
-      const documentsSnapshot = await db.collection('documents')
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .get();
-      
-      return documentsSnapshot.docs.map(doc => doc.data() as Document);
-    } catch (error) {
-      console.error('Error getting documents by user ID:', error);
-      return [];
-    }
-  }
-
-  static async updateDocument(documentId: string, updates: Partial<Document>): Promise<Document | null> {
-    try {
-      const documentRef = db.collection('documents').doc(documentId);
-      const updateData = {
-        ...updates,
-        updatedAt: Timestamp.now()
-      };
-      
-      await documentRef.update(updateData);
-      return await this.getDocumentById(documentId);
-    } catch (error) {
-      console.error('Error updating document:', error);
-      return null;
-    }
-  }
-
-  static async deleteDocument(documentId: string): Promise<boolean> {
-    try {
-      await db.collection('documents').doc(documentId).delete();
-      return true;
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      return false;
-    }
-  }
-
-  // Admin operations
-  static async makeUserAdmin(userId: string): Promise<boolean> {
-    try {
-      await this.updateUser(userId, { isAdmin: true, isWhitelisted: true });
-      return true;
-    } catch (error) {
-      console.error('Error making user admin:', error);
-      return false;
-    }
-  }
-
-  static async removeUserAdmin(userId: string): Promise<boolean> {
-    try {
-      await this.updateUser(userId, { isAdmin: false });
-      return true;
-    } catch (error) {
-      console.error('Error removing user admin:', error);
-      return false;
-    }
-  }
-
-  static async whitelistUser(userId: string): Promise<boolean> {
-    try {
-      await this.updateUser(userId, { isWhitelisted: true });
-      return true;
-    } catch (error) {
-      console.error('Error whitelisting user:', error);
-      return false;
-    }
-  }
-
-  static async removeUserFromWhitelist(userId: string): Promise<boolean> {
-    try {
-      await this.updateUser(userId, { isWhitelisted: false });
-      return true;
-    } catch (error) {
-      console.error('Error removing user from whitelist:', error);
-      return false;
-    }
-  }
-
-  // Analytics operations
-  static async getDealAnalytics(): Promise<{
-    totalDeals: number;
-    totalValue: number;
-    dealsByStage: { [stage: string]: number };
-    dealsByStatus: { [status: string]: number };
-    dealsByMonth: { [month: string]: number };
-  }> {
-    try {
-      const dealsSnapshot = await db.collection('deals').get();
-      const deals = dealsSnapshot.docs.map(doc => doc.data() as Deal);
-      
-      const totalDeals = deals.length;
-      const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
-      
-      const dealsByStage = deals.reduce((acc, deal) => {
-        acc[deal.stage] = (acc[deal.stage] || 0) + 1;
-        return acc;
-      }, {} as { [stage: string]: number });
-      
-      const dealsByStatus = deals.reduce((acc, deal) => {
-        acc[deal.status] = (acc[deal.status] || 0) + 1;
-        return acc;
-      }, {} as { [status: string]: number });
-      
-      const dealsByMonth = deals.reduce((acc, deal) => {
-        const month = deal.createdAt.toDate().toISOString().substring(0, 7); // YYYY-MM
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      }, {} as { [month: string]: number });
-      
-      return {
-        totalDeals,
-        totalValue,
-        dealsByStage,
-        dealsByStatus,
-        dealsByMonth
-      };
-    } catch (error) {
-      console.error('Error getting deal analytics:', error);
-      return {
-        totalDeals: 0,
-        totalValue: 0,
-        dealsByStage: {},
-        dealsByStatus: {},
-        dealsByMonth: {}
-      };
-    }
-  }
-
-  static async getUserAnalytics(): Promise<{
-    totalUsers: number;
-    adminUsers: number;
-    whitelistedUsers: number;
-    usersByMonth: { [month: string]: number };
-  }> {
-    try {
-      const usersSnapshot = await db.collection('users').get();
-      const users = usersSnapshot.docs.map(doc => doc.data() as User);
-      
-      const totalUsers = users.length;
-      const adminUsers = users.filter(user => user.isAdmin).length;
-      const whitelistedUsers = users.filter(user => user.isWhitelisted).length;
-      
-      const usersByMonth = users.reduce((acc, user) => {
-        const month = user.createdAt.toDate().toISOString().substring(0, 7); // YYYY-MM
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      }, {} as { [month: string]: number });
-      
-      return {
-        totalUsers,
-        adminUsers,
-        whitelistedUsers,
-        usersByMonth
-      };
-    } catch (error) {
-      console.error('Error getting user analytics:', error);
-      return {
-        totalUsers: 0,
-        adminUsers: 0,
-        whitelistedUsers: 0,
-        usersByMonth: {}
-      };
-    }
+    await FirebaseService.dealsCollection.doc(dealId).update({
+      documents: updatedDocuments
+    });
   }
 
   // Configuration methods
@@ -558,10 +380,10 @@ export class FirebaseService {
   } | null> {
     try {
       const snapshot = await db.collection('onedrive_tokens')
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get();
-    
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+      
       if (snapshot.empty) {
         return null;
       }
@@ -571,6 +393,51 @@ export class FirebaseService {
     } catch (error) {
       console.error('Error getting latest OneDrive token:', error);
       return null;
+    }
+  }
+
+  // Analytics methods
+  static async getAnalytics(): Promise<Analytics> {
+    try {
+      const deals = await this.getAllDeals();
+      const users = await this.getAllUsers();
+      
+      const totalDeals = deals.length;
+      const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+      
+      const dealsByStatus = deals.reduce((acc, deal) => {
+        acc[deal.status] = (acc[deal.status] || 0) + 1;
+        return acc;
+      }, {} as { [status: string]: number });
+      
+      const dealsByMonth = deals.reduce((acc, deal) => {
+        const month = deal.createdAt.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {} as { [month: string]: number });
+      
+      const usersByMonth = users.reduce((acc, user) => {
+        const month = user.createdAt.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {} as { [month: string]: number });
+      
+      return {
+        totalDeals,
+        totalValue,
+        dealsByStatus,
+        dealsByMonth,
+        usersByMonth: usersByMonth
+      };
+    } catch (error) {
+      console.error('Error getting analytics:', error);
+      return {
+        totalDeals: 0,
+        totalValue: 0,
+        dealsByStatus: {},
+        dealsByMonth: {},
+        usersByMonth: {}
+      };
     }
   }
 }
