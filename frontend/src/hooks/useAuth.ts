@@ -7,7 +7,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const { data: userData, isLoading: isQueryLoading } = useQuery(
+  const { data: userData, isLoading: isQueryLoading, error } = useQuery(
     'user',
     authAPI.getMe,
     {
@@ -23,26 +23,47 @@ export function useAuth() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
+    
+    if (!token) {
+      setUser(null)
+      setIsLoading(false)
+      return
+    }
 
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+    // If we have a token, wait for the API call to complete
+    if (isQueryLoading) {
+      return // Still loading, don't set user yet
+    }
+
+    if (error) {
+      // API call failed, clear everything
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+      setIsLoading(false)
+      return
+    }
+
+    if (userData) {
+      // API call succeeded, use fresh data
+      setUser(userData)
+      localStorage.setItem('user', JSON.stringify(userData))
+    } else {
+      // No user data from API, check localStorage as fallback
+      const savedUser = localStorage.getItem('user')
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser))
+        } catch (error) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setUser(null)
+        }
       }
     }
 
     setIsLoading(false)
-  }, [])
-
-  useEffect(() => {
-    if (userData) {
-      setUser(userData)
-      localStorage.setItem('user', JSON.stringify(userData))
-    }
-  }, [userData])
+  }, [userData, isQueryLoading, error])
 
   const login = async (code: string) => {
     try {
@@ -52,6 +73,9 @@ export function useAuth() {
       setUser(response.user)
       return response
     } catch (error) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
       throw error
     }
   }
@@ -62,19 +86,15 @@ export function useAuth() {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      // Clear all auth data
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       setUser(null)
-      
-      // Force reload to ensure clean state and redirect to login
-      window.location.reload()
     }
   }
 
   return {
     user,
-    isLoading: isLoading || isQueryLoading,
+    isLoading,
     login,
     logout
   }
