@@ -28,14 +28,14 @@ router.get('/discord/callback', async (req, res) => {
 
     if (error) {
       console.error('Discord OAuth error:', error);
-      console.log('Redirecting to frontend with error - HARDCODED URL');
-      return res.redirect(`https://rainmakers-portal-frontend.vercel.app?error=${error}`);
+      console.log('Redirecting to frontend with error - EXPLICIT REDIRECT');
+      return res.redirect(302, `https://rainmakers-portal-frontend.vercel.app?error=${error}`);
     }
 
     if (!code) {
       console.error('No code provided in Discord callback');
-      console.log('Redirecting to frontend with no_code - HARDCODED URL');
-      return res.redirect(`https://rainmakers-portal-frontend.vercel.app?error=no_code`);
+      console.log('Redirecting to frontend with no_code - EXPLICIT REDIRECT');
+      return res.redirect(302, `https://rainmakers-portal-frontend.vercel.app?error=no_code`);
     }
 
     console.log('Exchanging code for token...');
@@ -61,8 +61,8 @@ router.get('/discord/callback', async (req, res) => {
     );
 
     // Redirect to frontend with token
-    console.log('Redirecting to frontend with token - HARDCODED URL');
-    res.redirect(`https://rainmakers-portal-frontend.vercel.app?token=${token}&user=${encodeURIComponent(JSON.stringify({
+    console.log('Redirecting to frontend with token - EXPLICIT REDIRECT');
+    res.redirect(302, `https://rainmakers-portal-frontend.vercel.app?token=${token}&user=${encodeURIComponent(JSON.stringify({
       id: user.id,
       discordId: user.discordId,
       username: user.username,
@@ -73,8 +73,8 @@ router.get('/discord/callback', async (req, res) => {
     }))}`);
   } catch (error) {
     console.error('Discord auth error:', error);
-    console.log('Redirecting to frontend with auth_failed - HARDCODED URL');
-    res.redirect(`https://rainmakers-portal-frontend.vercel.app?error=auth_failed`);
+    console.log('Redirecting to frontend with auth_failed - EXPLICIT REDIRECT');
+    res.redirect(302, `https://rainmakers-portal-frontend.vercel.app?error=auth_failed`);
   }
 });
 
