@@ -19,13 +19,13 @@ export function useAuth() {
     {
       enabled: !!localStorage.getItem('token'),
       retry: false,
-      onError: (error) => {
+      onError: (error: any) => {
         console.error('❌ Auth API Error:', error)
         console.error('🔍 Error details:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
+          message: error?.message || 'Unknown error',
+          status: error?.response?.status,
+          statusText: error?.response?.statusText,
+          data: error?.response?.data
         })
         localStorage.removeItem('token')
         localStorage.removeItem('user')
@@ -51,9 +51,9 @@ export function useAuth() {
       userData, 
       isQueryLoading, 
       error: error ? {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
+        message: (error as any)?.message || 'Unknown error',
+        status: (error as any)?.response?.status,
+        data: (error as any)?.response?.data
       } : null
     })
     
@@ -79,10 +79,10 @@ export function useAuth() {
     if (error) {
       console.log('❌ API call failed, clearing auth')
       console.log('🔍 Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
+        message: (error as any)?.message || 'Unknown error',
+        status: (error as any)?.response?.status,
+        statusText: (error as any)?.response?.statusText,
+        data: (error as any)?.response?.data
       })
       // API call failed, clear everything
       localStorage.removeItem('token')
