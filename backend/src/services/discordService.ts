@@ -49,21 +49,34 @@ export class DiscordService {
     let user = await FirebaseService.getUserByDiscordId(discordUser.id);
 
     if (!user) {
-      user = await FirebaseService.createUser({
+      // Create user data without undefined values
+      const userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'> = {
         discordId: discordUser.id,
         username: discordUser.username,
         email: discordUser.email,
-        avatar: discordUser.avatar || undefined,
         isWhitelisted: false, // Admin needs to whitelist
         isAdmin: false
-      });
+      };
+
+      // Only add avatar if it exists
+      if (discordUser.avatar) {
+        userData.avatar = discordUser.avatar;
+      }
+
+      user = await FirebaseService.createUser(userData);
     } else {
-      // Update user info
-      user = await FirebaseService.updateUser(user.id, {
+      // Update user info - only update fields that have values
+      const updateData: Partial<User> = {
         username: discordUser.username,
-        email: discordUser.email,
-        avatar: discordUser.avatar || undefined
-      }) || user;
+        email: discordUser.email
+      };
+
+      // Only add avatar if it exists
+      if (discordUser.avatar) {
+        updateData.avatar = discordUser.avatar;
+      }
+
+      user = await FirebaseService.updateUser(user.id, updateData) || user;
     }
 
     return user;
