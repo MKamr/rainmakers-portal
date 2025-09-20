@@ -13,12 +13,12 @@ router.get('/discord/callback', async (req, res) => {
 
     if (error) {
       console.error('Discord OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend-production.up.railway.app'}?error=${error}`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app'}?error=${error}`);
     }
 
     if (!code) {
       console.error('No code provided in Discord callback');
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend-production.up.railway.app'}?error=no_code`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app'}?error=no_code`);
     }
 
     console.log('Exchanging code for token...');
@@ -44,7 +44,7 @@ router.get('/discord/callback', async (req, res) => {
     );
 
     // Redirect to frontend with token
-    const frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend-production.up.railway.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
     console.log('Redirecting to frontend with token');
     res.redirect(`${frontendUrl}?token=${token}&user=${encodeURIComponent(JSON.stringify({
       id: user.id,
@@ -57,7 +57,7 @@ router.get('/discord/callback', async (req, res) => {
     }))}`);
   } catch (error) {
     console.error('Discord auth error:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend-production.up.railway.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
     res.redirect(`${frontendUrl}?error=auth_failed`);
   }
 });
