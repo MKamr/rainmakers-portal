@@ -13,7 +13,9 @@ router.get('/test', (req, res) => {
     environment: {
       NODE_ENV: process.env.NODE_ENV,
       FRONTEND_URL: process.env.FRONTEND_URL,
-      DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID ? 'SET' : 'NOT_SET'
+      DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID ? 'SET' : 'NOT_SET',
+      DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET ? 'SET' : 'NOT_SET',
+      DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI ? 'SET' : 'NOT_SET'
     }
   });
 });
