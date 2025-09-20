@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 // Matrix Rain Animation Component
 const MatrixRain = () => {
@@ -32,7 +32,7 @@ const MatrixRain = () => {
       ctx.fillStyle = "rgba(0, 0, 0, 0.04)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = "#FFD700"
+      ctx.fillStyle = "#0F4"
       ctx.font = fontSize + "px monospace"
 
       for (let i = 0; i < drops.length; i++) {
@@ -48,163 +48,50 @@ const MatrixRain = () => {
 
     const interval = setInterval(draw, 35)
 
-    const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener("resize", handleResize)
-    }
+    return () => clearInterval(interval)
   }, [])
 
   return (
     <canvas
       id="matrix-canvas"
-      className="fixed top-0 left-0 w-full h-full pointer-events-none z-0"
+      className="fixed inset-0 w-full h-full z-0"
       style={{ background: "black" }}
     />
-  )
-}
-
-// Glitch Text Component
-const GlitchText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-  return (
-    <div className={`relative ${className}`}>
-      <div className="glitch-text">{children}</div>
-      <style>{`
-        .glitch-text {
-          position: relative;
-          color: #FFD700;
-          font-weight: bold;
-          animation: glitch 2s infinite;
-        }
-        
-        .glitch-text::before,
-        .glitch-text::after {
-          content: attr(data-text);
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-        
-        .glitch-text::before {
-          animation: glitch-1 0.5s infinite;
-          color: #B8860B;
-          z-index: -1;
-        }
-        
-        .glitch-text::after {
-          animation: glitch-2 0.5s infinite;
-          color: #DAA520;
-          z-index: -2;
-        }
-        
-        @keyframes glitch {
-          0%, 100% { transform: translate(0); }
-          20% { transform: translate(-2px, 2px); }
-          40% { transform: translate(-2px, -2px); }
-          60% { transform: translate(2px, 2px); }
-          80% { transform: translate(2px, -2px); }
-        }
-        
-        @keyframes glitch-1 {
-          0%, 100% { transform: translate(0); }
-          10% { transform: translate(-2px, -2px); }
-          20% { transform: translate(2px, 2px); }
-          30% { transform: translate(-2px, 2px); }
-          40% { transform: translate(2px, -2px); }
-          50% { transform: translate(-2px, -2px); }
-          60% { transform: translate(2px, 2px); }
-          70% { transform: translate(-2px, 2px); }
-          80% { transform: translate(2px, -2px); }
-          90% { transform: translate(-2px, -2px); }
-        }
-        
-        @keyframes glitch-2 {
-          0%, 100% { transform: translate(0); }
-          10% { transform: translate(2px, 2px); }
-          20% { transform: translate(-2px, -2px); }
-          30% { transform: translate(2px, -2px); }
-          40% { transform: translate(-2px, 2px); }
-          50% { transform: translate(2px, 2px); }
-          60% { transform: translate(-2px, -2px); }
-          70% { transform: translate(2px, -2px); }
-          80% { transform: translate(-2px, 2px); }
-          90% { transform: translate(2px, 2px); }
-        }
-      `}</style>
-    </div>
   )
 }
 
 // Matrix Logo Component
 const MatrixLogo = () => {
   return (
-    <div className="matrix-logo">
-      <div className="logo-container">
-        <img 
-          src="/rainmakers-logo-large.png" 
-          alt="Rainmakers Logo" 
-          className="rainmakers-logo-img"
-        />
-        <div className="logo-glow"></div>
+    <div className="text-center mb-8">
+      <div className="matrix-logo-container inline-block">
+        <div className="matrix-logo text-6xl font-bold text-yellow-400 font-mono mb-4">
+          RAINMAKERS
+        </div>
+        <div className="matrix-logo-subtitle text-yellow-400 font-mono text-sm">
+          &gt; PORTAL.EXE INITIALIZED
+        </div>
       </div>
-      <style>{`
-        .matrix-logo {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin-bottom: 3rem;
-        }
-        
-        .logo-container {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .rainmakers-logo-img {
-          height: 120px;
-          width: auto;
-          z-index: 2;
-          position: relative;
-          animation: logo-float 4s ease-in-out infinite;
-          filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
-        }
-        
-        @keyframes logo-float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-5px); }
-        }
-        
-        .logo-glow {
-          position: absolute;
-          top: -20px;
-          left: -20px;
-          right: -20px;
-          bottom: -20px;
-          background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: pulse-glow 3s ease-in-out infinite alternate;
-        }
-        
-        @keyframes pulse-glow {
-          from { transform: scale(1); opacity: 0.5; }
-          to { transform: scale(1.2); opacity: 0.8; }
-        }
-      `}</style>
+    </div>
+  )
+}
+
+// Glitch Text Component
+const GlitchText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  return (
+    <div className={`glitch-text ${className}`}>
+      <span className="glitch-text-main">{children}</span>
+      <span className="glitch-text-shadow glitch-text-shadow-1">{children}</span>
+      <span className="glitch-text-shadow glitch-text-shadow-2">{children}</span>
     </div>
   )
 }
 
 export function MatrixLoginPage() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
   useEffect(() => {
     // Check if we have a token from Discord OAuth callback
     const urlParams = new URLSearchParams(window.location.search)
@@ -214,6 +101,7 @@ export function MatrixLoginPage() {
 
     if (error) {
       console.error("Discord auth error:", error)
+      setIsCheckingAuth(false)
       return
     }
 
@@ -225,15 +113,241 @@ export function MatrixLoginPage() {
         window.location.href = "/"
       } catch (error) {
         console.error("Failed to parse user data:", error)
+        setIsCheckingAuth(false)
       }
+    } else {
+      // Check if user is already authenticated
+      checkExistingAuth()
     }
   }, [])
+
+  const checkExistingAuth = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const userData = localStorage.getItem('user')
+      
+      if (token && userData) {
+        // Verify token is still valid by making a request to backend
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const user = JSON.parse(userData)
+          setUser(user)
+          setIsAuthenticated(true)
+          
+          // If user is whitelisted/admin, redirect to dashboard
+          if (user.isWhitelisted || user.isAdmin) {
+            window.location.href = "/"
+            return
+          }
+        } else {
+          // Token is invalid, clear storage
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing auth:', error)
+      // Clear invalid data
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    } finally {
+      setIsCheckingAuth(false)
+    }
+  }
 
   const redirectToDiscord = () => {
     const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent("https://rainmakers-portal-backend.vercel.app/auth/discord/callback")}&scope=identify%20email`
     window.location.href = discordAuthUrl
   }
 
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setIsAuthenticated(false)
+    setUser(null)
+  }
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <MatrixRain />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="matrix-logo text-4xl font-bold text-yellow-400 font-mono mb-4">
+              RAINMAKERS
+            </div>
+            <div className="text-yellow-400 font-mono text-sm">
+              &gt; CHECKING AUTHENTICATION STATUS...
+            </div>
+            <div className="mt-4">
+              <div className="matrix-loading-bar w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="matrix-loading-progress h-full bg-yellow-400 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show authenticated user info if they're not whitelisted
+  if (isAuthenticated && user && !user.isWhitelisted && !user.isAdmin) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <MatrixRain />
+
+        {/* Main Content */}
+        <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+          <div className="matrix-login-container max-w-md w-full space-y-8">
+            {/* Logo */}
+            <MatrixLogo />
+
+            {/* Header */}
+            <div className="text-center">
+              <GlitchText className="text-3xl font-bold mb-6">ACCESS DENIED</GlitchText>
+              <div className="matrix-subtitle">
+                <p className="text-red-400 font-mono text-sm mb-2">&gt; USER: {user.username}</p>
+                <p className="text-red-400 font-mono text-sm mb-2">&gt; STATUS: NOT WHITELISTED</p>
+                <p className="text-yellow-400 font-mono text-sm">&gt; CONTACT ADMINISTRATOR</p>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <div className="space-y-6">
+              <button
+                onClick={logout}
+                className="matrix-button group relative w-full flex justify-center py-4 px-6 text-lg font-bold rounded-lg transition-all duration-300"
+              >
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>
+                  </svg>
+                  LOGOUT
+                </div>
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center">
+              <div className="matrix-footer">
+                <p className="text-red-400 font-mono text-xs mb-2">&gt; ACCESS DENIED</p>
+                <p className="text-red-400 font-mono text-xs">&gt; INSUFFICIENT PERMISSIONS</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Styles */}
+        <style>{`
+          .matrix-login-container {
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 
+              0 0 30px rgba(255, 215, 0, 0.6),
+              inset 0 0 30px rgba(255, 215, 0, 0.1);
+          }
+
+          .matrix-button {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+            border: 2px solid #FFD700;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .matrix-button:hover {
+            background: linear-gradient(45deg, #FFA500, #FFD700);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            transform: translateY(-2px);
+          }
+
+          .matrix-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+          }
+
+          .matrix-button:hover::before {
+            left: 100%;
+          }
+
+          .glitch-text {
+            position: relative;
+            display: inline-block;
+          }
+
+          .glitch-text-main {
+            position: relative;
+            z-index: 1;
+          }
+
+          .glitch-text-shadow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            opacity: 0.7;
+          }
+
+          .glitch-text-shadow-1 {
+            color: #ff0040;
+            transform: translate(-2px, -2px);
+            animation: glitch1 0.3s infinite;
+          }
+
+          .glitch-text-shadow-2 {
+            color: #00ff40;
+            transform: translate(2px, 2px);
+            animation: glitch2 0.3s infinite;
+          }
+
+          @keyframes glitch1 {
+            0%, 100% { transform: translate(-2px, -2px); }
+            25% { transform: translate(2px, -2px); }
+            50% { transform: translate(-2px, 2px); }
+            75% { transform: translate(2px, 2px); }
+          }
+
+          @keyframes glitch2 {
+            0%, 100% { transform: translate(2px, 2px); }
+            25% { transform: translate(-2px, 2px); }
+            50% { transform: translate(2px, -2px); }
+            75% { transform: translate(-2px, -2px); }
+          }
+
+          .matrix-loading-bar {
+            position: relative;
+          }
+
+          .matrix-loading-progress {
+            width: 100%;
+            animation: loading 2s ease-in-out infinite;
+          }
+
+          @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Show login form for unauthenticated users
   return (
     <div className="min-h-screen relative overflow-hidden">
       <MatrixRain />
@@ -287,48 +401,21 @@ export function MatrixLoginPage() {
           padding: 3rem;
           box-shadow: 
             0 0 30px rgba(255, 215, 0, 0.6),
-            inset 0 0 30px rgba(0, 255, 0, 0.1),
-            0 0 60px rgba(0, 255, 0, 0.3);
-          backdrop-filter: blur(15px);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .matrix-login-container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.1) 50%, transparent 70%);
-          animation: scan-line 3s linear infinite;
-          pointer-events: none;
-        }
-
-        @keyframes scan-line {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-
-        .matrix-subtitle {
-          border: 1px solid #FFD700;
-          background: rgba(255, 215, 0, 0.1);
-          padding: 1rem;
-          border-radius: 5px;
-          margin: 1rem 0;
+            inset 0 0 30px rgba(255, 215, 0, 0.1);
         }
 
         .matrix-button {
-          background: linear-gradient(45deg, #000000, #1a1a1a);
+          background: linear-gradient(45deg, #FFD700, #FFA500);
+          color: #000;
           border: 2px solid #FFD700;
-          color: #FFD700;
-          text-shadow: 0 0 10px #FFD700;
-          box-shadow: 
-            0 0 20px rgba(255, 215, 0, 0.5),
-            inset 0 0 20px rgba(255, 215, 0, 0.1);
           position: relative;
           overflow: hidden;
+        }
+
+        .matrix-button:hover {
+          background: linear-gradient(45deg, #FFA500, #FFD700);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+          transform: translateY(-2px);
         }
 
         .matrix-button::before {
@@ -338,7 +425,7 @@ export function MatrixLoginPage() {
           left: -100%;
           width: 100%;
           height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.4), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
           transition: left 0.5s;
         }
 
@@ -346,36 +433,48 @@ export function MatrixLoginPage() {
           left: 100%;
         }
 
-        .matrix-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 
-            0 5px 25px rgba(255, 215, 0, 0.7),
-            inset 0 0 25px rgba(255, 215, 0, 0.2);
+        .glitch-text {
+          position: relative;
+          display: inline-block;
         }
 
-        .matrix-footer {
-          border: 1px solid #FFD700;
-          background: rgba(255, 215, 0, 0.05);
-          padding: 0.75rem;
-          border-radius: 5px;
+        .glitch-text-main {
+          position: relative;
+          z-index: 1;
         }
 
-        /* Cyberpunk scrollbar */
-        ::-webkit-scrollbar {
-          width: 8px;
+        .glitch-text-shadow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 0;
+          opacity: 0.7;
         }
 
-        ::-webkit-scrollbar-track {
-          background: #000;
+        .glitch-text-shadow-1 {
+          color: #ff0040;
+          transform: translate(-2px, -2px);
+          animation: glitch1 0.3s infinite;
         }
 
-        ::-webkit-scrollbar-thumb {
-          background: #FFD700;
-          border-radius: 4px;
+        .glitch-text-shadow-2 {
+          color: #00ff40;
+          transform: translate(2px, 2px);
+          animation: glitch2 0.3s infinite;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-          background: #B8860B;
+        @keyframes glitch1 {
+          0%, 100% { transform: translate(-2px, -2px); }
+          25% { transform: translate(2px, -2px); }
+          50% { transform: translate(-2px, 2px); }
+          75% { transform: translate(2px, 2px); }
+        }
+
+        @keyframes glitch2 {
+          0%, 100% { transform: translate(2px, 2px); }
+          25% { transform: translate(-2px, 2px); }
+          50% { transform: translate(2px, -2px); }
+          75% { transform: translate(-2px, -2px); }
         }
       `}</style>
     </div>
