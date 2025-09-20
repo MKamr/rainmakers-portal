@@ -3,37 +3,65 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
-  try {
-    // Try to use service account file first
-    const serviceAccount = require('../../firebase-service-account.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id
-    });
-    console.log('Firebase initialized with service account');
-  } catch (error) {
-    console.warn('Service account file not found, trying environment variables...');
+  console.log('Initializing Firebase Admin...');
+  
+  // In production (Vercel), use environment variables
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Production environment detected, using environment variables...');
     
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
     
-    if (!privateKey || !clientEmail) {
-      console.warn('Firebase credentials not found. Using in-memory storage for development.');
-      // For development, we'll use in-memory storage
-      admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal'
+    if (!privateKey || !clientEmail || !projectId) {
+      console.error('Missing Firebase environment variables:', {
+        privateKey: !!privateKey,
+        clientEmail: !!clientEmail,
+        projectId: !!projectId
       });
-    } else {
-      const firebaseConfig = {
-        projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal',
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal',
-          privateKey: privateKey.replace(/\\n/g, '\n'),
-          clientEmail: clientEmail,
-        }),
-      };
+      throw new Error('Firebase credentials not properly configured in production');
+    }
+    
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: projectId,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
+        clientEmail: clientEmail
+      }),
+      projectId: projectId
+    });
+    console.log('Firebase initialized with environment variables');
+  } else {
+    // Development - try service account file first
+    try {
+      const serviceAccount = require('../../firebase-service-account.json');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id
+      });
+      console.log('Firebase initialized with service account file');
+    } catch (error) {
+      console.warn('Service account file not found, using environment variables...');
       
-      admin.initializeApp(firebaseConfig);
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      
+      if (!privateKey || !clientEmail) {
+        console.warn('Firebase credentials not found. Using in-memory storage for development.');
+        admin.initializeApp({
+          projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal'
+        });
+      } else {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal',
+            privateKey: privateKey.replace(/\\n/g, '\n'),
+            clientEmail: clientEmail
+          }),
+          projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal'
+        });
+        console.log('Firebase initialized with environment variables');
+      }
     }
   }
 }
