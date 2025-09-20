@@ -60,7 +60,7 @@ app.use(session({
 
 // Routes
 app.use('/api/auth', authRoutes);
-// Discord OAuth callback (separate route for browser redirect)
+// Discord OAuth callback (separate route for browser redirect) - explicit mounting
 app.use('/auth', authRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
 app.use('/api/deals', authenticateToken, dealRoutes);
