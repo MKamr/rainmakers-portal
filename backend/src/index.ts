@@ -24,6 +24,23 @@ const app = express();
 // Trust proxy for Railway deployment (needed for rate limiting and real IP detection)
 app.set('trust proxy', 1);
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`🌐 [${timestamp}] ${req.method} ${req.path}`);
+  console.log(`📍 Headers:`, {
+    'user-agent': req.headers['user-agent'],
+    'origin': req.headers.origin,
+    'referer': req.headers.referer,
+    'authorization': req.headers.authorization ? 'Bearer ***' : 'none',
+    'content-type': req.headers['content-type']
+  });
+  console.log(`🔍 Query:`, req.query);
+  console.log(`📦 Body:`, req.body);
+  console.log('---');
+  next();
+});
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
@@ -87,6 +104,18 @@ app.get('/', (req, res) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Response logging middleware
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log(`📤 [${new Date().toISOString()}] Response ${res.statusCode} for ${req.method} ${req.path}`);
+    console.log(`📋 Response data:`, typeof data === 'string' ? JSON.parse(data || '{}') : data);
+    console.log('---');
+    return originalSend.call(this, data);
+  };
+  next();
 });
 
 // Error handling

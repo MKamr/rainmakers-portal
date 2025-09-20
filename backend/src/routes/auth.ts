@@ -133,35 +133,66 @@ router.post('/discord', async (req, res) => {
 // Get current user
 router.get('/me', async (req, res) => {
   try {
-    console.log('=== /auth/me DEBUG ===');
-    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+    console.log('=== /auth/me ENDPOINT CALLED ===');
+    console.log('🕐 Timestamp:', new Date().toISOString());
+    console.log('🌐 Request details:', {
+      method: req.method,
+      path: req.path,
+      url: req.url,
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    console.log('🔑 JWT_SECRET check:', {
+      exists: !!process.env.JWT_SECRET,
+      length: process.env.JWT_SECRET?.length || 0
+    });
     
     const authHeader = req.headers['authorization'];
-    console.log('Auth header:', authHeader);
+    console.log('📋 Auth header:', authHeader);
     
     const token = authHeader && authHeader.split(' ')[1];
-    console.log('Token exists:', !!token);
+    console.log('🎫 Token analysis:', {
+      exists: !!token,
+      length: token?.length || 0,
+      preview: token ? `${token.substring(0, 20)}...` : 'none',
+      startsWithBearer: authHeader?.startsWith('Bearer ')
+    });
 
     if (!token) {
-      console.log('No token provided');
+      console.log('❌ No token provided - returning 401');
       return res.status(401).json({ error: 'Access token required' });
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET not set in environment variables');
+      console.error('❌ JWT_SECRET not set in environment variables');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    console.log('Verifying JWT token...');
+    console.log('🔐 Verifying JWT token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    console.log('Decoded token:', decoded);
+    console.log('✅ Decoded token:', {
+      userId: decoded.userId,
+      discordId: decoded.discordId,
+      iat: decoded.iat,
+      exp: decoded.exp
+    });
 
-    console.log('Getting user from Firebase...');
+    console.log('🔥 Getting user from Firebase...');
     const user = await FirebaseService.getUserById(decoded.userId);
-    console.log('User from Firebase:', user);
+    console.log('👤 User from Firebase:', user ? {
+      id: user.id,
+      discordId: user.discordId,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isWhitelisted: user.isWhitelisted,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    } : null);
 
     if (!user) {
-      console.log('User not found in Firebase');
+      console.log('❌ User not found in Firebase - returning 404');
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -175,15 +206,17 @@ router.get('/me', async (req, res) => {
       isWhitelisted: user.isWhitelisted
     };
     
-    console.log('Sending response:', responseData);
+    console.log('📤 Sending response:', responseData);
+    console.log('=== /auth/me ENDPOINT COMPLETED ===');
     res.json(responseData);
   } catch (error) {
-    console.error('Get user error:', error);
-    console.error('Error details:', {
+    console.error('💥 Get user error:', error);
+    console.error('🔍 Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : 'No stack trace'
     });
+    console.log('=== /auth/me ENDPOINT FAILED ===');
     res.status(500).json({ error: 'Failed to get user info' });
   }
 });
