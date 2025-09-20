@@ -5,78 +5,22 @@ import { FirebaseService } from '../services/firebaseService';
 
 const router = express.Router();
 
-// Test endpoint to verify backend is working
-router.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Auth routes are working!',
-    timestamp: new Date().toISOString(),
-    environment: {
-      NODE_ENV: process.env.NODE_ENV,
-      FRONTEND_URL: process.env.FRONTEND_URL,
-      DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID ? 'SET' : 'NOT_SET',
-      DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET ? 'SET' : 'NOT_SET',
-      DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI ? 'SET' : 'NOT_SET'
-    }
-  });
-});
-
 // Discord OAuth callback (GET route for browser redirect)
 router.get('/discord/callback', async (req, res) => {
   try {
-    console.log('=== DISCORD CALLBACK DEBUG ===');
-    console.log('Request URL:', req.url);
-    console.log('Request protocol:', req.protocol);
-    console.log('Request host:', req.get('host'));
-    console.log('Request headers:', req.headers);
-    console.log('Query params:', req.query);
-    
-    console.log('=== ENVIRONMENT DEBUG ===');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('Raw FRONTEND_URL:', JSON.stringify(process.env.FRONTEND_URL));
-    console.log('All URL-related env vars:', 
-      Object.entries(process.env)
-        .filter(([key]) => key.toLowerCase().includes('url'))
-        .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {})
-    );
-    
     const { code, error } = req.query;
 
     if (error) {
       console.error('Discord OAuth error:', error);
       let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
       
-      console.log('=== URL PROCESSING DEBUG ===');
-      console.log('Initial frontendUrl:', JSON.stringify(frontendUrl));
-      console.log('frontendUrl type:', typeof frontendUrl);
-      console.log('frontendUrl length:', frontendUrl.length);
-      
       // Clean the URL
       frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
-      console.log('After trim/quote removal:', JSON.stringify(frontendUrl));
-      
       if (!frontendUrl.startsWith('http')) {
         frontendUrl = `https://${frontendUrl}`;
-        console.log('After adding https:', JSON.stringify(frontendUrl));
       }
       
       const finalRedirectUrl = `${frontendUrl}?error=${error}`;
-      console.log('Final redirect URL:', JSON.stringify(finalRedirectUrl));
-      console.log('Final redirect URL length:', finalRedirectUrl.length);
-      
-      // Validate URL structure
-      try {
-        const urlObj = new URL(finalRedirectUrl);
-        console.log('URL validation successful:', {
-          protocol: urlObj.protocol,
-          hostname: urlObj.hostname,
-          pathname: urlObj.pathname,
-          search: urlObj.search
-        });
-      } catch (urlError) {
-        console.error('URL validation failed:', urlError instanceof Error ? urlError.message : String(urlError));
-      }
-      
-      console.log('About to redirect...');
       return res.redirect(finalRedirectUrl);
     }
 
@@ -84,32 +28,23 @@ router.get('/discord/callback', async (req, res) => {
       console.error('No code provided in Discord callback');
       let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
       
-      console.log('=== URL PROCESSING DEBUG (no_code) ===');
-      console.log('Initial frontendUrl:', JSON.stringify(frontendUrl));
       frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
       if (!frontendUrl.startsWith('http')) {
         frontendUrl = `https://${frontendUrl}`;
       }
       
       const finalRedirectUrl = `${frontendUrl}?error=no_code`;
-      console.log('Final redirect URL (no_code):', JSON.stringify(finalRedirectUrl));
       return res.redirect(finalRedirectUrl);
     }
 
-    console.log('Exchanging code for token...');
     // Exchange code for access token
     const accessToken = await DiscordService.exchangeCodeForToken(code as string);
-    console.log('Access token received');
     
     // Get user info from Discord
-    console.log('Getting user info from Discord...');
     const discordUser = await DiscordService.getUserInfo(accessToken);
-    console.log('Discord user info:', discordUser);
     
     // Find or create user in Firebase
-    console.log('Finding or creating user in Firebase...');
     const user = await DiscordService.findOrCreateUser(discordUser);
-    console.log('User found/created:', user);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -121,8 +56,6 @@ router.get('/discord/callback', async (req, res) => {
     // Redirect to frontend with token
     let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
     
-    console.log('=== SUCCESS URL PROCESSING DEBUG ===');
-    console.log('Initial frontendUrl:', JSON.stringify(frontendUrl));
     frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
     if (!frontendUrl.startsWith('http')) {
       frontendUrl = `https://${frontendUrl}`;
@@ -138,13 +71,11 @@ router.get('/discord/callback', async (req, res) => {
       isWhitelisted: user.isWhitelisted
     }))}`;
     
-    console.log('Final success redirect URL:', JSON.stringify(finalRedirectUrl));
     res.redirect(finalRedirectUrl);
   } catch (error) {
     console.error('Discord auth error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
     
-    // Same debug logging for error case
+    // Redirect to frontend with error
     let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
     frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
     if (!frontendUrl.startsWith('http')) {
@@ -152,7 +83,6 @@ router.get('/discord/callback', async (req, res) => {
     }
     
     const errorRedirectUrl = `${frontendUrl}?error=auth_failed`;
-    console.log('Error redirect URL:', JSON.stringify(errorRedirectUrl));
     res.redirect(errorRedirectUrl);
   }
 });

@@ -5,21 +5,25 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 if (!admin.apps.length) {
   console.log('Initializing Firebase Admin...');
   
-  // In production (Vercel), use environment variables
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-    console.log('Production environment detected (NODE_ENV:', process.env.NODE_ENV, 'VERCEL:', !!process.env.VERCEL, '), using environment variables...');
+  try {
+    // Always try to use service account file first (works in both dev and production)
+    const serviceAccount = require('../../firebase-service-account.json');
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id
+    });
+    console.log('Firebase initialized with service account file');
+  } catch (error) {
+    console.warn('Service account file not found, trying environment variables...');
     
+    // Fallback to environment variables
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const projectId = process.env.FIREBASE_PROJECT_ID;
     
     if (!privateKey || !clientEmail || !projectId) {
-      console.error('Missing Firebase environment variables:', {
-        privateKey: !!privateKey,
-        clientEmail: !!clientEmail,
-        projectId: !!projectId
-      });
-      throw new Error('Firebase credentials not properly configured in production');
+      console.error('Missing Firebase credentials. Both service account file and environment variables are not available.');
+      throw new Error('Firebase credentials not properly configured');
     }
     
     admin.initializeApp({
@@ -31,38 +35,6 @@ if (!admin.apps.length) {
       projectId: projectId
     });
     console.log('Firebase initialized with environment variables');
-  } else {
-    // Development - try service account file first
-    try {
-      const serviceAccount = require('../../firebase-service-account.json');
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: serviceAccount.project_id
-      });
-      console.log('Firebase initialized with service account file');
-    } catch (error) {
-      console.warn('Service account file not found, using environment variables...');
-      
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      
-      if (!privateKey || !clientEmail) {
-        console.warn('Firebase credentials not found. Using in-memory storage for development.');
-        admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal'
-        });
-      } else {
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal',
-            privateKey: privateKey.replace(/\\n/g, '\n'),
-            clientEmail: clientEmail
-          }),
-          projectId: process.env.FIREBASE_PROJECT_ID || 'rainmakers-portal'
-        });
-        console.log('Firebase initialized with environment variables');
-      }
-    }
   }
 }
 
@@ -85,418 +57,387 @@ export interface User {
 
 export interface Deal {
   id: string;
-  dealId: string;
-  propertyName: string;
-  propertyAddress: string;
-  loanAmount: number;
-  purchasePrice: number;
-  propertyType: string;
-  noi?: number;
-  dscr?: number;
-  requestedLeverage?: number;
-  notes?: string;
-  status: string;
-  ghlOpportunityId?: string;
-  pipelineId?: string;
-  stageId?: string;
   userId: string;
+  title: string;
+  description: string;
+  value: number;
+  stage: string;
+  status: 'active' | 'won' | 'lost' | 'paused';
+  ghlOpportunityId?: string;
+  ghlContactId?: string;
+  oneDriveFolderId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  
-  // Contact/Sponsor Details
-  contactName?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  contactId?: string;
-  businessName?: string;
-  streetAddress?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
-  website?: string;
-  timeZone?: string;
-  lastActivityDateSalesforce?: string;
-  phone?: string;
-  contactSource?: string;
-  contactType?: string;
-  contactDocumentUpload?: string;
-  opportunitySource?: string;
-  
-  // Company Details
-  companyName?: string;
-  companyPhone?: string;
-  companyEmail?: string;
-  companyWebsite?: string;
-  companyAddress?: string;
-  companyState?: string;
-  companyCity?: string;
-  companyDescription?: string;
-  companyPostalCode?: string;
-  companyCountry?: string;
-  
-  // Lead Property Details
-  leadPropertyType?: string;
-  leadPropertyAddress?: string;
-  leadPropertyCity?: string;
-  leadPropertyState?: string;
-  leadPropertyPurchaseDate?: string;
-  
-  // Document Fields
-  fileUpload?: string;
-  
-  applicationDate?: string;
-  sponsorName?: string;
-  sponsorNetWorth?: string;
-  sponsorLiquidity?: string;
-  
-  // Opportunity Details
-  opportunityName?: string;
-  pipeline?: string;
-  stage?: string;
-  opportunityValue?: number;
-  owner?: string;
-  followers?: string[];
-  tags?: string[];
-  additionalContacts?: string[];
-  lostReason?: string;
-  applicationDocumentUpload?: string;
-  applicationAdditionalInformation?: string;
-  
-  // Property Details
-  propertyAPN?: string;
-  propertyVintage?: string;
-  propertyStatus?: string;
-  numberOfUnits?: number;
-  originalPurchaseDate?: string;
-  occupancyPercentage?: number;
-  appraisedValue?: number;
-  debitYield?: number;
-  propertyCapEx?: number;
-  costBasis?: number;
-  managementEntity?: string;
-  occupancyPercentageDate?: string;
-  
-  // Loan Details
-  loanType?: string;
-  loanTerm?: number;
-  interestRate?: number;
-  amortizationPeriod?: number;
-  prepaymentPenalty?: string;
-  loanPurpose?: string;
-  borrowingEntity?: string;
-  lender?: string;
-  unpaidPrincipalBalance?: number;
-  dealType?: string;
-  investmentType?: string;
-  ltv?: number;
-  hcOriginationFee?: string;
-  ysp?: number;
-  processingFee?: string;
-  lenderOriginationFee?: string;
-  term?: string;
-  index?: string;
-  indexPercentage?: number;
-  spreadPercentage?: number;
-  ratePercentage?: number;
-  amortization?: string;
-  exitFee?: string;
-  recourse?: string;
-  fixedMaturityDate?: string;
-  floatingMaturityDate?: string;
-  
-  // Additional Financial Details
-  capRate?: number;
-  cashFlow?: number;
-  totalProjectCost?: number;
-  renovationCost?: number;
-  closingCosts?: number;
-  
-  // Audit Information
-  createdBy?: string;
-  createdOn?: string;
-  auditLogs?: string;
 }
 
 export interface Document {
   id: string;
-  filename: string;
-  originalName: string;
+  dealId: string;
+  userId: string;
+  fileName: string;
   fileSize: number;
   mimeType: string;
-  tags: string[];
-  oneDriveId?: string;
-  oneDriveUrl?: string;
-  userId: string;
-  dealId?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface Configuration {
-  id: string;
-  key: string;
-  value: string;
-  description?: string;
-  isEncrypted: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface OneDriveToken {
-  id: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: Timestamp;
-  scope: string;
+  oneDriveFileId?: string;
+  oneDriveWebUrl?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 
 export class FirebaseService {
-  // Helper function to check if we should use in-memory storage
-  private static useInMemoryStore(): boolean {
-    try {
-      require('../../firebase-service-account.json');
-      return false; // Service account file exists, use Firebase
-    } catch {
-      return !process.env.FIREBASE_PRIVATE_KEY || !process.env.FIREBASE_CLIENT_EMAIL;
-    }
-  }
-
   // User operations
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+    const userRef = db.collection('users').doc();
     const now = Timestamp.now();
     
-    // Ensure all required fields are present and filter out undefined values
-    const cleanUserData = {
-      discordId: userData.discordId,
-      username: userData.username,
-      email: userData.email,
-      isAdmin: userData.isAdmin,
-      isWhitelisted: userData.isWhitelisted,
-      ...(userData.avatar !== undefined && { avatar: userData.avatar }),
-    };
-    
-    if (this.useInMemoryStore()) {
-      const user: User = {
-        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...cleanUserData,
-        createdAt: now,
-        updatedAt: now,
-      };
-      
-      if (!inMemoryStore.users) inMemoryStore.users = {};
-      inMemoryStore.users[user.id] = user;
-      return user;
-    }
-    
-    const userRef = db.collection('users').doc();
     const user: User = {
       id: userRef.id,
-      ...cleanUserData,
+      ...userData,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: now
     };
     
     await userRef.set(user);
     return user;
   }
 
-  static async getUserById(id: string): Promise<User | null> {
-    if (this.useInMemoryStore()) {
-      return inMemoryStore.users?.[id] || null;
+  static async getUserById(userId: string): Promise<User | null> {
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      return userDoc.exists ? (userDoc.data() as User) : null;
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      return null;
     }
-    
-    const userDoc = await db.collection('users').doc(id).get();
-    return userDoc.exists ? (userDoc.data() as User) : null;
   }
 
   static async getUserByDiscordId(discordId: string): Promise<User | null> {
-    if (this.useInMemoryStore()) {
-      const users = inMemoryStore.users || {};
-      return Object.values(users).find((user: any) => user.discordId === discordId) || null;
+    try {
+      const usersSnapshot = await db.collection('users')
+        .where('discordId', '==', discordId)
+        .limit(1)
+        .get();
+      
+      if (usersSnapshot.empty) {
+        return null;
+      }
+      
+      return usersSnapshot.docs[0].data() as User;
+    } catch (error) {
+      console.error('Error getting user by Discord ID:', error);
+      return null;
     }
-    
-    const usersSnapshot = await db.collection('users')
-      .where('discordId', '==', discordId)
-      .limit(1)
-      .get();
-    
-    if (usersSnapshot.empty) return null;
-    
-    const userDoc = usersSnapshot.docs[0];
-    return { id: userDoc.id, ...userDoc.data() } as User;
   }
 
-  static async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
-    // Filter out undefined values for Firestore compatibility
-    const cleanUpdates: any = {};
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanUpdates[key] = value;
-      }
-    });
-    
-    if (this.useInMemoryStore()) {
-      if (!inMemoryStore.users?.[id]) return null;
-      
-      inMemoryStore.users[id] = {
-        ...inMemoryStore.users[id],
-        ...cleanUpdates,
-        updatedAt: Timestamp.now(),
+  static async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+    try {
+      const userRef = db.collection('users').doc(userId);
+      const updateData = {
+        ...updates,
+        updatedAt: Timestamp.now()
       };
       
-      return inMemoryStore.users[id];
+      await userRef.update(updateData);
+      return await this.getUserById(userId);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return null;
     }
-    
-    const userRef = db.collection('users').doc(id);
-    const updateData = {
-      ...cleanUpdates,
-      updatedAt: Timestamp.now(),
-    };
-    
-    await userRef.update(updateData);
-    return await this.getUserById(id);
   }
 
   static async getAllUsers(): Promise<User[]> {
-    const usersSnapshot = await db.collection('users').get();
-    return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      return usersSnapshot.docs.map(doc => doc.data() as User);
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      return [];
+    }
   }
 
   // Deal operations
   static async createDeal(dealData: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Deal> {
+    const dealRef = db.collection('deals').doc();
     const now = Timestamp.now();
     
-    // Filter out undefined values to avoid Firestore errors
-    const cleanDealData = Object.fromEntries(
-      Object.entries(dealData).filter(([_, value]) => value !== undefined)
-    );
-    
-    const dealRef = db.collection('deals').doc();
     const deal: Deal = {
       id: dealRef.id,
-      ...cleanDealData,
+      ...dealData,
       createdAt: now,
-      updatedAt: now,
-    } as Deal;
+      updatedAt: now
+    };
     
     await dealRef.set(deal);
     return deal;
   }
 
-  static async getDealById(id: string): Promise<Deal | null> {
-    const dealDoc = await db.collection('deals').doc(id).get();
-    return dealDoc.exists ? (dealDoc.data() as Deal) : null;
+  static async getDealById(dealId: string): Promise<Deal | null> {
+    try {
+      const dealDoc = await db.collection('deals').doc(dealId).get();
+      return dealDoc.exists ? (dealDoc.data() as Deal) : null;
+    } catch (error) {
+      console.error('Error getting deal by ID:', error);
+      return null;
+    }
   }
 
   static async getDealsByUserId(userId: string): Promise<Deal[]> {
-    if (this.useInMemoryStore()) {
-      // For in-memory storage, return empty array for now
+    try {
+      const dealsSnapshot = await db.collection('deals')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return dealsSnapshot.docs.map(doc => doc.data() as Deal);
+    } catch (error) {
+      console.error('Error getting deals by user ID:', error);
       return [];
     }
-    
-    const dealsSnapshot = await db.collection('deals')
-      .where('userId', '==', userId)
-      .get();
-    
-    // Sort in memory to avoid index requirement
-    const deals = dealsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deal));
-    return deals.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
   }
 
   static async getAllDeals(): Promise<Deal[]> {
-    const dealsSnapshot = await db.collection('deals')
-      .orderBy('createdAt', 'desc')
-      .get();
-    
-    return dealsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deal));
+    try {
+      const dealsSnapshot = await db.collection('deals')
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return dealsSnapshot.docs.map(doc => doc.data() as Deal);
+    } catch (error) {
+      console.error('Error getting all deals:', error);
+      return [];
+    }
   }
 
-  static async updateDeal(id: string, updates: Partial<Deal>): Promise<Deal | null> {
-    // Filter out undefined values for Firestore compatibility
-    const cleanUpdates: any = {};
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanUpdates[key] = value;
-      }
-    });
-    
-    const dealRef = db.collection('deals').doc(id);
-    const updateData = {
-      ...cleanUpdates,
-      updatedAt: Timestamp.now(),
-    };
-    
-    await dealRef.update(updateData);
-    return await this.getDealById(id);
+  static async updateDeal(dealId: string, updates: Partial<Deal>): Promise<Deal | null> {
+    try {
+      const dealRef = db.collection('deals').doc(dealId);
+      const updateData = {
+        ...updates,
+        updatedAt: Timestamp.now()
+      };
+      
+      await dealRef.update(updateData);
+      return await this.getDealById(dealId);
+    } catch (error) {
+      console.error('Error updating deal:', error);
+      return null;
+    }
   }
 
-  static async deleteDeal(id: string): Promise<void> {
-    await db.collection('deals').doc(id).delete();
+  static async deleteDeal(dealId: string): Promise<boolean> {
+    try {
+      await db.collection('deals').doc(dealId).delete();
+      return true;
+    } catch (error) {
+      console.error('Error deleting deal:', error);
+      return false;
+    }
   }
 
-  // Document operations - DISABLED
-  // Documents are not stored in Firebase
-
-  // Configuration operations
-  static async getConfiguration(key: string): Promise<string | null> {
-    const configDoc = await db.collection('configurations').doc(key).get();
-    return configDoc.exists ? (configDoc.data() as Configuration).value : null;
-  }
-
-  static async setConfiguration(key: string, value: string, description?: string, isEncrypted: boolean = false): Promise<void> {
+  // Document operations
+  static async createDocument(documentData: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>): Promise<Document> {
+    const documentRef = db.collection('documents').doc();
     const now = Timestamp.now();
-    const config: Configuration = {
-      id: key,
-      key,
-      value,
-      description,
-      isEncrypted,
+    
+    const document: Document = {
+      id: documentRef.id,
+      ...documentData,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: now
     };
     
-    await db.collection('configurations').doc(key).set(config);
+    await documentRef.set(document);
+    return document;
   }
 
-  // OneDrive Token operations
-  static async saveOneDriveToken(tokenData: Omit<OneDriveToken, 'id' | 'createdAt' | 'updatedAt'>): Promise<OneDriveToken> {
-    const now = Timestamp.now();
-    const tokenRef = db.collection('onedrive_tokens').doc();
-    const token: OneDriveToken = {
-      id: tokenRef.id,
-      ...tokenData,
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    await tokenRef.set(token);
-    return token;
+  static async getDocumentById(documentId: string): Promise<Document | null> {
+    try {
+      const documentDoc = await db.collection('documents').doc(documentId).get();
+      return documentDoc.exists ? (documentDoc.data() as Document) : null;
+    } catch (error) {
+      console.error('Error getting document by ID:', error);
+      return null;
+    }
   }
 
-  static async getLatestOneDriveToken(): Promise<OneDriveToken | null> {
-    const tokensSnapshot = await db.collection('onedrive_tokens')
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get();
-    
-    if (tokensSnapshot.empty) return null;
-    
-    const tokenDoc = tokensSnapshot.docs[0];
-    return { id: tokenDoc.id, ...tokenDoc.data() } as OneDriveToken;
+  static async getDocumentsByDealId(dealId: string): Promise<Document[]> {
+    try {
+      const documentsSnapshot = await db.collection('documents')
+        .where('dealId', '==', dealId)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return documentsSnapshot.docs.map(doc => doc.data() as Document);
+    } catch (error) {
+      console.error('Error getting documents by deal ID:', error);
+      return [];
+    }
   }
 
-  static async updateOneDriveToken(id: string, updates: Partial<OneDriveToken>): Promise<OneDriveToken | null> {
-    const tokenRef = db.collection('onedrive_tokens').doc(id);
-    const updateData = {
-      ...updates,
-      updatedAt: Timestamp.now(),
-    };
-    
-    await tokenRef.update(updateData);
-    const tokenDoc = await tokenRef.get();
-    return tokenDoc.exists ? { id: tokenDoc.id, ...tokenDoc.data() } as OneDriveToken : null;
+  static async getDocumentsByUserId(userId: string): Promise<Document[]> {
+    try {
+      const documentsSnapshot = await db.collection('documents')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return documentsSnapshot.docs.map(doc => doc.data() as Document);
+    } catch (error) {
+      console.error('Error getting documents by user ID:', error);
+      return [];
+    }
+  }
+
+  static async updateDocument(documentId: string, updates: Partial<Document>): Promise<Document | null> {
+    try {
+      const documentRef = db.collection('documents').doc(documentId);
+      const updateData = {
+        ...updates,
+        updatedAt: Timestamp.now()
+      };
+      
+      await documentRef.update(updateData);
+      return await this.getDocumentById(documentId);
+    } catch (error) {
+      console.error('Error updating document:', error);
+      return null;
+    }
+  }
+
+  static async deleteDocument(documentId: string): Promise<boolean> {
+    try {
+      await db.collection('documents').doc(documentId).delete();
+      return true;
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      return false;
+    }
+  }
+
+  // Admin operations
+  static async makeUserAdmin(userId: string): Promise<boolean> {
+    try {
+      await this.updateUser(userId, { isAdmin: true, isWhitelisted: true });
+      return true;
+    } catch (error) {
+      console.error('Error making user admin:', error);
+      return false;
+    }
+  }
+
+  static async removeUserAdmin(userId: string): Promise<boolean> {
+    try {
+      await this.updateUser(userId, { isAdmin: false });
+      return true;
+    } catch (error) {
+      console.error('Error removing user admin:', error);
+      return false;
+    }
+  }
+
+  static async whitelistUser(userId: string): Promise<boolean> {
+    try {
+      await this.updateUser(userId, { isWhitelisted: true });
+      return true;
+    } catch (error) {
+      console.error('Error whitelisting user:', error);
+      return false;
+    }
+  }
+
+  static async removeUserFromWhitelist(userId: string): Promise<boolean> {
+    try {
+      await this.updateUser(userId, { isWhitelisted: false });
+      return true;
+    } catch (error) {
+      console.error('Error removing user from whitelist:', error);
+      return false;
+    }
+  }
+
+  // Analytics operations
+  static async getDealAnalytics(): Promise<{
+    totalDeals: number;
+    totalValue: number;
+    dealsByStage: { [stage: string]: number };
+    dealsByStatus: { [status: string]: number };
+    dealsByMonth: { [month: string]: number };
+  }> {
+    try {
+      const dealsSnapshot = await db.collection('deals').get();
+      const deals = dealsSnapshot.docs.map(doc => doc.data() as Deal);
+      
+      const totalDeals = deals.length;
+      const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+      
+      const dealsByStage = deals.reduce((acc, deal) => {
+        acc[deal.stage] = (acc[deal.stage] || 0) + 1;
+        return acc;
+      }, {} as { [stage: string]: number });
+      
+      const dealsByStatus = deals.reduce((acc, deal) => {
+        acc[deal.status] = (acc[deal.status] || 0) + 1;
+        return acc;
+      }, {} as { [status: string]: number });
+      
+      const dealsByMonth = deals.reduce((acc, deal) => {
+        const month = deal.createdAt.toDate().toISOString().substring(0, 7); // YYYY-MM
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {} as { [month: string]: number });
+      
+      return {
+        totalDeals,
+        totalValue,
+        dealsByStage,
+        dealsByStatus,
+        dealsByMonth
+      };
+    } catch (error) {
+      console.error('Error getting deal analytics:', error);
+      return {
+        totalDeals: 0,
+        totalValue: 0,
+        dealsByStage: {},
+        dealsByStatus: {},
+        dealsByMonth: {}
+      };
+    }
+  }
+
+  static async getUserAnalytics(): Promise<{
+    totalUsers: number;
+    adminUsers: number;
+    whitelistedUsers: number;
+    usersByMonth: { [month: string]: number };
+  }> {
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      const users = usersSnapshot.docs.map(doc => doc.data() as User);
+      
+      const totalUsers = users.length;
+      const adminUsers = users.filter(user => user.isAdmin).length;
+      const whitelistedUsers = users.filter(user => user.isWhitelisted).length;
+      
+      const usersByMonth = users.reduce((acc, user) => {
+        const month = user.createdAt.toDate().toISOString().substring(0, 7); // YYYY-MM
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {} as { [month: string]: number });
+      
+      return {
+        totalUsers,
+        adminUsers,
+        whitelistedUsers,
+        usersByMonth
+      };
+    } catch (error) {
+      console.error('Error getting user analytics:', error);
+      return {
+        totalUsers: 0,
+        adminUsers: 0,
+        whitelistedUsers: 0,
+        usersByMonth: {}
+      };
+    }
   }
 }
