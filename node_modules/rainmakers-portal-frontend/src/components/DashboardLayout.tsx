@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <img 
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
               alt="Rainmakers Logo" 
-              className="h-12 w-auto"
+              className="h-20 w-auto"
             />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
@@ -112,7 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <img 
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
                 alt="Rainmakers Logo" 
-                className="h-12 w-auto"
+                className="h-20 w-auto"
               />
             </div>
             <nav className="mt-5 flex-1 space-y-1 px-2 matrix-nav">
