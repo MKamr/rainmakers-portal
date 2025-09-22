@@ -72,7 +72,7 @@ const RainmakersLogo = () => {
   return (
     <div className="flex justify-center mb-8">
       <img 
-        src="/rainmakers-logo-large.png" 
+        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
         alt="Rainmakers Logo" 
         className="rainmakers-logo-img"
       />
