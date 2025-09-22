@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useEffect } from "react"
 
 // Matrix Rain Animation Component
