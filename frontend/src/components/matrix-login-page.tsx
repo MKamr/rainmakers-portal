@@ -32,12 +32,12 @@ const MatrixRain = () => {
       ctx.fillStyle = "#FFD700" // Golden color
       ctx.font = fontSize + "px monospace"
 
-      // Calculate logo area (center of screen, larger exclusion zone)
+      // Calculate logo area (center of screen, approximate size)
       const logoArea = {
-        x: canvas.width / 2 - 300, // Larger exclusion zone
-        y: canvas.height / 2 - 200, // Larger exclusion zone
-        width: 600,
-        height: 400
+        x: canvas.width / 2 - 200, // Center minus half logo width
+        y: canvas.height / 2 - 150, // Center minus half logo height
+        width: 400,
+        height: 300
       }
 
       for (let i = 0; i < drops.length; i++) {
@@ -257,7 +257,7 @@ export function MatrixLoginPage() {
         .rainmakers-logo-img {
           height: 120px;
           width: auto;
-          filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+          
         }
 
         /* Cyberpunk scrollbar */
