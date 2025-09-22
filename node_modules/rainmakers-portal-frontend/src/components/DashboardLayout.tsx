@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { ThemeToggle } from './ThemeToggle'
 import { cn } from '../utils/cn'
-import { RainmakersLogo } from './RainmakersLogo'
 import {
   Home,
   FileText,
@@ -73,7 +72,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
           </div>
           <div className="flex flex-shrink-0 items-center px-4 py-4 matrix-logo-section">
-            <RainmakersLogo size="md" showText={true} />
+            <img 
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
+              alt="Rainmakers Logo" 
+              className="h-8 w-auto"
+            />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-2 matrix-nav">
@@ -106,7 +109,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 matrix-desktop-sidebar">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 matrix-logo-section">
-              <RainmakersLogo size="md" showText={true} />
+              <img 
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
+                alt="Rainmakers Logo" 
+                className="h-8 w-auto"
+              />
             </div>
             <nav className="mt-5 flex-1 space-y-1 px-2 matrix-nav">
               {navigation.map((item) => {
