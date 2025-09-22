@@ -32,12 +32,12 @@ const MatrixRain = () => {
       ctx.fillStyle = "#FFD700" // Golden color
       ctx.font = fontSize + "px monospace"
 
-      // Calculate logo area (center of screen, approximate size)
+      // Calculate logo area (center of screen, larger exclusion zone)
       const logoArea = {
-        x: canvas.width / 2 - 200, // Center minus half logo width
-        y: canvas.height / 2 - 150, // Center minus half logo height
-        width: 400,
-        height: 300
+        x: canvas.width / 2 - 300, // Larger exclusion zone
+        y: canvas.height / 2 - 200, // Larger exclusion zone
+        width: 600,
+        height: 400
       }
 
       for (let i = 0; i < drops.length; i++) {
