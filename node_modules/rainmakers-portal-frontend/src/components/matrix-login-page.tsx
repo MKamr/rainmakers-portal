@@ -32,9 +32,27 @@ const MatrixRain = () => {
       ctx.fillStyle = "#FFD700" // Golden color
       ctx.font = fontSize + "px monospace"
 
+      // Calculate logo area (center of screen, approximate size)
+      const logoArea = {
+        x: canvas.width / 2 - 200, // Center minus half logo width
+        y: canvas.height / 2 - 150, // Center minus half logo height
+        width: 400,
+        height: 300
+      }
+
       for (let i = 0; i < drops.length; i++) {
+        const x = i * fontSize
+        const y = drops[i] * fontSize
+        
+        // Skip drawing in logo area
+        if (x >= logoArea.x && x <= logoArea.x + logoArea.width &&
+            y >= logoArea.y && y <= logoArea.y + logoArea.height) {
+          drops[i]++
+          continue
+        }
+
         const text = matrixArray[Math.floor(Math.random() * matrixArray.length)]
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize)
+        ctx.fillText(text, x, y)
 
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
           drops[i] = 0
