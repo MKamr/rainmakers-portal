@@ -68,29 +68,15 @@ const MatrixRain = () => {
   )
 }
 
-// Glitch Text Component
-const GlitchText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-  return (
-    <div className={`relative ${className}`}>
-      <div className="glitch-text" data-text={children}>{children}</div>
-    </div>
-  )
-}
-
 // Rainmakers Logo Component
 const RainmakersLogo = () => {
   return (
     <div className="flex justify-center mb-8">
-      <div className="rainmakers-logo-container">
-        <div className="rainmakers-icon">
-          <div className="bar bar-1"></div>
-          <div className="bar bar-2"></div>
-          <div className="bar bar-3"></div>
-          <div className="bar bar-4"></div>
-          <div className="bar bar-5"></div>
-        </div>
-        <div className="rainmakers-text">Rainmakers</div>
-      </div>
+      <img 
+        src="/rainmakers-logo-large.png" 
+        alt="Rainmakers Logo" 
+        className="rainmakers-logo-img"
+      />
     </div>
   )
 }
@@ -137,7 +123,6 @@ export function MatrixLoginPage() {
 
           {/* Header */}
           <div className="text-center">
-            <GlitchText className="text-4xl font-bold mb-6">NEURAL INTERFACE</GlitchText>
             <div className="matrix-subtitle">
               <p className="text-yellow-400 font-mono text-sm mb-2">&gt; ESTABLISHING SECURE CONNECTION...</p>
               <p className="text-yellow-400 font-mono text-sm">&gt; DISCORD AUTHENTICATION REQUIRED</p>
@@ -252,113 +237,10 @@ export function MatrixLoginPage() {
         }
 
         /* Rainmakers Logo Styles */
-        .rainmakers-logo-container {
-          display: flex;
-          align-items: center;
-          background: rgba(0, 0, 0, 0.8);
-          padding: 1rem 2rem;
-          border-radius: 10px;
-          border: 1px solid #FFD700;
-        }
-
-        .rainmakers-icon {
-          display: flex;
-          align-items: end;
-          margin-right: 1rem;
-          height: 40px;
-        }
-
-        .bar {
-          width: 8px;
-          background: linear-gradient(to top, #FFD700, #FFA500);
-          margin-right: 3px;
-          border-radius: 2px;
-          animation: bar-glow 2s ease-in-out infinite alternate;
-        }
-
-        .bar-1 { height: 20px; animation-delay: 0s; }
-        .bar-2 { height: 35px; animation-delay: 0.2s; }
-        .bar-3 { height: 25px; animation-delay: 0.4s; }
-        .bar-4 { height: 40px; animation-delay: 0.6s; }
-        .bar-5 { height: 30px; animation-delay: 0.8s; }
-
-        @keyframes bar-glow {
-          from { box-shadow: 0 0 5px #FFD700; }
-          to { box-shadow: 0 0 15px #FFD700, 0 0 25px #FFD700; }
-        }
-
-        .rainmakers-text {
-          font-family: 'Arial', sans-serif;
-          font-size: 24px;
-          font-weight: bold;
-          color: #FFD700;
-          text-shadow: 0 0 10px #FFD700;
-        }
-
-        /* Glitch Text Styles */
-        .glitch-text {
-          position: relative;
-          color: #FFD700;
-          font-weight: bold;
-          font-family: 'Courier New', monospace;
-          text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700;
-          animation: glitch 2s infinite;
-        }
-        
-        .glitch-text::before,
-        .glitch-text::after {
-          content: attr(data-text);
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-        
-        .glitch-text::before {
-          animation: glitch-1 0.5s infinite;
-          color: #FF6B6B;
-          z-index: -1;
-        }
-        
-        .glitch-text::after {
-          animation: glitch-2 0.5s infinite;
-          color: #4ECDC4;
-          z-index: -2;
-        }
-        
-        @keyframes glitch {
-          0%, 100% { transform: translate(0); }
-          20% { transform: translate(-2px, 2px); }
-          40% { transform: translate(-2px, -2px); }
-          60% { transform: translate(2px, 2px); }
-          80% { transform: translate(2px, -2px); }
-        }
-        
-        @keyframes glitch-1 {
-          0%, 100% { transform: translate(0); }
-          10% { transform: translate(-2px, -2px); }
-          20% { transform: translate(2px, 2px); }
-          30% { transform: translate(-2px, 2px); }
-          40% { transform: translate(2px, -2px); }
-          50% { transform: translate(-2px, -2px); }
-          60% { transform: translate(2px, 2px); }
-          70% { transform: translate(-2px, 2px); }
-          80% { transform: translate(2px, -2px); }
-          90% { transform: translate(-2px, -2px); }
-        }
-        
-        @keyframes glitch-2 {
-          0%, 100% { transform: translate(0); }
-          10% { transform: translate(2px, 2px); }
-          20% { transform: translate(-2px, -2px); }
-          30% { transform: translate(2px, -2px); }
-          40% { transform: translate(-2px, 2px); }
-          50% { transform: translate(2px, 2px); }
-          60% { transform: translate(-2px, -2px); }
-          70% { transform: translate(2px, -2px); }
-          80% { transform: translate(-2px, 2px); }
-          90% { transform: translate(2px, 2px); }
+        .rainmakers-logo-img {
+          height: 120px;
+          width: auto;
+          filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
         }
 
         /* Cyberpunk scrollbar */
