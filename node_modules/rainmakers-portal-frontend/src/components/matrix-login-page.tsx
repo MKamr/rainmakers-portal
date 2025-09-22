@@ -213,7 +213,7 @@ export function MatrixLoginPage() {
         }
 
         .matrix-button {
-          background: linear-gradient(90deg, #0066CC, #0099FF);
+          background: linear-gradient(90deg, #5865F2, #7289DA);
           border: 2px solid #FFD700;
           color: #fff;
           text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
