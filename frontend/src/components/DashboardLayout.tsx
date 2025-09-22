@@ -41,13 +41,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleLogout = async () => {
     try {
       await logout()
-      // The logout function will handle the redirect via window.location.reload()
+      // The logout function will handle the redirect
     } catch (error) {
       console.error('Logout failed:', error)
-      // Even if logout fails, clear local storage and reload
+      // Even if logout fails, clear local storage and redirect
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.reload()
+      window.location.href = '/'
     }
   }
 

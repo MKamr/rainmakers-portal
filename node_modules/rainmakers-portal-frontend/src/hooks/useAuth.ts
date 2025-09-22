@@ -154,6 +154,8 @@ export function useAuth() {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       setUser(null)
+      // Redirect to login page after logout
+      window.location.href = '/'
     }
   }
 

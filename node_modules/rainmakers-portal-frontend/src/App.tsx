@@ -104,7 +104,7 @@ function App() {
                   console.log('🚪 App: Sign out clicked')
                   localStorage.removeItem('token')
                   localStorage.removeItem('user')
-                  window.location.reload()
+                  window.location.href = '/'
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
               >
