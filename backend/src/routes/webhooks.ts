@@ -4,6 +4,20 @@ import { GHLService } from '../services/ghlService';
 
 const router = Router();
 
+// Health check for webhook routes
+router.get('/', (req: Request, res: Response) => {
+  res.json({ 
+    message: 'Webhook routes are active!', 
+    timestamp: new Date().toISOString(),
+    availableEndpoints: [
+      'GET /api/webhooks/',
+      'GET /api/webhooks/test',
+      'POST /api/webhooks/test', 
+      'POST /api/webhooks/ghl'
+    ]
+  });
+});
+
 // Helper function to map GHL stage names to system stage names
 function mapGHLStageToSystemStage(ghlStageName: string): string {
   const stageMap: Record<string, string> = {
@@ -137,13 +151,25 @@ router.post('/ghl', async (req: Request, res: Response) => {
   }
 });
 
-// Test webhook endpoint
+// Test webhook endpoint (GET)
 router.get('/test', (req: Request, res: Response) => {
   res.json({ 
     message: 'Webhook endpoint is working!', 
     timestamp: new Date().toISOString(),
     method: req.method,
     path: req.path
+  });
+});
+
+// Test webhook endpoint (POST) - for GHL testing
+router.post('/test', (req: Request, res: Response) => {
+  console.log('🧪 [TEST WEBHOOK] Received POST request:', JSON.stringify(req.body, null, 2));
+  res.json({ 
+    message: 'Webhook POST endpoint is working!', 
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    path: req.path,
+    body: req.body
   });
 });
 
