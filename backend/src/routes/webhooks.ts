@@ -35,7 +35,22 @@ function mapGHLStageToSystemStage(ghlStageName: string): string {
     'Underwriting': 'Underwriting'
   };
   
-  return stageMap[ghlStageName] || ghlStageName;
+  // Handle exact matches first
+  if (stageMap[ghlStageName]) {
+    return stageMap[ghlStageName];
+  }
+  
+  // Handle partial matches (case insensitive)
+  const lowerStageName = ghlStageName.toLowerCase();
+  for (const [ghlStage, systemStage] of Object.entries(stageMap)) {
+    if (lowerStageName.includes(ghlStage.toLowerCase()) || ghlStage.toLowerCase().includes(lowerStageName)) {
+      console.log(`🔄 [STAGE MAPPING] Matched "${ghlStageName}" to "${systemStage}"`);
+      return systemStage;
+    }
+  }
+  
+  console.log(`⚠️ [STAGE MAPPING] No mapping found for stage: "${ghlStageName}", using as-is`);
+  return ghlStageName;
 }
 
 // GHL Webhook endpoint for opportunity updates
@@ -53,7 +68,8 @@ router.post('/ghl', async (req: Request, res: Response) => {
       }
     }
     
-    const { opportunity } = req.body;
+    // Handle both opportunity object and direct fields from GHL webhook
+    let opportunity = req.body.opportunity || req.body;
     
     if (!opportunity || !opportunity.id) {
       console.log('❌ [GHL WEBHOOK] Invalid opportunity data received');
@@ -79,10 +95,35 @@ router.post('/ghl', async (req: Request, res: Response) => {
     if (opportunity.status) updates.status = opportunity.status;
     if (opportunity.pipelineId) updates.pipeline = opportunity.pipelineId;
     
-    // Handle stage changes - fetch stage name from GHL if stage ID is provided
-    if (opportunity.pipelineStageId && opportunity.pipelineId) {
+    // Handle stage changes - GHL sends stage name directly in the webhook
+    if (opportunity.pipleline_stage || opportunity.pipeline_stage) {
       try {
         console.log('🔄 [GHL WEBHOOK] Processing stage change for opportunity:', opportunity.id);
+        console.log('🔄 [GHL WEBHOOK] Received stage:', opportunity.pipleline_stage || opportunity.pipeline_stage);
+        
+        // Get the stage name from GHL webhook (note the typo in GHL field name)
+        const ghlStageName = opportunity.pipleline_stage || opportunity.pipeline_stage;
+        const currentStage = deal.stage;
+        const normalizedStage = mapGHLStageToSystemStage(ghlStageName);
+        
+        // Only update if stage actually changed
+        if (currentStage !== normalizedStage) {
+          updates.stage = normalizedStage;
+          updates.stageLastUpdated = new Date().toISOString();
+          console.log('🎯 [GHL WEBHOOK] Stage changed from:', currentStage, 'to:', normalizedStage);
+          console.log('🎯 [GHL WEBHOOK] GHL stage name:', ghlStageName, '-> System stage:', normalizedStage);
+        } else {
+          console.log('ℹ️ [GHL WEBHOOK] Stage unchanged:', normalizedStage);
+        }
+      } catch (error) {
+        console.error('❌ [GHL WEBHOOK] Error processing stage change:', error);
+      }
+    }
+    
+    // Also handle the old pipelineStageId method for backward compatibility
+    if (opportunity.pipelineStageId && opportunity.pipelineId) {
+      try {
+        console.log('🔄 [GHL WEBHOOK] Processing stage change by ID for opportunity:', opportunity.id);
         console.log('🔄 [GHL WEBHOOK] Pipeline ID:', opportunity.pipelineId, 'Stage ID:', opportunity.pipelineStageId);
         
         // Check if stage actually changed
