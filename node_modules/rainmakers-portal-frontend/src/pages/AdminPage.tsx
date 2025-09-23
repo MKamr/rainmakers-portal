@@ -372,17 +372,17 @@ export function AdminPage() {
         <div className="space-y-6">
           {/* Enhanced Stats */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-700">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Users className="h-6 w-6 text-blue-600" />
+                    <Users className="h-6 w-6 text-blue-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                      <dd className="text-lg font-medium text-gray-900">{analytics?.users.total || 0}</dd>
-                      <dd className="text-sm text-gray-500">
+                      <dt className="text-sm font-medium text-gray-300 truncate">Total Users</dt>
+                      <dd className="text-lg font-medium text-white">{analytics?.users.total || 0}</dd>
+                      <dd className="text-sm text-gray-400">
                         {analytics?.users.active || 0} active • {analytics?.users.admins || 0} admins
                       </dd>
                     </dl>
@@ -391,17 +391,17 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-700">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <FileText className="h-6 w-6 text-green-600" />
+                    <FileText className="h-6 w-6 text-green-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Deals</dt>
-                      <dd className="text-lg font-medium text-gray-900">{analytics?.deals.total || 0}</dd>
-                      <dd className="text-sm text-gray-500">
+                      <dt className="text-sm font-medium text-gray-300 truncate">Total Deals</dt>
+                      <dd className="text-lg font-medium text-white">{analytics?.deals.total || 0}</dd>
+                      <dd className="text-sm text-gray-400">
                         ${analytics?.deals.totalValue?.toLocaleString() || 0} total value
                       </dd>
                     </dl>
@@ -410,17 +410,17 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-700">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <BarChart3 className="h-6 w-6 text-orange-600" />
+                    <BarChart3 className="h-6 w-6 text-orange-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Activity</dt>
-                      <dd className="text-lg font-medium text-gray-900">{analytics?.overview.totalActivity || 0}</dd>
-                      <dd className="text-sm text-gray-500">
+                      <dt className="text-sm font-medium text-gray-300 truncate">Activity</dt>
+                      <dd className="text-lg font-medium text-white">{analytics?.overview.totalActivity || 0}</dd>
+                      <dd className="text-sm text-gray-400">
                         {analytics?.overview.recentActivity || 0} recent
                       </dd>
                     </dl>
@@ -432,35 +432,35 @@ export function AdminPage() {
 
           {/* Performance Overview */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <h3 className="text-lg leading-6 font-medium text-white mb-4">
                   Deal Status Breakdown
                 </h3>
                 <div className="space-y-2">
                   {analytics?.deals.byStatus && Object.entries(analytics.deals.byStatus).map(([status, count]) => (
                     <div key={status} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 capitalize">{status}</span>
-                      <span className="text-sm font-medium text-gray-900">{count as number}</span>
+                      <span className="text-sm text-gray-300 capitalize">{status}</span>
+                      <span className="text-sm font-medium text-white">{count as number}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <h3 className="text-lg leading-6 font-medium text-white mb-4">
                   Top Performing Users
                 </h3>
                 <div className="space-y-2">
                   {analytics?.performance.topUsers?.slice(0, 5).map((user: any, index: number) => (
                     <div key={user.id} className="flex justify-between items-center">
                       <div>
-                        <span className="text-sm font-medium text-gray-900">{user.name}</span>
-                        <span className="text-xs text-gray-500 ml-2">({user.dealsCount} deals)</span>
+                        <span className="text-sm font-medium text-white">{user.name}</span>
+                        <span className="text-xs text-gray-400 ml-2">({user.dealsCount} deals)</span>
                       </div>
-                      <span className="text-sm text-gray-500">#{index + 1}</span>
+                      <span className="text-sm text-gray-400">#{index + 1}</span>
                     </div>
                   ))}
                 </div>
@@ -470,38 +470,38 @@ export function AdminPage() {
 
           {/* Integration Status */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <h3 className="text-lg leading-6 font-medium text-white mb-4">
                   📁 OneDrive Document Storage
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center">
                     {oneDriveStatus?.connected ? (
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                      <XCircle className="h-5 w-5 text-red-400 mr-2" />
                     )}
                     <span className={`text-sm font-medium ${
-                      oneDriveStatus?.connected ? 'text-green-700' : 'text-red-700'
+                      oneDriveStatus?.connected ? 'text-green-300' : 'text-red-300'
                     }`}>
                       {oneDriveStatus?.connected ? 'Connected' : 'Not Connected'}
                     </span>
                   </div>
                   
                   {oneDriveStatus?.connected && (
-                    <div className="text-xs text-gray-600 space-y-1">
+                    <div className="text-xs text-gray-300 space-y-1">
                       <div>✅ All documents stored in admin OneDrive</div>
                       <div>✅ Automatic sync to GHL contacts</div>
                       <div>✅ Admin-only access control</div>
                       {oneDriveStatus.expired && (
-                        <div className="text-orange-600">⚠️ Token expired - reconnection needed</div>
+                        <div className="text-orange-400">⚠️ Token expired - reconnection needed</div>
                       )}
                     </div>
                   )}
                   
                   {!oneDriveStatus?.connected && (
-                    <div className="text-xs text-gray-600 space-y-1">
+                    <div className="text-xs text-gray-300 space-y-1">
                       <div>❌ Documents cannot be uploaded</div>
                       <div>❌ No GHL document sync</div>
                       <div>❌ Admin access required</div>
@@ -512,7 +512,7 @@ export function AdminPage() {
                 {!oneDriveStatus?.connected && (
                   <button
                     onClick={handleOneDriveConnect}
-                    className="mt-3 btn btn-primary btn-sm"
+                    className="mt-3 px-4 py-2 bg-blue-600 border border-blue-500 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
                   >
                     Connect OneDrive
                   </button>
@@ -520,19 +520,19 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <h3 className="text-lg leading-6 font-medium text-white mb-4">
                   GoHighLevel Integration
                 </h3>
                 <div className="flex items-center">
                   {ghlStatus?.connected ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
                   ) : (
-                    <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <XCircle className="h-5 w-5 text-red-400 mr-2" />
                   )}
                   <span className={`text-sm font-medium ${
-                    ghlStatus?.connected ? 'text-green-700' : 'text-red-700'
+                    ghlStatus?.connected ? 'text-green-300' : 'text-red-300'
                   }`}>
                     {ghlStatus?.connected ? 'Connected' : 'Not Connected'}
                   </span>
@@ -544,8 +544,8 @@ export function AdminPage() {
       )}
 
       {activeTab === 'users' && (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
+        <div className="bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-700">
+          <ul className="divide-y divide-gray-700">
             {users?.map((user) => (
               <li key={user.id}>
                 <div className="px-4 py-4 sm:px-6">
@@ -555,16 +555,16 @@ export function AdminPage() {
                         {user.avatar ? (
                           <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.username} />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700">
+                          <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center">
+                            <span className="text-sm font-medium text-white">
                               {user.username.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm font-medium text-white">{user.username}</div>
+                        <div className="text-sm text-gray-400">{user.email}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -574,18 +574,18 @@ export function AdminPage() {
                             type="checkbox"
                             checked={user.isWhitelisted}
                             onChange={(e) => handleUpdateUser(user.id, { isWhitelisted: e.target.checked })}
-                            className="rounded border-gray-300 text-rainmakers-600 shadow-sm focus:border-rainmakers-300 focus:ring focus:ring-rainmakers-200 focus:ring-opacity-50"
+                            className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                           />
-                          <span className="ml-2 text-sm text-gray-700">Whitelisted</span>
+                          <span className="ml-2 text-sm text-gray-300">Whitelisted</span>
                         </label>
                         <label className="flex items-center">
                           <input
                             type="checkbox"
                             checked={user.isAdmin}
                             onChange={(e) => handleUpdateUser(user.id, { isAdmin: e.target.checked })}
-                            className="rounded border-gray-300 text-rainmakers-600 shadow-sm focus:border-rainmakers-300 focus:ring focus:ring-rainmakers-200 focus:ring-opacity-50"
+                            className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                           />
-                          <span className="ml-2 text-sm text-gray-700">Admin</span>
+                          <span className="ml-2 text-sm text-gray-300">Admin</span>
                         </label>
                       </div>
                     </div>
@@ -783,32 +783,32 @@ export function AdminPage() {
 
       {activeTab === 'settings' && (
         <div className="space-y-6">
-          <div className="bg-white shadow rounded-lg">
+          <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              <h3 className="text-lg leading-6 font-medium text-white mb-4">
                 Integration Settings
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-300 mb-4">
                 Configure your integrations with GoHighLevel and Microsoft OneDrive.
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     GoHighLevel API Key *
                   </label>
                   <input
                     type="password"
-                    className="input max-w-md"
+                    className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your GHL API key"
                     value={ghlConfig.apiKey}
                     onChange={(e) => handleGHLConfigChange('apiKey', e.target.value)}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     {ghlConfig.apiKey ? '✅ Configuration loaded from Firebase' : 'Enter your API key to load available pipelines and stages'}
                   </p>
                   <button
                     type="button"
-                    className="btn btn-outline btn-sm mt-2"
+                    className="mt-2 px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
                     onClick={() => fetchPipelines()}
                     disabled={!ghlConfig.apiKey.trim()}
                   >
@@ -817,28 +817,28 @@ export function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     GHL v2 Private Integration Token (Optional)
                   </label>
                   <input
                     type="password"
-                    className="input max-w-md"
+                    className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your GHL v2 private integration token"
                     value={ghlConfig.v2Token}
                     onChange={(e) => handleGHLConfigChange('v2Token', e.target.value)}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Required for v2 API endpoints (appointments). Leave empty to use v1 API key as fallback.
                   </p>
                 </div>
 
                 {availablePipelines.length > 0 ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Select Pipeline
                     </label>
                     <select
-                      className="input max-w-md"
+                      className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={ghlConfig.pipelineId}
                       onChange={(e) => handlePipelineSelect(e.target.value)}
                     >
@@ -851,50 +851,50 @@ export function AdminPage() {
                     </select>
                   </div>
                 ) : ghlConfig.apiKey.trim() ? (
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-400">
                     No pipelines found. Click "Load Pipelines" to fetch from GHL.
                   </div>
                 ) : null}
 
                 {/* Location ID */}
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     GHL Location ID
                   </label>
                   <input
                     type="text"
-                    className="input max-w-md"
+                    className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your GHL location ID (e.g., 3rBmt1RsDH7fRyHrmAsN)"
                     value={ghlConfig.locationId}
                     onChange={(e) => handleGHLConfigChange('locationId', e.target.value)}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Required for appointment creation. You can find this in your GHL account settings.
                   </p>
                 </div>
 
                 {/* Assigned User ID */}
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     GHL Assigned User ID
                   </label>
                   <input
                     type="text"
-                    className="input max-w-md"
+                    className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="DjCMFUCmWHJ1NE3ZP4HL"
                     value={ghlConfig.assignedUserId}
                     onChange={(e) => handleGHLConfigChange('assignedUserId', e.target.value)}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     User ID who will be assigned to appointments. Defaults to DjCMFUCmWHJ1NE3ZP4HL if not set.
                   </p>
                 </div>
 
                 {selectedPipeline && (
-                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Pipeline: {selectedPipeline.name}</h4>
-                    <p className="text-sm text-blue-700 mb-3">Map your GHL pipeline stages to deal workflow stages:</p>
-                    <div className="text-xs text-blue-600 space-y-1">
+                  <div className="bg-blue-900/20 border border-blue-700 p-4 rounded-lg mb-4">
+                    <h4 className="font-medium text-blue-300 mb-2">Pipeline: {selectedPipeline.name}</h4>
+                    <p className="text-sm text-blue-200 mb-3">Map your GHL pipeline stages to deal workflow stages:</p>
+                    <div className="text-xs text-blue-300 space-y-1">
                       <div><strong>Pipeline ID:</strong> {selectedPipeline.id}</div>
                       <div><strong>Location ID:</strong> {selectedPipeline.locationId}</div>
                       <div><strong>Available Stages:</strong> {selectedPipeline.stages?.length || 0}</div>
@@ -905,11 +905,11 @@ export function AdminPage() {
                 {selectedPipeline?.stages && selectedPipeline.stages.length > 0 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
                         Initial Qualification Stage
                       </label>
                       <select
-                        className="input max-w-md"
+                        className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={ghlConfig.underReviewStageId}
                         onChange={(e) => handleStageSelect('underReviewStageId', e.target.value)}
                       >
@@ -923,11 +923,11 @@ export function AdminPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
                         Needs Analysis Stage
                       </label>
                       <select
-                        className="input max-w-md"
+                        className="w-full max-w-md px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={ghlConfig.inUnderwritingStageId}
                         onChange={(e) => handleStageSelect('inUnderwritingStageId', e.target.value)}
                       >
