@@ -167,10 +167,10 @@ export class FirebaseService {
       console.log('🔥 [FIREBASE] Creating deal with data:', dealData);
       
       const newDealRef = FirebaseService.dealsCollection.doc();
-      const now = Timestamp.now();
-      
+    const now = Timestamp.now();
+    
       // Filter out undefined values to prevent Firestore errors
-      const cleanDealData = Object.fromEntries(
+    const cleanDealData = Object.fromEntries(
         Object.entries(dealData).filter(([key, value]) => value !== undefined)
       );
       
@@ -179,9 +179,9 @@ export class FirebaseService {
       // Create deal with flexible structure - include all provided fields
       const newDeal = {
         id: newDealRef.id,
-        ...cleanDealData,
-        createdAt: now,
-        updatedAt: now,
+      ...cleanDealData,
+      createdAt: now,
+      updatedAt: now,
       };
       
       console.log('🔥 [FIREBASE] Deal to be saved:', newDeal);
@@ -256,10 +256,10 @@ export class FirebaseService {
     try {
       console.log('🔥 [FIREBASE] Getting all deals from deals collection...');
       
-      const dealsSnapshot = await db.collection('deals')
-        .orderBy('createdAt', 'desc')
-        .get();
-      
+    const dealsSnapshot = await db.collection('deals')
+      .orderBy('createdAt', 'desc')
+      .get();
+    
       console.log('🔥 [FIREBASE] Found total documents in deals collection:', dealsSnapshot.docs.length);
       
       const deals = dealsSnapshot.docs.map(doc => {
@@ -334,7 +334,7 @@ export class FirebaseService {
       console.log('🔧 [CONFIG] Getting configuration for key:', key);
       
       // Try configurations collection first (new structure)
-      const configDoc = await db.collection('configurations').doc(key).get();
+    const configDoc = await db.collection('configurations').doc(key).get();
       if (configDoc.exists) {
         const data = configDoc.data();
         console.log('🔧 [CONFIG] Found in configurations collection:', { key, hasValue: !!data?.value });
@@ -362,8 +362,8 @@ export class FirebaseService {
       console.log('🔧 [CONFIG] Setting configuration:', { key, hasValue: !!value, description });
       
       await db.collection('configurations').doc(key).set({
-        key,
-        value,
+      key,
+      value,
         description: description || '',
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
@@ -385,7 +385,7 @@ export class FirebaseService {
   }): Promise<void> {
     try {
       await db.collection('onedrive_tokens').add({
-        ...tokenData,
+      ...tokenData,
         createdAt: Timestamp.now()
       });
     } catch (error) {
@@ -402,10 +402,10 @@ export class FirebaseService {
   } | null> {
     try {
       const snapshot = await db.collection('onedrive_tokens')
-        .orderBy('createdAt', 'desc')
-        .limit(1)
-        .get();
-      
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+    
       if (snapshot.empty) {
         return null;
       }
