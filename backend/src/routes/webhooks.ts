@@ -71,9 +71,6 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Handle both opportunity object and direct fields from GHL webhook
     let opportunity = req.body.opportunity || req.body;
     
-    console.log('🔍 [GHL WEBHOOK] Full request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 [GHL WEBHOOK] Opportunity object:', JSON.stringify(opportunity, null, 2));
-    
     if (!opportunity || !opportunity.id) {
       console.log('❌ [GHL WEBHOOK] Invalid opportunity data received');
       return res.status(400).json({ error: 'Invalid opportunity data' });
@@ -109,16 +106,13 @@ router.post('/ghl', async (req: Request, res: Response) => {
     console.log('🔍 [GHL WEBHOOK] pipeline_stage:', opportunity.pipeline_stage);
     console.log('🔍 [GHL WEBHOOK] All opportunity fields:', Object.keys(opportunity));
     
-    // Check for stage field (note the typo in GHL field name: pipleline_stage)
-    const stageField = opportunity.pipleline_stage || opportunity.pipeline_stage;
-    
-    if (stageField) {
+    if (opportunity.pipleline_stage || opportunity.pipeline_stage) {
       try {
         console.log('🔄 [GHL WEBHOOK] Processing stage change for opportunity:', opportunity.id);
-        console.log('🔄 [GHL WEBHOOK] Received stage:', stageField);
+        console.log('🔄 [GHL WEBHOOK] Received stage:', opportunity.pipleline_stage || opportunity.pipeline_stage);
         
-        // Get the stage name from GHL webhook
-        const ghlStageName = stageField;
+        // Get the stage name from GHL webhook (note the typo in GHL field name)
+        const ghlStageName = opportunity.pipleline_stage || opportunity.pipeline_stage;
         const currentStage = deal.stage;
         const normalizedStage = mapGHLStageToSystemStage(ghlStageName);
         
@@ -126,14 +120,6 @@ router.post('/ghl', async (req: Request, res: Response) => {
         console.log('🔄 [GHL WEBHOOK] GHL stage name:', ghlStageName);
         console.log('🔄 [GHL WEBHOOK] Normalized stage:', normalizedStage);
         console.log('🔄 [GHL WEBHOOK] Stage changed?', currentStage !== normalizedStage);
-        console.log('🔄 [GHL WEBHOOK] Stage comparison details:', {
-          currentStage,
-          ghlStageName,
-          normalizedStage,
-          isEqual: currentStage === normalizedStage,
-          currentType: typeof currentStage,
-          normalizedType: typeof normalizedStage
-        });
         
         // Only update if stage actually changed
         if (currentStage !== normalizedStage) {
@@ -149,7 +135,6 @@ router.post('/ghl', async (req: Request, res: Response) => {
       }
     } else {
       console.log('⚠️ [GHL WEBHOOK] No stage field found in webhook data');
-      console.log('⚠️ [GHL WEBHOOK] Available fields:', Object.keys(opportunity));
     }
     
     // Also handle the old pipelineStageId method for backward compatibility
@@ -211,33 +196,18 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Update the deal in Firebase
     console.log('🔍 [GHL WEBHOOK] Updates to apply:', Object.keys(updates));
     console.log('🔍 [GHL WEBHOOK] Updates object:', JSON.stringify(updates, null, 2));
-    console.log('🔍 [GHL WEBHOOK] Deal ID to update:', deal.id);
-    console.log('🔍 [GHL WEBHOOK] Deal current stage:', deal.stage);
     
     if (Object.keys(updates).length > 0) {
       console.log('🔄 [GHL WEBHOOK] Updating deal with changes:', JSON.stringify(updates, null, 2));
       try {
-        console.log('🔄 [GHL WEBHOOK] Calling FirebaseService.updateDeal...');
-        const updateResult = await FirebaseService.updateDeal(deal.id, updates);
+        await FirebaseService.updateDeal(deal.id, updates);
         console.log('✅ [GHL WEBHOOK] Deal updated successfully in Firebase');
-        console.log('✅ [GHL WEBHOOK] Update result:', updateResult);
-        
-        // Verify the update by fetching the deal again
-        console.log('🔍 [GHL WEBHOOK] Verifying update by fetching deal again...');
-        const updatedDeal = await FirebaseService.getDealById(deal.id);
-        console.log('🔍 [GHL WEBHOOK] Updated deal stage:', updatedDeal?.stage);
-        
       } catch (error) {
         console.error('❌ [GHL WEBHOOK] Error updating deal in Firebase:', error);
-        if (error instanceof Error) {
-          console.error('❌ [GHL WEBHOOK] Error details:', error.message);
-          console.error('❌ [GHL WEBHOOK] Error stack:', error.stack);
-        }
         return res.status(500).json({ error: 'Failed to update deal in database' });
       }
     } else {
       console.log('ℹ️ [GHL WEBHOOK] No relevant changes to sync');
-      console.log('ℹ️ [GHL WEBHOOK] Updates object is empty:', updates);
     }
     
     res.json({ 
