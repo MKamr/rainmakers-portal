@@ -17,7 +17,7 @@ export function AdminPage() {
   const [selectedDeal, setSelectedDeal] = useState<any>(null)
   const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('list')
   
-  // GHL Configuration state
+  // GHL Configuration states
   const [ghlConfig, setGhlConfig] = useState({
     apiKey: '',
     v2Token: '',
