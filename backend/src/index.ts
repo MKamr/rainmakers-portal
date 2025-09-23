@@ -12,6 +12,7 @@ import userRoutes from './routes/user';
 import dealRoutes from './routes/deals';
 import documentRoutes from './routes/documents';
 import adminRoutes from './routes/admin';
+import webhookRoutes from './routes/webhooks';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -79,6 +80,8 @@ app.use(session({
 app.use('/api/auth', authRoutes);
 // Discord OAuth callback (separate route for browser redirect) - explicit mounting
 app.use('/auth', authRoutes);
+// Webhook routes (public, no authentication required)
+app.use('/api/webhooks', webhookRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
 app.use('/api/deals', authenticateToken, dealRoutes);
 app.use('/api/documents', authenticateToken, documentRoutes);
@@ -94,6 +97,7 @@ app.get('/', (req, res) => {
       health: '/api/health',
       auth: '/api/auth',
       authCallback: '/auth/discord/callback',
+      webhooks: '/api/webhooks',
       deals: '/api/deals',
       documents: '/api/documents',
       admin: '/api/admin'
