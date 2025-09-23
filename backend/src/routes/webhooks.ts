@@ -86,9 +86,15 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // First try to find by GHL opportunity ID
     let deal = deals.find(d => d.ghlOpportunityId === opportunity.id);
     
-    // If not found by ID, try to find by opportunity name (deal title)
+    // If not found by ID, try to find by opportunity name (dealId in Firebase)
     if (!deal && opportunity.name) {
-      console.log('🔍 [GHL WEBHOOK] Not found by ID, trying to find by name...');
+      console.log('🔍 [GHL WEBHOOK] Not found by ID, trying to find by dealId...');
+      deal = deals.find(d => d.dealId === opportunity.name);
+    }
+    
+    // If still not found, try to find by opportunity name (deal title)
+    if (!deal && opportunity.name) {
+      console.log('🔍 [GHL WEBHOOK] Not found by dealId, trying to find by title...');
       deal = deals.find(d => d.title === opportunity.name || d.title?.includes(opportunity.name));
     }
     
@@ -331,6 +337,7 @@ router.get('/diagnose', async (req: Request, res: Response) => {
     
     const dealInfo = deals.map(deal => ({
       id: deal.id,
+      dealId: deal.dealId,
       title: deal.title,
       stage: deal.stage,
       ghlOpportunityId: deal.ghlOpportunityId,

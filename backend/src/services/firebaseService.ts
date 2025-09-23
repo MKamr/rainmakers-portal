@@ -83,6 +83,7 @@ export interface Deal {
   propertyAddress?: string;
   propertyType?: string;
   dealType?: string;
+  dealId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
