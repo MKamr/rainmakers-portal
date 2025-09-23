@@ -71,6 +71,9 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Handle both opportunity object and direct fields from GHL webhook
     let opportunity = req.body.opportunity || req.body;
     
+    console.log('🔍 [GHL WEBHOOK] Full request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [GHL WEBHOOK] Opportunity object:', JSON.stringify(opportunity, null, 2));
+    
     if (!opportunity || !opportunity.id) {
       console.log('❌ [GHL WEBHOOK] Invalid opportunity data received');
       return res.status(400).json({ error: 'Invalid opportunity data' });
@@ -106,13 +109,16 @@ router.post('/ghl', async (req: Request, res: Response) => {
     console.log('🔍 [GHL WEBHOOK] pipeline_stage:', opportunity.pipeline_stage);
     console.log('🔍 [GHL WEBHOOK] All opportunity fields:', Object.keys(opportunity));
     
-    if (opportunity.pipleline_stage || opportunity.pipeline_stage) {
+    // Check for stage field (note the typo in GHL field name: pipleline_stage)
+    const stageField = opportunity.pipleline_stage || opportunity.pipeline_stage;
+    
+    if (stageField) {
       try {
         console.log('🔄 [GHL WEBHOOK] Processing stage change for opportunity:', opportunity.id);
-        console.log('🔄 [GHL WEBHOOK] Received stage:', opportunity.pipleline_stage || opportunity.pipeline_stage);
+        console.log('🔄 [GHL WEBHOOK] Received stage:', stageField);
         
-        // Get the stage name from GHL webhook (note the typo in GHL field name)
-        const ghlStageName = opportunity.pipleline_stage || opportunity.pipeline_stage;
+        // Get the stage name from GHL webhook
+        const ghlStageName = stageField;
         const currentStage = deal.stage;
         const normalizedStage = mapGHLStageToSystemStage(ghlStageName);
         
@@ -135,6 +141,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
       }
     } else {
       console.log('⚠️ [GHL WEBHOOK] No stage field found in webhook data');
+      console.log('⚠️ [GHL WEBHOOK] Available fields:', Object.keys(opportunity));
     }
     
     // Also handle the old pipelineStageId method for backward compatibility
