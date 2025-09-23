@@ -80,6 +80,9 @@ export interface Deal {
   ghlOpportunityId?: string;
   ghlContactId?: string;
   oneDriveFolderId?: string;
+  propertyAddress?: string;
+  propertyType?: string;
+  dealType?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

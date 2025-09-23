@@ -102,6 +102,51 @@ router.post('/ghl', async (req: Request, res: Response) => {
       });
     }
     
+    // If still not found, try to find by property address
+    if (!deal && opportunity.customFields) {
+      console.log('🔍 [GHL WEBHOOK] Not found by name, trying property address...');
+      const propertyAddress = opportunity.customFields['opportunity.property_address'] || 
+                             opportunity.customFields['property_address'] ||
+                             opportunity.propertyAddress;
+      
+      if (propertyAddress) {
+        console.log('🔍 [GHL WEBHOOK] Looking for property address:', propertyAddress);
+        deal = deals.find(d => {
+          if (!(d as any).propertyAddress) return false;
+          return (d as any).propertyAddress.toLowerCase().includes(propertyAddress.toLowerCase()) ||
+                 propertyAddress.toLowerCase().includes((d as any).propertyAddress.toLowerCase());
+        });
+      }
+    }
+    
+    // If still not found, try to find by any custom field that might contain address info
+    if (!deal && opportunity.customFields) {
+      console.log('🔍 [GHL WEBHOOK] Not found by property address, trying other custom fields...');
+      const customFields = opportunity.customFields;
+      
+      // Look for any field that might contain address information
+      const addressFields = Object.entries(customFields).find(([key, value]) => {
+        if (!value || typeof value !== 'string') return false;
+        const lowerValue = value.toLowerCase();
+        return lowerValue.includes('la, usa') || 
+               lowerValue.includes('pakistan') ||
+               lowerValue.includes('address') ||
+               lowerValue.includes('property');
+      });
+      
+      if (addressFields) {
+        const [fieldKey, fieldValue] = addressFields;
+        console.log('🔍 [GHL WEBHOOK] Found potential address field:', fieldKey, '=', fieldValue);
+        
+        // Try to find deal by this field value
+        deal = deals.find(d => {
+          if (!(d as any).propertyAddress) return false;
+          return (d as any).propertyAddress.toLowerCase().includes((fieldValue as string).toLowerCase()) ||
+                 (fieldValue as string).toLowerCase().includes((d as any).propertyAddress.toLowerCase());
+        });
+      }
+    }
+    
     if (!deal) {
       console.log('⚠️ [GHL WEBHOOK] No deal found with GHL opportunity ID:', opportunity.id);
       console.log('⚠️ [GHL WEBHOOK] No deal found with GHL opportunity name:', opportunity.name);
