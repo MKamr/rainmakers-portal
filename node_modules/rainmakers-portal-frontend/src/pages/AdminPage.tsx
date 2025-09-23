@@ -606,8 +606,8 @@ export function AdminPage() {
                 onClick={() => setDealsViewMode('list')}
                 className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   dealsViewMode === 'list' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
                 }`}
               >
                 <List className="h-4 w-4 mr-2" />
@@ -617,27 +617,27 @@ export function AdminPage() {
                 onClick={() => setDealsViewMode('stages')}
                 className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   dealsViewMode === 'stages' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
                 }`}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
                 Stage View
               </button>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-300">
               Showing {deals?.length || 0} deals
             </div>
           </div>
 
           {/* Deals Filters */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Filter Deals</h3>
+          <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
+            <h3 className="text-lg font-medium text-white mb-4">Filter Deals</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">User</label>
                 <select
-                  className="input"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={dealFilters.userId}
                   onChange={(e) => handleDealFilterChange('userId', e.target.value)}
                 >
@@ -651,9 +651,9 @@ export function AdminPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
                 <select
-                  className="input"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={dealFilters.status}
                   onChange={(e) => handleDealFilterChange('status', e.target.value)}
                 >
@@ -666,9 +666,9 @@ export function AdminPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Property Type</label>
                 <select
-                  className="input"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={dealFilters.propertyType}
                   onChange={(e) => handleDealFilterChange('propertyType', e.target.value)}
                 >
@@ -681,20 +681,20 @@ export function AdminPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
                 <input
                   type="date"
-                  className="input"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={dealFilters.startDate}
                   onChange={(e) => handleDealFilterChange('startDate', e.target.value)}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
                 <input
                   type="date"
-                  className="input"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={dealFilters.endDate}
                   onChange={(e) => handleDealFilterChange('endDate', e.target.value)}
                 />
@@ -704,7 +704,7 @@ export function AdminPage() {
             <div className="mt-4 flex justify-between">
               <button
                 onClick={clearDealFilters}
-                className="btn btn-outline btn-sm"
+                className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 Clear Filters
               </button>
@@ -714,45 +714,45 @@ export function AdminPage() {
           {/* Deals Content */}
           {dealsViewMode === 'list' ? (
             /* Deals List View */
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
+            <div className="bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-700">
+              <ul className="divide-y divide-gray-700">
                 {deals?.map((deal) => (
                   <li key={deal.id}>
                     <div className="px-4 py-4 sm:px-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-rainmakers-600 truncate">
+                            <p className="text-sm font-medium text-blue-400 truncate">
                               {deal.dealId}
                             </p>
                             <div className="flex space-x-2">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                deal.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                                deal.status === 'In Underwriting' ? 'bg-blue-100 text-blue-800' :
-                                deal.status === 'LOE Sent' ? 'bg-purple-100 text-purple-800' :
-                                deal.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
+                                deal.status === 'Under Review' ? 'bg-yellow-900 text-yellow-200' :
+                                deal.status === 'In Underwriting' ? 'bg-blue-900 text-blue-200' :
+                                deal.status === 'LOE Sent' ? 'bg-purple-900 text-purple-200' :
+                                deal.status === 'Closed' ? 'bg-green-900 text-green-200' :
+                                'bg-gray-700 text-gray-300'
                               }`}>
                                 {deal.status}
                               </span>
-                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">
+                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-900 text-indigo-200">
                                 {deal.stage || 'Qualification'}
                               </span>
                             </div>
                           </div>
                           <div className="mt-1">
-                            <p className="text-lg font-medium text-gray-900 truncate">
+                            <p className="text-lg font-medium text-white truncate">
                               {deal.propertyName}
                             </p>
-                            <p className="text-sm text-gray-500 truncate">
+                            <p className="text-sm text-gray-400 truncate">
                               {deal.propertyAddress}
                             </p>
                           </div>
-                          <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                          <div className="mt-2 flex items-center justify-between text-sm text-gray-400">
                             <span>
                               {safeFormatDate(deal.createdAt, 'MMM d, yyyy')}
                             </span>
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                            <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
                               Created by: {users?.find(u => u.id === deal.userId)?.name || users?.find(u => u.id === deal.userId)?.email || 'Unknown User'}
                             </span>
                           </div>
@@ -760,7 +760,7 @@ export function AdminPage() {
                         <div className="ml-4 flex-shrink-0">
                           <button
                             onClick={() => setSelectedDeal(deal)}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-3 py-2 border border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             Details
@@ -774,7 +774,7 @@ export function AdminPage() {
             </div>
           ) : (
             /* Stage View */
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
               <StageView deals={deals || []} />
             </div>
           )}
