@@ -13,7 +13,8 @@ router.get('/', (req: Request, res: Response) => {
       'GET /api/webhooks/',
       'GET /api/webhooks/test',
       'POST /api/webhooks/test', 
-      'POST /api/webhooks/ghl'
+      'POST /api/webhooks/ghl',
+      'GET /api/webhooks/diagnose'
     ]
   });
 });
@@ -76,29 +77,61 @@ router.post('/ghl', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid opportunity data' });
     }
     
-    // Find the deal by GHL opportunity ID
+    // Find the deal by GHL opportunity ID, or by opportunity name if ID doesn't match
     const deals = await FirebaseService.getAllDeals();
     console.log('🔍 [GHL WEBHOOK] Total deals in database:', deals.length);
     console.log('🔍 [GHL WEBHOOK] Looking for opportunity ID:', opportunity.id);
-    console.log('🔍 [GHL WEBHOOK] Available GHL opportunity IDs:', deals.map(d => d.ghlOpportunityId).filter(Boolean));
+    console.log('🔍 [GHL WEBHOOK] Looking for opportunity name:', opportunity.name);
     
-    const deal = deals.find(d => d.ghlOpportunityId === opportunity.id);
+    // First try to find by GHL opportunity ID
+    let deal = deals.find(d => d.ghlOpportunityId === opportunity.id);
+    
+    // If not found by ID, try to find by opportunity name (deal title)
+    if (!deal && opportunity.name) {
+      console.log('🔍 [GHL WEBHOOK] Not found by ID, trying to find by name...');
+      deal = deals.find(d => d.title === opportunity.name || d.title?.includes(opportunity.name));
+    }
+    
+    // If still not found, try to find by partial name match
+    if (!deal && opportunity.name) {
+      console.log('🔍 [GHL WEBHOOK] Not found by exact name, trying partial match...');
+      deal = deals.find(d => {
+        if (!d.title || !opportunity.name) return false;
+        return d.title.toLowerCase().includes(opportunity.name.toLowerCase()) || 
+               opportunity.name.toLowerCase().includes(d.title.toLowerCase());
+      });
+    }
     
     if (!deal) {
       console.log('⚠️ [GHL WEBHOOK] No deal found with GHL opportunity ID:', opportunity.id);
-      console.log('⚠️ [GHL WEBHOOK] Available deals with GHL IDs:', deals.filter(d => d.ghlOpportunityId).map(d => ({ id: d.id, ghlId: d.ghlOpportunityId })));
-      return res.status(404).json({ error: 'Deal not found' });
+      console.log('⚠️ [GHL WEBHOOK] No deal found with GHL opportunity name:', opportunity.name);
+      console.log('⚠️ [GHL WEBHOOK] Available deals:', deals.map(d => ({ id: d.id, title: d.title, ghlId: d.ghlOpportunityId })));
+      
+      // Return success to prevent GHL from retrying, but log the issue
+      return res.json({ 
+        success: true, 
+        message: 'Webhook received but no matching deal found',
+        note: 'This GHL opportunity was not found in our portal',
+        opportunityId: opportunity.id,
+        opportunityName: opportunity.name
+      });
     }
     
-    console.log('✅ [GHL WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
+    console.log('✅ [GHL WEBHOOK] Found deal:', deal.id, 'Title:', deal.title, 'Current stage:', deal.stage);
     
     // Prepare updates from GHL opportunity
     const updates: any = {};
     
     // Update basic fields
-    if (opportunity.name) updates.opportunityName = opportunity.name;
+    if (opportunity.name) updates.title = opportunity.name;
     if (opportunity.status) updates.status = opportunity.status;
     if (opportunity.pipelineId) updates.pipeline = opportunity.pipelineId;
+    
+    // Update GHL opportunity ID if not already set
+    if (!deal.ghlOpportunityId && opportunity.id) {
+      updates.ghlOpportunityId = opportunity.id;
+      console.log('🔗 [GHL WEBHOOK] Setting GHL opportunity ID:', opportunity.id);
+    }
     
     // Handle stage changes - GHL sends stage name directly in the webhook
     console.log('🔍 [GHL WEBHOOK] Checking for stage fields...');
@@ -243,6 +276,42 @@ router.post('/test', (req: Request, res: Response) => {
     path: req.path,
     body: req.body
   });
+});
+
+// Diagnostic endpoint to check deals and their GHL IDs
+router.get('/diagnose', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [DIAGNOSE] Getting all deals for diagnosis...');
+    const deals = await FirebaseService.getAllDeals();
+    
+    const dealInfo = deals.map(deal => ({
+      id: deal.id,
+      title: deal.title,
+      stage: deal.stage,
+      ghlOpportunityId: deal.ghlOpportunityId,
+      ghlContactId: deal.ghlContactId,
+      createdAt: deal.createdAt?.toDate?.() || deal.createdAt,
+      hasGhlId: !!deal.ghlOpportunityId
+    }));
+    
+    const dealsWithGhl = deals.filter(d => d.ghlOpportunityId);
+    const dealsWithoutGhl = deals.filter(d => !d.ghlOpportunityId);
+    
+    res.json({
+      message: 'Deal diagnosis completed',
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalDeals: deals.length,
+        dealsWithGhlId: dealsWithGhl.length,
+        dealsWithoutGhlId: dealsWithoutGhl.length
+      },
+      allDeals: dealInfo,
+      ghlOpportunityIds: dealsWithGhl.map(d => d.ghlOpportunityId).filter(Boolean)
+    });
+  } catch (error) {
+    console.error('❌ [DIAGNOSE] Error getting deals:', error);
+    res.status(500).json({ error: 'Failed to get deals for diagnosis' });
+  }
 });
 
 export default router;
