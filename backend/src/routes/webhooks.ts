@@ -78,14 +78,19 @@ router.post('/ghl', async (req: Request, res: Response) => {
     
     // Find the deal by GHL opportunity ID
     const deals = await FirebaseService.getAllDeals();
+    console.log('🔍 [GHL WEBHOOK] Total deals in database:', deals.length);
+    console.log('🔍 [GHL WEBHOOK] Looking for opportunity ID:', opportunity.id);
+    console.log('🔍 [GHL WEBHOOK] Available GHL opportunity IDs:', deals.map(d => d.ghlOpportunityId).filter(Boolean));
+    
     const deal = deals.find(d => d.ghlOpportunityId === opportunity.id);
     
     if (!deal) {
       console.log('⚠️ [GHL WEBHOOK] No deal found with GHL opportunity ID:', opportunity.id);
+      console.log('⚠️ [GHL WEBHOOK] Available deals with GHL IDs:', deals.filter(d => d.ghlOpportunityId).map(d => ({ id: d.id, ghlId: d.ghlOpportunityId })));
       return res.status(404).json({ error: 'Deal not found' });
     }
     
-    console.log('✅ [GHL WEBHOOK] Found deal:', deal.id);
+    console.log('✅ [GHL WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
     
     // Prepare updates from GHL opportunity
     const updates: any = {};
@@ -96,6 +101,11 @@ router.post('/ghl', async (req: Request, res: Response) => {
     if (opportunity.pipelineId) updates.pipeline = opportunity.pipelineId;
     
     // Handle stage changes - GHL sends stage name directly in the webhook
+    console.log('🔍 [GHL WEBHOOK] Checking for stage fields...');
+    console.log('🔍 [GHL WEBHOOK] pipleline_stage:', opportunity.pipleline_stage);
+    console.log('🔍 [GHL WEBHOOK] pipeline_stage:', opportunity.pipeline_stage);
+    console.log('🔍 [GHL WEBHOOK] All opportunity fields:', Object.keys(opportunity));
+    
     if (opportunity.pipleline_stage || opportunity.pipeline_stage) {
       try {
         console.log('🔄 [GHL WEBHOOK] Processing stage change for opportunity:', opportunity.id);
@@ -105,6 +115,11 @@ router.post('/ghl', async (req: Request, res: Response) => {
         const ghlStageName = opportunity.pipleline_stage || opportunity.pipeline_stage;
         const currentStage = deal.stage;
         const normalizedStage = mapGHLStageToSystemStage(ghlStageName);
+        
+        console.log('🔄 [GHL WEBHOOK] Current deal stage:', currentStage);
+        console.log('🔄 [GHL WEBHOOK] GHL stage name:', ghlStageName);
+        console.log('🔄 [GHL WEBHOOK] Normalized stage:', normalizedStage);
+        console.log('🔄 [GHL WEBHOOK] Stage changed?', currentStage !== normalizedStage);
         
         // Only update if stage actually changed
         if (currentStage !== normalizedStage) {
@@ -118,6 +133,8 @@ router.post('/ghl', async (req: Request, res: Response) => {
       } catch (error) {
         console.error('❌ [GHL WEBHOOK] Error processing stage change:', error);
       }
+    } else {
+      console.log('⚠️ [GHL WEBHOOK] No stage field found in webhook data');
     }
     
     // Also handle the old pipelineStageId method for backward compatibility
@@ -177,15 +194,29 @@ router.post('/ghl', async (req: Request, res: Response) => {
     }
     
     // Update the deal in Firebase
+    console.log('🔍 [GHL WEBHOOK] Updates to apply:', Object.keys(updates));
+    console.log('🔍 [GHL WEBHOOK] Updates object:', JSON.stringify(updates, null, 2));
+    
     if (Object.keys(updates).length > 0) {
       console.log('🔄 [GHL WEBHOOK] Updating deal with changes:', JSON.stringify(updates, null, 2));
-      await FirebaseService.updateDeal(deal.id, updates);
-      console.log('✅ [GHL WEBHOOK] Deal updated successfully');
+      try {
+        await FirebaseService.updateDeal(deal.id, updates);
+        console.log('✅ [GHL WEBHOOK] Deal updated successfully in Firebase');
+      } catch (error) {
+        console.error('❌ [GHL WEBHOOK] Error updating deal in Firebase:', error);
+        return res.status(500).json({ error: 'Failed to update deal in database' });
+      }
     } else {
       console.log('ℹ️ [GHL WEBHOOK] No relevant changes to sync');
     }
     
-    res.json({ success: true, message: 'Deal updated successfully' });
+    res.json({ 
+      success: true, 
+      message: 'Deal updated successfully',
+      dealId: deal.id,
+      updates: updates,
+      stageChanged: updates.stage ? true : false
+    });
   } catch (error) {
     console.error('❌ [GHL WEBHOOK] Error processing webhook:', error);
     res.status(500).json({ error: 'Failed to process webhook' });
