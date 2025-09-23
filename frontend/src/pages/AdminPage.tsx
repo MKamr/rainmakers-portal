@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy } from 'lucide-react'
+import { DealDetailsModal } from '../components/DealDetailsModal'
+import { StageView } from '../components/StageView'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 
@@ -10,6 +12,10 @@ import { safeFormatDate } from '../utils/dateUtils'
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const queryClient = useQueryClient()
+  
+  // Deal details modal state
+  const [selectedDeal, setSelectedDeal] = useState<any>(null)
+  const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('list')
   
   // GHL Configuration state
   const [ghlConfig, setGhlConfig] = useState({
@@ -141,15 +147,6 @@ export function AdminPage() {
     }
   })
 
-  const testContactMutation = useMutation(adminAPI.testGHLContact, {
-    onSuccess: (data) => {
-      toast.success(`Contact created successfully! ID: ${data.contact.id}`)
-    },
-    onError: (error: any) => {
-      console.error('Contact creation failed:', error)
-      toast.error(`Failed to create contact: ${error?.response?.data?.error || error.message || 'Unknown error'}`)
-    }
-  })
 
   const fetchCustomFieldsMutation = useMutation(adminAPI.fetchGHLCustomFields, {
     onSuccess: (data) => {
@@ -279,16 +276,6 @@ export function AdminPage() {
     window.location.href = authUrl
   }
 
-  const handleTestContactCreation = async () => {
-    const testData = {
-      firstName: 'Test',
-      lastName: 'Contact',
-      email: 'test@example.com',
-      phone: '1234567890'
-    }
-    
-    await testContactMutation.mutateAsync(testData)
-  }
 
   const handleFetchCustomFields = async () => {
     await fetchCustomFieldsMutation.mutateAsync()
@@ -612,22 +599,34 @@ export function AdminPage() {
 
       {activeTab === 'deals' && (
         <div className="space-y-4">
-          {/* Test Contact Creation Button */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-blue-900">Test GHL Contact Creation</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  Test creating a contact in GoHighLevel to verify the integration is working.
-                </p>
-              </div>
+          {/* View Toggle and Filters Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
               <button
-                onClick={handleTestContactCreation}
-                disabled={testContactMutation.isLoading}
-                className="btn btn-primary btn-sm"
+                onClick={() => setDealsViewMode('list')}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  dealsViewMode === 'list' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
-                {testContactMutation.isLoading ? 'Creating...' : 'Test Contact Creation'}
+                <List className="h-4 w-4 mr-2" />
+                List View
               </button>
+              <button
+                onClick={() => setDealsViewMode('stages')}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  dealsViewMode === 'stages' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Grid3X3 className="h-4 w-4 mr-2" />
+                Stage View
+              </button>
+            </div>
+            <div className="text-sm text-gray-500">
+              Showing {deals?.length || 0} deals
             </div>
           </div>
 
@@ -709,59 +708,76 @@ export function AdminPage() {
               >
                 Clear Filters
               </button>
-              <div className="text-sm text-gray-500">
-                Showing {deals?.length || 0} deals
-              </div>
             </div>
           </div>
 
-          {/* Deals List */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {deals?.map((deal) => (
-                <li key={deal.id}>
-                  <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-rainmakers-600 truncate">
-                            {deal.dealId}
-                          </p>
-                          <div className="flex space-x-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              deal.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                              deal.status === 'In Underwriting' ? 'bg-blue-100 text-blue-800' :
-                              deal.status === 'LOE Sent' ? 'bg-purple-100 text-purple-800' :
-                              deal.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {deal.status}
+          {/* Deals Content */}
+          {dealsViewMode === 'list' ? (
+            /* Deals List View */
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <ul className="divide-y divide-gray-200">
+                {deals?.map((deal) => (
+                  <li key={deal.id}>
+                    <div className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-rainmakers-600 truncate">
+                              {deal.dealId}
+                            </p>
+                            <div className="flex space-x-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                deal.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                                deal.status === 'In Underwriting' ? 'bg-blue-100 text-blue-800' :
+                                deal.status === 'LOE Sent' ? 'bg-purple-100 text-purple-800' :
+                                deal.status === 'Closed' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {deal.status}
+                              </span>
+                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">
+                                {deal.stage || 'Qualification'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-1">
+                            <p className="text-lg font-medium text-gray-900 truncate">
+                              {deal.propertyName}
+                            </p>
+                            <p className="text-sm text-gray-500 truncate">
+                              {deal.propertyAddress}
+                            </p>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                            <span>
+                              {safeFormatDate(deal.createdAt, 'MMM d, yyyy')}
                             </span>
-                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">
-                              {deal.stage || 'Qualification'}
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                              Created by: {users?.find(u => u.id === deal.userId)?.name || users?.find(u => u.id === deal.userId)?.email || 'Unknown User'}
                             </span>
                           </div>
                         </div>
-                        <div className="mt-1">
-                          <p className="text-lg font-medium text-gray-900 truncate">
-                            {deal.propertyName}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate">
-                            {deal.propertyAddress}
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <span>
-                            {safeFormatDate(deal.createdAt, 'MMM d, yyyy')}
-                          </span>
+                        <div className="ml-4 flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedDeal(deal)}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Details
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            /* Stage View */
+            <div className="bg-white shadow rounded-lg">
+              <StageView deals={deals || []} />
+            </div>
+          )}
         </div>
       )}
 
@@ -1174,6 +1190,13 @@ export function AdminPage() {
         </div>
       )}
       
+      {/* Deal Details Modal */}
+      {selectedDeal && (
+        <DealDetailsModal
+          deal={selectedDeal}
+          onClose={() => setSelectedDeal(null)}
+        />
+      )}
     </div>
   )
 }
