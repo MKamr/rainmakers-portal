@@ -126,6 +126,14 @@ router.post('/ghl', async (req: Request, res: Response) => {
         console.log('🔄 [GHL WEBHOOK] GHL stage name:', ghlStageName);
         console.log('🔄 [GHL WEBHOOK] Normalized stage:', normalizedStage);
         console.log('🔄 [GHL WEBHOOK] Stage changed?', currentStage !== normalizedStage);
+        console.log('🔄 [GHL WEBHOOK] Stage comparison details:', {
+          currentStage,
+          ghlStageName,
+          normalizedStage,
+          isEqual: currentStage === normalizedStage,
+          currentType: typeof currentStage,
+          normalizedType: typeof normalizedStage
+        });
         
         // Only update if stage actually changed
         if (currentStage !== normalizedStage) {
@@ -203,18 +211,33 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Update the deal in Firebase
     console.log('🔍 [GHL WEBHOOK] Updates to apply:', Object.keys(updates));
     console.log('🔍 [GHL WEBHOOK] Updates object:', JSON.stringify(updates, null, 2));
+    console.log('🔍 [GHL WEBHOOK] Deal ID to update:', deal.id);
+    console.log('🔍 [GHL WEBHOOK] Deal current stage:', deal.stage);
     
     if (Object.keys(updates).length > 0) {
       console.log('🔄 [GHL WEBHOOK] Updating deal with changes:', JSON.stringify(updates, null, 2));
       try {
-        await FirebaseService.updateDeal(deal.id, updates);
+        console.log('🔄 [GHL WEBHOOK] Calling FirebaseService.updateDeal...');
+        const updateResult = await FirebaseService.updateDeal(deal.id, updates);
         console.log('✅ [GHL WEBHOOK] Deal updated successfully in Firebase');
+        console.log('✅ [GHL WEBHOOK] Update result:', updateResult);
+        
+        // Verify the update by fetching the deal again
+        console.log('🔍 [GHL WEBHOOK] Verifying update by fetching deal again...');
+        const updatedDeal = await FirebaseService.getDealById(deal.id);
+        console.log('🔍 [GHL WEBHOOK] Updated deal stage:', updatedDeal?.stage);
+        
       } catch (error) {
         console.error('❌ [GHL WEBHOOK] Error updating deal in Firebase:', error);
+        if (error instanceof Error) {
+          console.error('❌ [GHL WEBHOOK] Error details:', error.message);
+          console.error('❌ [GHL WEBHOOK] Error stack:', error.stack);
+        }
         return res.status(500).json({ error: 'Failed to update deal in database' });
       }
     } else {
       console.log('ℹ️ [GHL WEBHOOK] No relevant changes to sync');
+      console.log('ℹ️ [GHL WEBHOOK] Updates object is empty:', updates);
     }
     
     res.json({ 
