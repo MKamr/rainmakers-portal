@@ -168,15 +168,104 @@ router.get('/test', (req: Request, res: Response) => {
 });
 
 // Test webhook endpoint (POST) - for GHL testing
-router.post('/test', (req: Request, res: Response) => {
-  console.log('🧪 [TEST WEBHOOK] Received POST request:', JSON.stringify(req.body, null, 2));
-  res.json({ 
-    message: 'Webhook POST endpoint is working!', 
-    timestamp: new Date().toISOString(),
-    method: req.method,
-    path: req.path,
-    body: req.body
-  });
+router.post('/test', async (req: Request, res: Response) => {
+  try {
+    console.log('🧪 [TEST WEBHOOK] Received POST request:', JSON.stringify(req.body, null, 2));
+    
+    // Get the opportunity data from the webhook
+    let opportunity = req.body.opportunity || req.body;
+    
+    if (!opportunity) {
+      console.log('❌ [TEST WEBHOOK] No opportunity data received');
+      return res.status(400).json({ error: 'No opportunity data received' });
+    }
+    
+    // Get all deals and find the matching one
+    const deals = await FirebaseService.getAllDeals();
+    console.log('🔍 [TEST WEBHOOK] Looking for deal with opportunity name:', opportunity.opportunity_name);
+    console.log('🔍 [TEST WEBHOOK] Available dealIds in database:', deals.map(d => d.dealId).filter(Boolean));
+    
+    // Find deal by opportunity name (dealId in Firebase)
+    const deal = deals.find(d => d.dealId === opportunity.opportunity_name);
+    
+    if (!deal) {
+      console.log('⚠️ [TEST WEBHOOK] No deal found with opportunity name:', opportunity.opportunity_name);
+      console.log('⚠️ [TEST WEBHOOK] Available deals:', deals.map(d => ({ id: d.id, dealId: d.dealId, title: d.title })));
+      return res.json({ 
+        success: true, 
+        message: 'Webhook received but no matching deal found',
+        opportunityName: opportunity.opportunity_name,
+        availableDealIds: deals.map(d => d.dealId).filter(Boolean),
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: req.path,
+        body: req.body
+      });
+    }
+    
+    console.log('✅ [TEST WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
+    
+    // Prepare updates from GHL opportunity
+    const updates: any = {};
+    
+    // Update GHL opportunity ID if not already set
+    if (!deal.ghlOpportunityId && opportunity.id) {
+      updates.ghlOpportunityId = opportunity.id;
+    }
+    
+    // Handle stage changes
+    const stageField = opportunity.pipleline_stage || opportunity.pipeline_stage;
+    if (stageField) {
+      const ghlStageName = stageField;
+      const currentStage = deal.stage;
+      const normalizedStage = mapGHLStageToSystemStage(ghlStageName);
+      
+      if (currentStage !== normalizedStage) {
+        updates.stage = normalizedStage;
+        updates.stageLastUpdated = new Date().toISOString();
+        console.log('🎯 [TEST WEBHOOK] Stage changed from:', currentStage, 'to:', normalizedStage);
+      }
+    }
+    
+    // Update other fields from GHL data
+    if (opportunity.monetaryValue) updates.opportunityValue = opportunity.monetaryValue;
+    if (opportunity.assignedTo) updates.owner = opportunity.assignedTo;
+    if (opportunity.source) updates.opportunitySource = opportunity.source;
+    if (opportunity.lostReason) updates.lostReason = opportunity.lostReason;
+    
+    // Handle custom fields if they exist
+    if (opportunity.customFields) {
+      const customFields = opportunity.customFields;
+      if (customFields['opportunity.deal_type']) updates.dealType = customFields['opportunity.deal_type'];
+      if (customFields['opportunity.property_type']) updates.propertyType = customFields['opportunity.property_type'];
+      if (customFields['opportunity.property_address']) updates.propertyAddress = customFields['opportunity.property_address'];
+      if (customFields['opportunity.property_vintage']) updates.propertyVintage = customFields['opportunity.property_vintage'];
+      if (customFields['opportunity.sponsor_net_worth']) updates.sponsorNetWorth = customFields['opportunity.sponsor_net_worth'];
+      if (customFields['opportunity.sponsor_liquidity']) updates.sponsorLiquidity = customFields['opportunity.sponsor_liquidity'];
+      if (customFields['opportunity.loan_request']) updates.loanRequest = customFields['opportunity.loan_request'];
+      if (customFields['opportunity.additional_information']) updates.additionalInformation = customFields['opportunity.additional_information'];
+    }
+    
+    // Update the deal in Firebase
+    if (Object.keys(updates).length > 0) {
+      await FirebaseService.updateDeal(deal.id, updates);
+      console.log('✅ [TEST WEBHOOK] Deal updated successfully');
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Deal updated successfully',
+      dealId: deal.id,
+      updates: updates,
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      path: req.path,
+      body: req.body
+    });
+  } catch (error) {
+    console.error('❌ [TEST WEBHOOK] Error processing webhook:', error);
+    res.status(500).json({ error: 'Failed to process webhook' });
+  }
 });
 
 // Diagnostic endpoint to check deals and their GHL IDs
