@@ -15,6 +15,7 @@ interface CreateDealModalProps {
 export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createdDealId, setCreatedDealId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details')
   const { user } = useAuth()
 
   const { register, handleSubmit, formState: { errors } } = useForm<{
@@ -36,6 +37,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
     onSuccess: (deal) => {
       toast.success('Deal created successfully')
       setCreatedDealId(deal.id)
+      setActiveTab('documents') // Switch to documents tab after creation
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to create deal')
@@ -93,12 +95,8 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <Sparkles className="h-6 w-6 text-yellow-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    {createdDealId ? '📄 Upload Documents' : '🚀 Launch New Deal'}
-                  </h3>
-                  <p className="text-sm text-gray-300">
-                    {createdDealId ? 'Add documents to your new deal' : 'Create your next investment opportunity'}
-                  </p>
+                  <h3 className="text-xl font-bold text-white">🚀 Create New Deal</h3>
+                  <p className="text-sm text-gray-300">Create your next investment opportunity</p>
                 </div>
               </div>
               <button 
@@ -111,44 +109,46 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
             </div>
           </div>
 
-          {/* Content */}
-          <div className="px-8 py-6">
-            {createdDealId ? (
-              <div className="space-y-6">
-                <div className="text-center py-4">
-                  <div className="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Deal created successfully!
-                  </div>
+          {/* Tabs */}
+          <div className="border-b border-gray-600">
+            <nav className="flex space-x-8 px-8">
+              <button
+                type="button"
+                onClick={() => setActiveTab('details')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'details'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Deal Details</span>
                 </div>
-                
-                <DocumentUpload 
-                  dealId={createdDealId} 
-                  onUploadSuccess={handleDocumentUploadSuccess}
-                />
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
-                  >
-                    Skip for now
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDocumentUploadSuccess}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-                  >
-                    Done
-                  </button>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('documents')}
+                disabled={!createdDealId}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'documents'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                } ${!createdDealId ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Documents</span>
                 </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit(onSubmit)}>
+              </button>
+            </nav>
+          </div>
 
-            {/* Form Content */}
-            <div className="p-8 space-y-8">
+          {/* Tab Content */}
+          {activeTab === 'details' ? (
+            <form onSubmit={handleSubmit(onSubmit)}>
+              {/* Form Content */}
+              <div className="p-8 space-y-8">
               {/* Client Information Section */}
               <div className="space-y-6">
                 <div className="flex items-center space-x-3 pb-2 border-b border-gray-600">
@@ -425,9 +425,51 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                 </div>
               </div>
             </div>
-              </form>
-            )}
-          </div>
+            </form>
+          ) : (
+            <div className="p-8">
+              {createdDealId ? (
+                <div className="space-y-6">
+                  <div className="text-center py-4">
+                    <div className="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Deal created successfully! Now you can upload documents.
+                    </div>
+                  </div>
+                  
+                  <DocumentUpload 
+                    dealId={createdDealId} 
+                    onUploadSuccess={handleDocumentUploadSuccess}
+                  />
+                  
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                    >
+                      Skip for now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDocumentUploadSuccess}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <FileText className="h-12 w-12 mx-auto mb-4" />
+                    <p className="text-lg">Create the deal first to upload documents</p>
+                    <p className="text-sm">Fill out the deal details and click "Launch Deal" to proceed</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
