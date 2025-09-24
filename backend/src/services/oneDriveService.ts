@@ -32,6 +32,10 @@ export class OneDriveService {
 
   private static async refreshAccessToken(refreshToken: string): Promise<string> {
     try {
+      console.log('🔄 [TOKEN] Refreshing OneDrive token...');
+      console.log('🔄 [TOKEN] Client ID:', process.env.MICROSOFT_CLIENT_ID ? 'Set' : 'Not set');
+      console.log('🔄 [TOKEN] Client Secret:', process.env.MICROSOFT_CLIENT_SECRET ? 'Set' : 'Not set');
+      
       // Microsoft expects form data, not JSON
       const formData = new URLSearchParams();
       formData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
