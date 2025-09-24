@@ -247,13 +247,18 @@ router.get('/deals', async (req: Request, res: Response) => {
   }
 });
 
-// Connect OneDrive
-router.post('/onedrive/connect', async (req: Request, res: Response) => {
+// OneDrive OAuth callback (public route)
+router.get('/onedrive/callback', async (req: Request, res: Response) => {
   try {
-    const { code } = req.body;
+    const { code, error } = req.query;
+
+    if (error) {
+      console.error('OneDrive OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
+    }
 
     if (!code) {
-      return res.status(400).json({ error: 'Authorization code required' });
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
     }
 
     // Exchange code for tokens
@@ -283,16 +288,14 @@ router.post('/onedrive/connect', async (req: Request, res: Response) => {
       }
     });
 
-    res.json({
-      message: 'OneDrive connected successfully',
-      user: {
-        email: userResponse.data.mail || userResponse.data.userPrincipalName,
-        name: userResponse.data.displayName
-      }
-    });
+    // Redirect back to admin page with success
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_success=true&user=${encodeURIComponent(JSON.stringify({
+      email: userResponse.data.mail || userResponse.data.userPrincipalName,
+      name: userResponse.data.displayName
+    }))}`);
   } catch (error) {
-    console.error('OneDrive connection error:', error);
-    res.status(500).json({ error: 'Failed to connect OneDrive' });
+    console.error('OneDrive callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=connection_failed`);
   }
 });
 

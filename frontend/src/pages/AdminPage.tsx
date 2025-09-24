@@ -11,6 +11,23 @@ import { safeFormatDate } from '../utils/dateUtils'
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState('overview')
+  
+  // Handle OneDrive callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const onedriveSuccess = urlParams.get('onedrive_success')
+    const onedriveError = urlParams.get('onedrive_error')
+    
+    if (onedriveSuccess === 'true') {
+      toast.success('OneDrive connected successfully!')
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (onedriveError) {
+      toast.error(`OneDrive connection failed: ${onedriveError}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
   const queryClient = useQueryClient()
   
   // Deal details modal state
@@ -270,7 +287,7 @@ export function AdminPage() {
 
   const handleOneDriveConnect = () => {
     const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
-    const redirectUri = encodeURIComponent(window.location.origin + '/admin')
+    const redirectUri = encodeURIComponent('https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback')
     const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
     const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`
     window.location.href = authUrl

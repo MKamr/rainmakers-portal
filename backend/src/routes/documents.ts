@@ -44,8 +44,9 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Deal not found' });
     }
 
-    // Return empty array - documents are not stored in Firebase
-    res.json([]);
+    // Get documents from OneDrive
+    const documents = await OneDriveService.getDealFiles(dealId);
+    res.json(documents);
   } catch (error) {
     console.error('Get documents error:', error);
     res.status(500).json({ error: 'Failed to fetch documents' });
@@ -75,11 +76,26 @@ router.post('/upload', upload.single('file'), [
       return res.status(404).json({ error: 'Deal not found' });
     }
 
-    // Document upload is disabled - return success message
-    res.status(201).json({ 
-      message: 'Document upload is currently disabled',
+    // Upload to OneDrive
+    const oneDriveFile = await OneDriveService.uploadFile(
       dealId,
-      filename: req.file.originalname
+      req.file.originalname,
+      req.file.buffer,
+      req.file.mimetype
+    );
+
+    res.status(201).json({
+      message: 'Document uploaded successfully',
+      file: {
+        id: oneDriveFile.id,
+        name: oneDriveFile.name,
+        size: oneDriveFile.size,
+        webUrl: oneDriveFile.webUrl,
+        downloadUrl: oneDriveFile.downloadUrl,
+        tags,
+        dealId,
+        uploadedAt: new Date().toISOString()
+      }
     });
   } catch (error) {
     console.error('Upload document error:', error);
