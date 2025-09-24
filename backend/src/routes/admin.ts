@@ -360,17 +360,52 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
     }
 
     console.log('✅ [EXCHANGE] Code and codeVerifier received');
+    console.log('🔍 [EXCHANGE] Environment check:', {
+      MICROSOFT_CLIENT_ID: !!process.env.MICROSOFT_CLIENT_ID,
+      MICROSOFT_REDIRECT_URI: !!process.env.MICROSOFT_REDIRECT_URI,
+      MICROSOFT_CLIENT_ID_VALUE: process.env.MICROSOFT_CLIENT_ID ? process.env.MICROSOFT_CLIENT_ID.substring(0, 10) + '...' : 'NOT SET',
+      MICROSOFT_REDIRECT_URI_VALUE: process.env.MICROSOFT_REDIRECT_URI || 'NOT SET'
+    });
+    
+    if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_REDIRECT_URI) {
+      console.error('❌ [EXCHANGE] Missing required environment variables');
+      return res.status(500).json({ 
+        error: 'Missing Microsoft configuration',
+        details: 'MICROSOFT_CLIENT_ID or MICROSOFT_REDIRECT_URI not set'
+      });
+    }
+    
     console.log('🔄 [EXCHANGE] Exchanging code for tokens with Microsoft...');
-
-    // Exchange code for tokens using PKCE
-    const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      client_id: process.env.MICROSOFT_CLIENT_ID || '',
-      code,
-      redirect_uri: process.env.MICROSOFT_REDIRECT_URI || '',
+    console.log('🔄 [EXCHANGE] Request details:', {
+      client_id: process.env.MICROSOFT_CLIENT_ID.substring(0, 10) + '...',
+      redirect_uri: process.env.MICROSOFT_REDIRECT_URI,
       grant_type: 'authorization_code',
-      code_verifier: codeVerifier,
+      code: code.substring(0, 20) + '...',
+      code_verifier: codeVerifier.substring(0, 20) + '...',
       scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
     });
+
+    // Exchange code for tokens using PKCE
+    let response;
+    try {
+      response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+        client_id: process.env.MICROSOFT_CLIENT_ID || '',
+        code,
+        redirect_uri: process.env.MICROSOFT_REDIRECT_URI || '',
+        grant_type: 'authorization_code',
+        code_verifier: codeVerifier,
+        scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+      });
+      console.log('✅ [EXCHANGE] Microsoft API response received');
+    } catch (microsoftError: any) {
+      console.error('❌ [EXCHANGE] Microsoft API error:', {
+        status: microsoftError.response?.status,
+        statusText: microsoftError.response?.statusText,
+        data: microsoftError.response?.data,
+        message: microsoftError.message
+      });
+      throw new Error(`Microsoft API error: ${microsoftError.response?.status} - ${microsoftError.response?.data?.error_description || microsoftError.message}`);
+    }
 
     const { access_token, refresh_token, expires_in } = response.data;
     
@@ -378,27 +413,41 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
     console.log('🔄 [EXCHANGE] Saving tokens to Firebase...');
 
     // Save token to Firebase
-    await FirebaseService.saveOneDriveToken({
-      accessToken: access_token,
-      refreshToken: refresh_token,
-      expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
-      scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
-    });
-
-    console.log('✅ [EXCHANGE] Tokens saved to Firebase');
+    try {
+      await FirebaseService.saveOneDriveToken({
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
+        scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+      });
+      console.log('✅ [EXCHANGE] Tokens saved to Firebase');
+    } catch (firebaseError: any) {
+      console.error('❌ [EXCHANGE] Firebase save error:', firebaseError);
+      throw new Error(`Firebase save error: ${firebaseError.message}`);
+    }
     console.log('🔄 [EXCHANGE] Getting user info from Microsoft Graph...');
 
     // Get user info to confirm connection
-    const userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
-      headers: {
-        'Authorization': `Bearer ${access_token}`
-      }
-    });
-
-    console.log('✅ [EXCHANGE] User info retrieved:', {
-      email: userResponse.data.mail || userResponse.data.userPrincipalName,
-      name: userResponse.data.displayName
-    });
+    let userResponse;
+    try {
+      userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+      console.log('✅ [EXCHANGE] User info retrieved:', {
+        email: userResponse.data.mail || userResponse.data.userPrincipalName,
+        name: userResponse.data.displayName
+      });
+    } catch (graphError: any) {
+      console.error('❌ [EXCHANGE] Microsoft Graph API error:', {
+        status: graphError.response?.status,
+        statusText: graphError.response?.statusText,
+        data: graphError.response?.data,
+        message: graphError.message
+      });
+      throw new Error(`Microsoft Graph API error: ${graphError.response?.status} - ${graphError.response?.data?.error?.message || graphError.message}`);
+    }
 
     const result = {
       success: true,
