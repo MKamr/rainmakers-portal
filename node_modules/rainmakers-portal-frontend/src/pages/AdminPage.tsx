@@ -335,7 +335,11 @@ export function AdminPage() {
       console.log('🔑 [FRONTEND] Starting OneDrive connection...');
       
       // Generate PKCE challenge
-      const response = await fetch('/api/onedrive/pkce', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
+      const pkceUrl = `${apiBaseUrl}/onedrive/pkce`;
+      console.log('🔑 [FRONTEND] PKCE URL:', pkceUrl);
+      
+      const response = await fetch(pkceUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
