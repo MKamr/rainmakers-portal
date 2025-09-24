@@ -400,6 +400,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                 </div>
               </div>
             </div>
+            </div>
 
             {/* Footer */}
             <div className="bg-gray-700 px-8 py-6 border-t border-gray-600">
