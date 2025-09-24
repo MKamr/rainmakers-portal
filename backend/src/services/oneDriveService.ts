@@ -36,7 +36,7 @@ export class OneDriveService {
       console.log('🔄 [TOKEN] Client ID:', process.env.MICROSOFT_CLIENT_ID ? 'Set' : 'Not set');
       console.log('🔄 [TOKEN] Client Secret:', process.env.MICROSOFT_CLIENT_SECRET ? 'Set' : 'Not set');
       
-      // Microsoft expects form data, not JSON
+      // Try with client secret first (for Web apps)
       const formData = new URLSearchParams();
       formData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
       formData.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET || '');
@@ -44,25 +44,66 @@ export class OneDriveService {
       formData.append('grant_type', 'refresh_token');
       formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
 
-      const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-
-      const { access_token, refresh_token, expires_in } = response.data;
-
-      // Update token in Firebase
-      const token = await FirebaseService.getLatestOneDriveToken();
-      if (token) {
-        await FirebaseService.updateOneDriveToken(token.id, {
-          accessToken: access_token,
-          refreshToken: refresh_token,
-          expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000))
+      try {
+        const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         });
-      }
 
-      return access_token;
+        const { access_token, refresh_token, expires_in } = response.data;
+
+        // Update token in Firebase
+        const token = await FirebaseService.getLatestOneDriveToken();
+        if (token) {
+          await FirebaseService.updateOneDriveToken(token.id, {
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000))
+          });
+        }
+
+        return access_token;
+      } catch (clientSecretError: any) {
+        console.log('🔄 [TOKEN] Client secret approach failed, trying without client secret...');
+        
+        // If client secret fails (SPA still configured), try without it
+        if (clientSecretError.response?.data?.error === 'invalid_client' && 
+            clientSecretError.response?.data?.error_description?.includes('Client is public')) {
+          
+          console.log('🔄 [TOKEN] Azure still configured as SPA, using PKCE approach...');
+          
+          // For SPA clients, we need to use PKCE without client secret
+          const pkceFormData = new URLSearchParams();
+          pkceFormData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
+          pkceFormData.append('refresh_token', refreshToken);
+          pkceFormData.append('grant_type', 'refresh_token');
+          pkceFormData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
+
+          const pkceResponse = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', pkceFormData, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          });
+
+          const { access_token, refresh_token, expires_in } = pkceResponse.data;
+
+          // Update token in Firebase
+          const token = await FirebaseService.getLatestOneDriveToken();
+          if (token) {
+            await FirebaseService.updateOneDriveToken(token.id, {
+              accessToken: access_token,
+              refreshToken: refresh_token,
+              expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000))
+            });
+          }
+
+          return access_token;
+        } else {
+          // Re-throw if it's a different error
+          throw clientSecretError;
+        }
+      }
     } catch (error) {
       console.error('Error refreshing OneDrive token:', error);
       throw new Error('Failed to refresh OneDrive token');
