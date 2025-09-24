@@ -30,31 +30,6 @@ export class OneDriveService {
     }
   }
 
-  // Helper method to check if deal folder exists
-  private static async checkDealFolderExists(dealId: string): Promise<boolean> {
-    try {
-      const accessToken = await this.getAccessToken();
-      const dealFolderName = await this.getDealFolderName(dealId);
-      const folderPath = 'Hardwell Capital/Hardwell Capital $/Hardwell Capital Origination/Prospects/Pre-Approved Property';
-      const dealFolderPath = `${folderPath}/${dealFolderName}`;
-      
-      await axios.get(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        }
-      );
-      return true;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return false;
-      }
-      throw error;
-    }
-  }
-
   static async getAccessToken(): Promise<string> {
     const token = await FirebaseService.getLatestOneDriveToken();
 
@@ -183,23 +158,52 @@ export class OneDriveService {
       const dealFolderPath = `${folderPath}/${folderName}`;
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
-      const response = await axios.post(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
-        {
-          name: folderName,
-          folder: {},
-          '@microsoft.graph.conflictBehavior': 'rename'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
+      // First check if the folder already exists
+      try {
+        await axios.get(
+          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
           }
-        }
-      );
+        );
+        console.log('✅ [ONEDRIVE] Deal folder already exists:', dealFolderPath);
+        // Return the existing folder ID - we need to get it from the response
+        const existingResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        return existingResponse.data.id;
+      } catch (error: any) {
+        // If folder doesn't exist (404), create it
+        if (error.response?.status === 404) {
+          console.log('📁 [ONEDRIVE] Deal folder does not exist, creating...');
+          const response = await axios.post(
+            `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+            {
+              name: folderName,
+              folder: {},
+              '@microsoft.graph.conflictBehavior': 'fail' // Fail if folder already exists
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
 
-      console.log('✅ [ONEDRIVE] Deal folder created:', dealFolderPath);
-      return response.data.id;
+          console.log('✅ [ONEDRIVE] Deal folder created:', dealFolderPath);
+          return response.data.id;
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       console.error('❌ [ONEDRIVE] Error creating OneDrive folder:', error);
       throw new Error('Failed to create deal folder');
@@ -219,19 +223,13 @@ export class OneDriveService {
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
       
-      // First, check if deal folder exists, create if it doesn't
+      // Ensure the deal folder exists (createDealFolder handles duplicates gracefully)
       try {
-        const folderExists = await this.checkDealFolderExists(dealId);
-        if (!folderExists) {
-          console.log('📁 [ONEDRIVE] Deal folder does not exist, creating...');
-          const deal = await FirebaseService.getDealById(dealId);
-          await this.createDealFolder(dealId, deal?.propertyAddress);
-          console.log('✅ [ONEDRIVE] Deal folder created');
-        } else {
-          console.log('✅ [ONEDRIVE] Deal folder already exists');
-        }
+        const deal = await FirebaseService.getDealById(dealId);
+        await this.createDealFolder(dealId, deal?.propertyAddress);
+        console.log('✅ [ONEDRIVE] Deal folder ensured to exist');
       } catch (error) {
-        console.log('⚠️ [ONEDRIVE] Deal folder check/creation failed, proceeding with upload:', error);
+        console.log('⚠️ [ONEDRIVE] Deal folder creation failed, proceeding with upload:', error);
       }
       
       const response = await axios.put(
