@@ -336,6 +336,16 @@ router.get('/deals', async (req: Request, res: Response) => {
   }
 });
 
+// Test endpoint to verify admin routes are working
+router.get('/test', async (req: Request, res: Response) => {
+  console.log('🧪 [ADMIN TEST] Admin route test endpoint hit');
+  res.json({ 
+    message: 'Admin routes are working', 
+    timestamp: new Date().toISOString(),
+    route: '/api/admin/test'
+  });
+});
+
 // Exchange OneDrive authorization code for tokens using PKCE
 router.post('/onedrive/exchange', async (req: Request, res: Response) => {
   try {
@@ -351,6 +361,7 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
       'authorization': req.headers.authorization ? 'Bearer ***' : 'none'
     });
     console.log('🔄 [EXCHANGE] Request body:', req.body);
+    console.log('🔄 [EXCHANGE] Request query:', req.query);
     
     const { code, codeVerifier } = req.body;
 
@@ -478,6 +489,48 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
     
     res.status(500).json({ 
       error: 'Failed to exchange authorization code for tokens',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Save OneDrive tokens (called from frontend after token exchange)
+router.post('/onedrive/save-tokens', async (req: Request, res: Response) => {
+  try {
+    console.log('💾 [SAVE-TOKENS] ===== OneDrive Save Tokens Started =====');
+    console.log('💾 [SAVE-TOKENS] Request body:', req.body);
+    
+    const { accessToken, refreshToken, expiresIn } = req.body;
+    
+    if (!accessToken || !refreshToken || !expiresIn) {
+      console.log('❌ [SAVE-TOKENS] Missing required token data');
+      return res.status(400).json({ error: 'Access token, refresh token, and expires in are required' });
+    }
+    
+    console.log('💾 [SAVE-TOKENS] Saving tokens to Firebase...');
+    
+    // Save token to Firebase
+    await FirebaseService.saveOneDriveToken({
+      accessToken,
+      refreshToken,
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + expiresIn * 1000)),
+      scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+    });
+    
+    console.log('✅ [SAVE-TOKENS] Tokens saved to Firebase successfully');
+    console.log('💾 [SAVE-TOKENS] ===== OneDrive Save Tokens Completed =====');
+    
+    res.json({
+      success: true,
+      message: 'OneDrive tokens saved successfully'
+    });
+  } catch (error) {
+    console.error('❌ [SAVE-TOKENS] ===== OneDrive Save Tokens Failed =====');
+    console.error('❌ [SAVE-TOKENS] Error:', error);
+    console.error('❌ [SAVE-TOKENS] ===== OneDrive Save Tokens Failed =====');
+    
+    res.status(500).json({ 
+      error: 'Failed to save OneDrive tokens',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

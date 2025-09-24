@@ -36,27 +36,57 @@ export function AdminPage() {
         throw new Error('Code verifier not found')
       }
 
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
-      const exchangeUrl = `${apiBaseUrl}/admin/onedrive/exchange`;
-      console.log('🔄 [FRONTEND] Exchange URL:', exchangeUrl);
+      console.log('🔄 [FRONTEND] Exchanging code for tokens directly with Microsoft...');
       
-      const response = await fetch(exchangeUrl, {
+      // Exchange code for tokens directly from frontend (for SPA apps)
+      const formData = new URLSearchParams();
+      formData.append('client_id', import.meta.env.VITE_MICROSOFT_CLIENT_ID || '');
+      formData.append('code', code);
+      formData.append('redirect_uri', 'https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback');
+      formData.append('grant_type', 'authorization_code');
+      formData.append('code_verifier', codeVerifier);
+      formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
+      
+      const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ [FRONTEND] Microsoft API error:', errorData);
+        throw new Error(`Microsoft API error: ${errorData.error_description || 'Unknown error'}`);
+      }
+
+      const tokenData = await response.json();
+      console.log('✅ [FRONTEND] Tokens received from Microsoft');
+      
+      // Now send tokens to backend to save
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
+      const saveUrl = `${apiBaseUrl}/admin/onedrive/save-tokens`;
+      console.log('🔄 [FRONTEND] Saving tokens to backend:', saveUrl);
+      
+      const saveResponse = await fetch(saveUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          code,
-          codeVerifier
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresIn: tokenData.expires_in
         })
-      })
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to exchange code for tokens')
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save tokens to backend')
       }
 
-      await response.json()
+      await saveResponse.json()
       
       // Clear session storage
       sessionStorage.removeItem('onedrive_code_verifier')
@@ -70,7 +100,7 @@ export function AdminPage() {
       window.location.reload()
     } catch (error) {
       console.error('OneDrive code exchange error:', error)
-      toast.error('Failed to complete OneDrive connection')
+      toast.error(`Failed to complete OneDrive connection: ${error instanceof Error ? error.message : 'Unknown error'}`)
       
       // Clear session storage and URL parameters
       sessionStorage.removeItem('onedrive_code_verifier')
