@@ -217,7 +217,7 @@ export function AdminPage() {
     },
     onError: (error: any) => {
       console.error('Custom fields fetch failed:', error)
-      toast.error(`Failed to fetch custom fields: ${error?.response?.data?.error || error.message || 'Unknown error'}`)
+      toast.error(`Failed to fetch custom fields: ${error?.response?.data?.error || (error instanceof Error ? error.message : 'Unknown error')}`)
     }
   })
 
@@ -366,7 +366,7 @@ export function AdminPage() {
       window.location.href = authUrl
     } catch (error) {
       console.error('❌ [FRONTEND] OneDrive PKCE generation error:', error);
-      toast.error(`Failed to initiate OneDrive connection: ${error.message}`);
+      toast.error(`Failed to initiate OneDrive connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
