@@ -210,7 +210,7 @@ router.get('/onedrive/status', async (req: Request, res: Response) => {
 // OneDrive OAuth callback (public route - must be before admin middleware)
 router.get('/onedrive/callback', async (req: Request, res: Response) => {
   try {
-    console.log('🔄 [CALLBACK] ===== OneDrive OAuth Callback Started =====');
+    console.log('🔄 [CALLBACK] ===== OneDrive OAuth Callback Started (Web App Flow) =====');
     console.log('🔄 [CALLBACK] Request method:', req.method);
     console.log('🔄 [CALLBACK] Request path:', req.path);
     console.log('🔄 [CALLBACK] Request url:', req.url);
@@ -229,14 +229,67 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
     }
 
     console.log('✅ [CALLBACK] Authorization code received:', code.substring(0, 20) + '...');
-    console.log('🔄 [CALLBACK] Redirecting to frontend with code...');
+    console.log('🔄 [CALLBACK] Exchanging code for tokens (Web App Flow)...');
     
-    // For PKCE, we need to get the code verifier from the frontend
-    // Since we can't access sessionStorage from backend, we'll use a different approach
-    // We'll redirect to frontend with the code, and let frontend handle the token exchange
-    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_code=${code}&onedrive_state=${state || ''}`);
+    // Exchange code for tokens using Web app flow (with client secret)
+    const formData = new URLSearchParams();
+    formData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
+    formData.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET || '');
+    formData.append('code', code as string);
+    formData.append('grant_type', 'authorization_code');
+    formData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
+    formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
+
+    console.log('🔄 [CALLBACK] Environment check:', {
+      MICROSOFT_CLIENT_ID: !!process.env.MICROSOFT_CLIENT_ID,
+      MICROSOFT_CLIENT_SECRET: !!process.env.MICROSOFT_CLIENT_SECRET,
+      MICROSOFT_REDIRECT_URI: !!process.env.MICROSOFT_REDIRECT_URI
+    });
+
+    if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET || !process.env.MICROSOFT_REDIRECT_URI) {
+      console.error('❌ [CALLBACK] Missing required environment variables');
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=missing_config`);
+    }
+
+    try {
+      const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      const { access_token, refresh_token, expires_in } = response.data;
+      console.log('✅ [CALLBACK] Tokens received from Microsoft');
+
+      // Save token to Firebase
+      await FirebaseService.saveOneDriveToken({
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
+        scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+      });
+      console.log('✅ [CALLBACK] Tokens saved to Firebase');
+
+      // Get user info to confirm connection
+      const userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+      console.log('✅ [CALLBACK] User info retrieved:', {
+        email: userResponse.data.mail || userResponse.data.userPrincipalName,
+        name: userResponse.data.displayName
+      });
+
+      // Redirect to frontend with success
+      res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_success=true&user_email=${encodeURIComponent(userResponse.data.mail || userResponse.data.userPrincipalName)}`);
+      
+    } catch (tokenError: any) {
+      console.error('❌ [CALLBACK] Token exchange failed:', tokenError.response?.data || tokenError.message);
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=token_exchange_failed`);
+    }
     
-    console.log('✅ [CALLBACK] ===== OneDrive OAuth Callback Completed =====');
+    console.log('✅ [CALLBACK] ===== OneDrive OAuth Callback Completed Successfully =====');
   } catch (error) {
     console.error('❌ [CALLBACK] ===== OneDrive OAuth Callback Failed =====');
     console.error('❌ [CALLBACK] Error:', error);

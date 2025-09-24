@@ -105,6 +105,13 @@ export interface Analytics {
   dealsByMonth: { [month: string]: number };
 }
 
+export interface OneDriveToken {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Timestamp;
+  scope: string;
+}
+
 export class FirebaseService {
   private static usersCollection = db.collection('users');
   private static dealsCollection = db.collection('deals');
@@ -398,12 +405,7 @@ export class FirebaseService {
     }
   }
 
-  static async getLatestOneDriveToken(): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresAt: Timestamp;
-    scope: string;
-  } | null> {
+  static async getLatestOneDriveToken(): Promise<OneDriveToken | null> {
     try {
       const snapshot = await db.collection('onedrive_tokens')
       .orderBy('createdAt', 'desc')

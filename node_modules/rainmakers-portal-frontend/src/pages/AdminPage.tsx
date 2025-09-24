@@ -15,12 +15,16 @@ export function AdminPage() {
   // Handle OneDrive callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    const onedriveCode = urlParams.get('onedrive_code')
+    const onedriveSuccess = urlParams.get('onedrive_success')
     const onedriveError = urlParams.get('onedrive_error')
+    const userEmail = urlParams.get('user_email')
     
-    if (onedriveCode) {
-      // Exchange code for tokens
-      handleOneDriveCodeExchange(onedriveCode)
+    if (onedriveSuccess === 'true') {
+      toast.success(`OneDrive connected successfully! Connected as: ${userEmail || 'Unknown user'}`)
+      // Refresh OneDrive status
+      refetchOneDriveStatus()
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
     } else if (onedriveError) {
       toast.error(`OneDrive connection failed: ${onedriveError}`)
       // Clear URL parameters
@@ -28,85 +32,6 @@ export function AdminPage() {
     }
   }, [])
 
-  const handleOneDriveCodeExchange = async (code: string) => {
-    try {
-      const codeVerifier = sessionStorage.getItem('onedrive_code_verifier')
-      
-      if (!codeVerifier) {
-        throw new Error('Code verifier not found')
-      }
-
-      console.log('🔄 [FRONTEND] Exchanging code for tokens directly with Microsoft...');
-      
-      // Exchange code for tokens directly from frontend (for SPA apps)
-      const formData = new URLSearchParams();
-      formData.append('client_id', import.meta.env.VITE_MICROSOFT_CLIENT_ID || '');
-      formData.append('code', code);
-      formData.append('redirect_uri', 'https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback');
-      formData.append('grant_type', 'authorization_code');
-      formData.append('code_verifier', codeVerifier);
-      formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
-      
-      const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ [FRONTEND] Microsoft API error:', errorData);
-        throw new Error(`Microsoft API error: ${errorData.error_description || 'Unknown error'}`);
-      }
-
-      const tokenData = await response.json();
-      console.log('✅ [FRONTEND] Tokens received from Microsoft');
-      
-      // Now send tokens to backend to save
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
-      const saveUrl = `${apiBaseUrl}/admin/onedrive/save-tokens`;
-      console.log('🔄 [FRONTEND] Saving tokens to backend:', saveUrl);
-      
-      const saveResponse = await fetch(saveUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token,
-          expiresIn: tokenData.expires_in
-        })
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save tokens to backend')
-      }
-
-      await saveResponse.json()
-      
-      // Clear session storage
-      sessionStorage.removeItem('onedrive_code_verifier')
-      
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname)
-      
-      toast.success('OneDrive connected successfully!')
-      
-      // Refresh OneDrive status
-      window.location.reload()
-    } catch (error) {
-      console.error('OneDrive code exchange error:', error)
-      toast.error(`Failed to complete OneDrive connection: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      
-      // Clear session storage and URL parameters
-      sessionStorage.removeItem('onedrive_code_verifier')
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-  }
   const queryClient = useQueryClient()
   
   // Deal details modal state
@@ -149,7 +74,7 @@ export function AdminPage() {
   const { data: analytics, isLoading: analyticsLoading } = useQuery('admin-analytics', adminAPI.getAnalytics)
   const { data: users, isLoading: usersLoading } = useQuery('admin-users', adminAPI.getUsers)
   const { data: deals, isLoading: dealsLoading } = useQuery(['admin-deals', dealFilters], () => adminAPI.getAllDeals(dealFilters))
-  const { data: oneDriveStatus } = useQuery('onedrive-status', adminAPI.getOneDriveStatus)
+  const { data: oneDriveStatus, refetch: refetchOneDriveStatus } = useQuery('onedrive-status', adminAPI.getOneDriveStatus)
   const { data: ghlStatus } = useQuery('ghl-status', adminAPI.testGHL)
 
   // Load GHL pipelines when API key is available
@@ -366,45 +291,22 @@ export function AdminPage() {
 
   const handleOneDriveConnect = async () => {
     try {
-      console.log('🔑 [FRONTEND] Starting OneDrive connection...');
+      console.log('🔑 [FRONTEND] Starting OneDrive connection (Web app flow)...');
       
-      // Generate PKCE challenge
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
-      const pkceUrl = `${apiBaseUrl}/onedrive/pkce`;
-      console.log('🔑 [FRONTEND] PKCE URL:', pkceUrl);
-      
-      const response = await fetch(pkceUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('🔍 [FRONTEND] PKCE response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [FRONTEND] PKCE request failed:', errorText);
-        throw new Error(`Failed to generate PKCE challenge: ${response.status} ${errorText}`);
-      }
-      
-      const { codeChallenge, codeVerifier } = await response.json();
-      console.log('✅ [FRONTEND] Received PKCE challenge');
-      
-      // Store code verifier for later use
-      sessionStorage.setItem('onedrive_code_verifier', codeVerifier);
-      
-      // Build authorization URL with PKCE
+      // Build authorization URL for Web app flow (no PKCE needed)
       const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
       const redirectUri = encodeURIComponent('https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback')
       const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
-      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&state=onedrive_auth`
       
-      console.log('🚀 [FRONTEND] Redirecting to Microsoft:', authUrl);
-      window.location.href = authUrl
+      console.log('🔑 [FRONTEND] Redirecting to Microsoft OAuth (Web app flow)...');
+      console.log('🔑 [FRONTEND] Auth URL:', authUrl);
+      
+      // Redirect to Microsoft OAuth
+      window.location.href = authUrl;
     } catch (error) {
-      console.error('❌ [FRONTEND] OneDrive PKCE generation error:', error);
-      toast.error(`Failed to initiate OneDrive connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ [FRONTEND] OneDrive connection failed:', error);
+      toast.error('Failed to connect OneDrive. Please try again.');
     }
   }
 
