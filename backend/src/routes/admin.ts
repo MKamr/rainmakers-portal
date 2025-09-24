@@ -339,11 +339,28 @@ router.get('/deals', async (req: Request, res: Response) => {
 // Exchange OneDrive authorization code for tokens using PKCE
 router.post('/onedrive/exchange', async (req: Request, res: Response) => {
   try {
+    console.log('🔄 [EXCHANGE] ===== OneDrive Token Exchange Started =====');
+    console.log('🔄 [EXCHANGE] Request method:', req.method);
+    console.log('🔄 [EXCHANGE] Request path:', req.path);
+    console.log('🔄 [EXCHANGE] Request url:', req.url);
+    console.log('🔄 [EXCHANGE] Request headers:', {
+      'user-agent': req.headers['user-agent'],
+      'origin': req.headers.origin,
+      'referer': req.headers.referer,
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers.authorization ? 'Bearer ***' : 'none'
+    });
+    console.log('🔄 [EXCHANGE] Request body:', req.body);
+    
     const { code, codeVerifier } = req.body;
 
     if (!code || !codeVerifier) {
+      console.log('❌ [EXCHANGE] Missing code or codeVerifier');
       return res.status(400).json({ error: 'Code and code verifier are required' });
     }
+
+    console.log('✅ [EXCHANGE] Code and codeVerifier received');
+    console.log('🔄 [EXCHANGE] Exchanging code for tokens with Microsoft...');
 
     // Exchange code for tokens using PKCE
     const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
@@ -356,6 +373,9 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
     });
 
     const { access_token, refresh_token, expires_in } = response.data;
+    
+    console.log('✅ [EXCHANGE] Tokens received from Microsoft');
+    console.log('🔄 [EXCHANGE] Saving tokens to Firebase...');
 
     // Save token to Firebase
     await FirebaseService.saveOneDriveToken({
@@ -365,6 +385,9 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
       scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
     });
 
+    console.log('✅ [EXCHANGE] Tokens saved to Firebase');
+    console.log('🔄 [EXCHANGE] Getting user info from Microsoft Graph...');
+
     // Get user info to confirm connection
     const userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
       headers: {
@@ -372,17 +395,34 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
       }
     });
 
-    res.json({
+    console.log('✅ [EXCHANGE] User info retrieved:', {
+      email: userResponse.data.mail || userResponse.data.userPrincipalName,
+      name: userResponse.data.displayName
+    });
+
+    const result = {
       success: true,
       message: 'OneDrive connected successfully',
       user: {
         email: userResponse.data.mail || userResponse.data.userPrincipalName,
         name: userResponse.data.displayName
       }
-    });
+    };
+
+    console.log('✅ [EXCHANGE] ===== OneDrive Token Exchange Completed Successfully =====');
+    res.json(result);
   } catch (error) {
-    console.error('OneDrive token exchange error:', error);
-    res.status(500).json({ error: 'Failed to exchange authorization code for tokens' });
+    console.error('❌ [EXCHANGE] ===== OneDrive Token Exchange Failed =====');
+    console.error('❌ [EXCHANGE] Error type:', typeof error);
+    console.error('❌ [EXCHANGE] Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('❌ [EXCHANGE] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('❌ [EXCHANGE] Full error object:', error);
+    console.error('❌ [EXCHANGE] ===== OneDrive Token Exchange Failed =====');
+    
+    res.status(500).json({ 
+      error: 'Failed to exchange authorization code for tokens',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

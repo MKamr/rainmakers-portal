@@ -36,7 +36,11 @@ export function AdminPage() {
         throw new Error('Code verifier not found')
       }
 
-      const response = await fetch('/api/admin/onedrive/exchange', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://rainmakers-portal-backend.vercel.app/api';
+      const exchangeUrl = `${apiBaseUrl}/admin/onedrive/exchange`;
+      console.log('🔄 [FRONTEND] Exchange URL:', exchangeUrl);
+      
+      const response = await fetch(exchangeUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
