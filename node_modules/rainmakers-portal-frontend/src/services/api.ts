@@ -101,13 +101,13 @@ export const dealsAPI = {
     api.get(`/deals/${dealId}/documents`).then(res => res.data),
 };
 
-// Documents API (Admin Only)
+// Documents API
 export const documentsAPI = {
   getDocuments: (): Promise<Document[]> =>
-    api.get('/admin/onedrive/documents').then(res => res.data),
+    api.get('/documents').then(res => res.data),
   
   getDealDocuments: (dealId: string): Promise<Document[]> =>
-    api.get(`/admin/onedrive/deal/${dealId}`).then(res => res.data),
+    api.get(`/documents/deal/${dealId}`).then(res => res.data),
   
   uploadDocument: (dealId: string, file: File, tags: string[] = []): Promise<{ message: string; dealId: string; filename: string }> => {
     const formData = new FormData();
@@ -115,7 +115,7 @@ export const documentsAPI = {
     formData.append('dealId', dealId);
     formData.append('tags', JSON.stringify(tags));
     
-    return api.post('/admin/onedrive/upload', formData, {
+    return api.post('/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -123,10 +123,10 @@ export const documentsAPI = {
   },
   
   updateDocument: (id: string, data: { tags: string[] }): Promise<Document> =>
-    api.put(`/admin/onedrive/document/${id}`, data).then(res => res.data),
+    api.put(`/documents/${id}`, data).then(res => res.data),
   
   deleteDocument: (id: string): Promise<void> =>
-    api.delete(`/admin/onedrive/document/${id}`).then(res => res.data),
+    api.delete(`/documents/${id}`).then(res => res.data),
 };
 
 // Admin API

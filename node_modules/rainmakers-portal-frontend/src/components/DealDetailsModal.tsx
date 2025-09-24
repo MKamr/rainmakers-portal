@@ -362,28 +362,15 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                     <div className="flex items-center space-x-3">
                       <FileText className="h-5 w-5 text-purple-400" />
                       <h4 className="text-lg font-semibold text-white">Documents</h4>
-                      {user?.isAdmin && (
-                        <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/50">
-                          <Shield className="h-3 w-3" />
-                          <span className="text-xs font-medium">Admin</span>
-                        </div>
-                      )}
                     </div>
                     
-                    {user?.isAdmin ? (
-                      <button
-                        onClick={() => setShowUpload(!showUpload)}
-                        className="px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-500 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        Upload
-                      </button>
-                    ) : (
-                      <div className="px-3 py-2 text-sm font-medium text-gray-500 bg-gray-700 border border-gray-600 rounded-lg">
-                        <Shield className="h-4 w-4 mr-1 inline" />
-                        Admin Only
-                      </div>
-                    )}
+                    <button
+                      onClick={() => setShowUpload(!showUpload)}
+                      className="px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 border border-purple-500 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      Upload
+                    </button>
                     </div>
 
                     {showUpload && (
