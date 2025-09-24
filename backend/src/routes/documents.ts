@@ -90,7 +90,19 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
 // Upload document
 router.post('/upload', upload.single('file'), [
   body('dealId').notEmpty().withMessage('Deal ID is required'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
+  body('tags').optional().custom((value) => {
+    if (value === undefined || value === null) return true;
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed);
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }).withMessage('Tags must be an array or valid JSON string'),
 ], async (req: Request, res: Response) => {
   try {
     console.log('📄 [UPLOAD] Upload request received');

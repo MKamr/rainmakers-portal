@@ -110,7 +110,7 @@ export class OneDriveService {
         try {
           // Check if folder exists
           await axios.get(
-            `${this.GRAPH_BASE_URL}/me/drive/root:/${currentPath}`,
+            `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(currentPath)}`,
             {
               headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -126,7 +126,7 @@ export class OneDriveService {
             const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
             const createUrl = i === 0 
               ? `${this.GRAPH_BASE_URL}/me/drive/root/children`
-              : `${this.GRAPH_BASE_URL}/me/drive/root:/${parentPath}:/children`;
+              : `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(parentPath)}:/children`;
             
             await axios.post(
               createUrl,
@@ -159,7 +159,7 @@ export class OneDriveService {
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
       const response = await axios.post(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${folderPath}:/children`,
+        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
         {
           name: folderName,
           folder: {},
@@ -204,7 +204,7 @@ export class OneDriveService {
       }
       
       const response = await axios.put(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${filePath}:/content`,
+        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(filePath)}:/content`,
         fileBuffer,
         {
           headers: {
@@ -244,7 +244,7 @@ export class OneDriveService {
       console.log('📁 [ONEDRIVE] Getting files from:', dealFolderPath);
       
       const response = await axios.get(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${dealFolderPath}:/children`,
+        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}:/children`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`
