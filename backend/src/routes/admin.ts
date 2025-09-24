@@ -388,13 +388,21 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
     // Exchange code for tokens using PKCE
     let response;
     try {
-      response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-        client_id: process.env.MICROSOFT_CLIENT_ID || '',
-        code,
-        redirect_uri: process.env.MICROSOFT_REDIRECT_URI || '',
-        grant_type: 'authorization_code',
-        code_verifier: codeVerifier,
-        scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+      // Microsoft OAuth endpoint expects form data, not JSON
+      const formData = new URLSearchParams();
+      formData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
+      formData.append('code', code);
+      formData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
+      formData.append('grant_type', 'authorization_code');
+      formData.append('code_verifier', codeVerifier);
+      formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
+      
+      console.log('🔄 [EXCHANGE] Sending form data to Microsoft...');
+      
+      response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
       console.log('✅ [EXCHANGE] Microsoft API response received');
     } catch (microsoftError: any) {
