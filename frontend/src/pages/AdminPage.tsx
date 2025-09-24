@@ -332,6 +332,8 @@ export function AdminPage() {
 
   const handleOneDriveConnect = async () => {
     try {
+      console.log('🔑 [FRONTEND] Starting OneDrive connection...');
+      
       // Generate PKCE challenge
       const response = await fetch('/api/onedrive/pkce', {
         method: 'POST',
@@ -340,11 +342,16 @@ export function AdminPage() {
         }
       });
       
+      console.log('🔍 [FRONTEND] PKCE response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to generate PKCE challenge');
+        const errorText = await response.text();
+        console.error('❌ [FRONTEND] PKCE request failed:', errorText);
+        throw new Error(`Failed to generate PKCE challenge: ${response.status} ${errorText}`);
       }
       
       const { codeChallenge, codeVerifier } = await response.json();
+      console.log('✅ [FRONTEND] Received PKCE challenge');
       
       // Store code verifier for later use
       sessionStorage.setItem('onedrive_code_verifier', codeVerifier);
@@ -355,10 +362,11 @@ export function AdminPage() {
       const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`
       
+      console.log('🚀 [FRONTEND] Redirecting to Microsoft:', authUrl);
       window.location.href = authUrl
     } catch (error) {
-      console.error('OneDrive PKCE generation error:', error);
-      toast.error('Failed to initiate OneDrive connection');
+      console.error('❌ [FRONTEND] OneDrive PKCE generation error:', error);
+      toast.error(`Failed to initiate OneDrive connection: ${error.message}`);
     }
   }
 

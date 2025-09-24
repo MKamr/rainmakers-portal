@@ -251,7 +251,13 @@ router.get('/deals', async (req: Request, res: Response) => {
 // Generate PKCE challenge for OneDrive OAuth (public endpoint)
 router.post('/onedrive/pkce', async (req: Request, res: Response) => {
   try {
+    console.log('🔑 [PKCE] Generating PKCE challenge...');
     const pkceChallenge = generatePKCEChallenge();
+    console.log('✅ [PKCE] Generated challenge:', {
+      codeChallenge: pkceChallenge.codeChallenge.substring(0, 20) + '...',
+      codeVerifier: pkceChallenge.codeVerifier.substring(0, 20) + '...',
+      method: pkceChallenge.codeChallengeMethod
+    });
     
     res.json({
       codeChallenge: pkceChallenge.codeChallenge,
@@ -259,7 +265,7 @@ router.post('/onedrive/pkce', async (req: Request, res: Response) => {
       codeChallengeMethod: pkceChallenge.codeChallengeMethod
     });
   } catch (error) {
-    console.error('PKCE generation error:', error);
+    console.error('❌ [PKCE] Generation error:', error);
     res.status(500).json({ error: 'Failed to generate PKCE challenge' });
   }
 });
