@@ -82,7 +82,7 @@ app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
 // OneDrive OAuth callback and PKCE (public, no authentication required)
 app.use('/auth', adminRoutes);
-// Public PKCE endpoint for OneDrive
+// Public PKCE endpoint for OneDrive (must be before /api/admin to avoid conflicts)
 app.use('/api/onedrive', adminRoutes);
 // Webhook routes (public, no authentication required)
 app.use('/api/webhooks', webhookRoutes);

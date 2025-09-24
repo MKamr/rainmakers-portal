@@ -248,9 +248,18 @@ router.get('/deals', async (req: Request, res: Response) => {
   }
 });
 
+// Test route to verify /api/onedrive mount is working
+router.get('/test', async (req: Request, res: Response) => {
+  res.json({ message: 'OneDrive mount test successful', timestamp: new Date().toISOString() });
+});
+
 // Generate PKCE challenge for OneDrive OAuth (public endpoint)
 router.post('/pkce', async (req: Request, res: Response) => {
   try {
+    console.log('🔑 [PKCE] POST /pkce endpoint hit!');
+    console.log('🔑 [PKCE] Request method:', req.method);
+    console.log('🔑 [PKCE] Request path:', req.path);
+    console.log('🔑 [PKCE] Request url:', req.url);
     console.log('🔑 [PKCE] Generating PKCE challenge...');
     const pkceChallenge = generatePKCEChallenge();
     console.log('✅ [PKCE] Generated challenge:', {
@@ -1029,6 +1038,22 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+// Debug route to catch all unmatched requests to /api/onedrive/*
+router.all('*', async (req: Request, res: Response) => {
+  console.log('🔍 [DEBUG] OneDrive route hit:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl
+  });
+  res.status(405).json({ 
+    error: 'Method not allowed', 
+    method: req.method, 
+    path: req.path,
+    availableMethods: ['GET /test', 'POST /pkce']
+  });
 });
 
 export default router;
