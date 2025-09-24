@@ -523,7 +523,7 @@ router.post('/', [
           // Fallback: Try to create opportunity without contactId
           try {
             const ghlDeal = await GHLService.createDeal({
-              name: `${dealId}`,
+              name: normalized.applicationPropertyAddress || dealId,
               pipelineId: ghlPipelineId,
               stageId: ghlStageId,
               locationId: ghlLocationId,
@@ -577,15 +577,15 @@ router.post('/', [
           // Create new opportunity
           console.log('🚀 [DEAL CREATE] Creating new GHL opportunity...');
           try {
-            ghlDeal = await GHLService.createDeal({
-              name: `${dealId}`,
-              pipelineId: ghlPipelineId,
-              stageId: ghlStageId,
-              locationId: ghlLocationId,
-              contactId: ghlContact.id,
-              source: normalized.source, // Add Discord username as source
-              customFields: []
-            });
+          ghlDeal = await GHLService.createDeal({
+            name: normalized.applicationPropertyAddress || dealId,
+            pipelineId: ghlPipelineId,
+            stageId: ghlStageId,
+            locationId: ghlLocationId,
+            contactId: ghlContact.id,
+            source: normalized.source, // Add Discord username as source
+            customFields: []
+          });
             
             // After creation/update, push source and opportunity custom fields
             const fieldMappingForOpp = loadGHLFieldMapping();
@@ -604,7 +604,7 @@ router.post('/', [
             if (ghlDeal && ghlDeal.id) {
               try {
                 await GHLService.updateDeal(ghlDeal.id, {
-                  name: `${dealId}`,
+                  name: normalized.applicationPropertyAddress || dealId,
                   customFields: oppCustomFieldsArrayForCreate
                 });
               } catch (postCreateUpdateErr) {
@@ -730,7 +730,7 @@ router.put('/:id', [
         
         // Basic fields - using V2 API format (matching working Python script)
         // Name is used in V2 API instead of title
-        ghlUpdateData.name = deal.dealId || deal.propertyAddress || 'Untitled Deal';
+        ghlUpdateData.name = deal.propertyAddress || deal.dealId || 'Untitled Deal';
         
         // Status must be one of the valid GHL statuses
         if (updates.status) {
