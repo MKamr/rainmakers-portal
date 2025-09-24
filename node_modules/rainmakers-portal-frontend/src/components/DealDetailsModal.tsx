@@ -21,7 +21,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     ['deal-documents', deal.id],
     () => documentsAPI.getDealDocuments(deal.id),
     {
-      enabled: user?.isAdmin || false // Only fetch documents if user is admin
+      enabled: true // Allow all users to view documents
     }
   )
 
@@ -29,10 +29,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!user?.isAdmin) {
-      toast.error('Only administrators can upload documents')
-      return
-    }
+    // Allow all users to upload documents
 
     setUploading(true)
     try {
@@ -52,10 +49,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
   }
 
   const handleDeleteDocument = async (documentId: string) => {
-    if (!user?.isAdmin) {
-      toast.error('Only administrators can delete documents')
-      return
-    }
+    // Allow all users to delete documents
 
     if (window.confirm('Are you sure you want to delete this document?')) {
       try {
@@ -414,8 +408,8 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                     ) : documents?.length === 0 ? (
                     <div className="text-center py-8 bg-gray-700 rounded-lg border border-gray-600">
                       <FileText className="h-12 w-12 text-gray-500 mx-auto mb-3" />
-                      <p className="text-sm text-gray-400">Document functionality is currently disabled</p>
-                      <p className="text-xs text-gray-500 mt-1">Documents are not stored in Firebase</p>
+                      <p className="text-sm text-gray-400">No documents uploaded yet</p>
+                      <p className="text-xs text-gray-500 mt-1">Upload documents to store them in OneDrive</p>
                       </div>
                     ) : (
                     <div className="space-y-3 max-h-64 overflow-y-auto">

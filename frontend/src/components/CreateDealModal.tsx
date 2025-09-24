@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useMutation } from 'react-query'
 import { dealsAPI } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+import { DocumentUpload } from './DocumentUpload'
 import { X, User, Phone, Mail, Building, MapPin, Calendar, DollarSign, FileText, Plus, Sparkles, Briefcase, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -13,6 +14,7 @@ interface CreateDealModalProps {
 
 export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdDealId, setCreatedDealId] = useState<string | null>(null)
   const { user } = useAuth()
 
   const { register, handleSubmit, formState: { errors } } = useForm<{
@@ -31,9 +33,9 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
   }>()
 
   const createDealMutation = useMutation(dealsAPI.createDeal, {
-    onSuccess: () => {
+    onSuccess: (deal) => {
       toast.success('Deal created successfully')
-      onSuccess()
+      setCreatedDealId(deal.id)
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to create deal')
@@ -44,7 +46,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
     console.log('🚀 Starting deal creation with data:', data)
     setIsSubmitting(true)
     try {
-      await createDealMutation.mutateAsync({
+      const deal = await createDealMutation.mutateAsync({
         discordUsername: user?.username || '', // Map from logged-in user
         clientFirstName: data.clientFirstName,
         clientLastName: data.clientLastName,
@@ -59,13 +61,18 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
         loanRequest: data.loanRequest,
         anyAdditionalInformation: data.anyAdditionalInformation,
       })
-      console.log('✅ Deal created successfully!')
+      console.log('✅ Deal created successfully!', deal)
+      setCreatedDealId(deal.id)
     } catch (error) {
       console.error('❌ Deal creation failed:', error)
       throw error
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleDocumentUploadSuccess = () => {
+    onSuccess()
   }
 
   return (
@@ -78,28 +85,67 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
         </span>
 
         <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Header */}
-            <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-yellow-500/20 rounded-lg">
-                    <Sparkles className="h-6 w-6 text-yellow-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">🚀 Launch New Deal</h3>
-                    <p className="text-sm text-gray-300">Create your next investment opportunity</p>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-yellow-500/20 rounded-lg">
+                  <Sparkles className="h-6 w-6 text-yellow-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {createdDealId ? '📄 Upload Documents' : '🚀 Launch New Deal'}
+                  </h3>
+                  <p className="text-sm text-gray-300">
+                    {createdDealId ? 'Add documents to your new deal' : 'Create your next investment opportunity'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="px-8 py-6">
+            {createdDealId ? (
+              <div className="space-y-6">
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Deal created successfully!
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={onClose} 
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                
+                <DocumentUpload 
+                  dealId={createdDealId} 
+                  onUploadSuccess={handleDocumentUploadSuccess}
+                />
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDocumentUploadSuccess}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)}>
 
             {/* Form Content */}
             <div className="p-8 space-y-8">
@@ -379,7 +425,9 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                 </div>
               </div>
             </div>
-          </form>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

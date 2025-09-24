@@ -4,6 +4,7 @@ import { useMutation } from 'react-query'
 import { dealsAPI } from '../services/api'
 import { Deal } from '../types'
 import { useAuth } from '../hooks/useAuth'
+import { DocumentUpload } from './DocumentUpload'
 import { X, User, Phone, Mail, Building, MapPin, Calendar, DollarSign, FileText, Edit, Briefcase, Home, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -15,6 +16,7 @@ interface EditDealModalProps {
 
 export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details')
   const { user } = useAuth()
 
   const { register, handleSubmit, formState: { errors } } = useForm<{
@@ -119,7 +121,44 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
               </div>
             </div>
 
-            {/* Form Content */}
+            {/* Tabs */}
+            <div className="border-b border-gray-600">
+              <nav className="flex space-x-8 px-8">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('details')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'details'
+                      ? 'border-blue-500 text-blue-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Edit className="w-4 h-4" />
+                    <span>Deal Details</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('documents')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'documents'
+                      ? 'border-blue-500 text-blue-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-4 h-4" />
+                    <span>Documents</span>
+                  </div>
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'details' ? (
+              <div>
+                {/* Form Content */}
             <div className="p-8 space-y-8">
               {/* Client Information Section */}
               <div className="space-y-6">
@@ -397,6 +436,12 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                 </div>
               </div>
             </div>
+              </div>
+            ) : (
+              <div className="p-8">
+                <DocumentUpload dealId={deal.id} />
+              </div>
+            )}
           </form>
         </div>
       </div>
