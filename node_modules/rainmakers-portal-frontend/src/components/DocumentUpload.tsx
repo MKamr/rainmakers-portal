@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { documentsAPI } from '../services/api';
-import { Upload, File, Download, Trash2, Eye } from 'lucide-react';
+import { Upload, File, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface DocumentUploadProps {
