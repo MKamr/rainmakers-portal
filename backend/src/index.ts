@@ -13,6 +13,7 @@ import dealRoutes from './routes/deals';
 import documentRoutes from './routes/documents';
 import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
+import onedriveRoutes from './routes/onedrive';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -76,14 +77,14 @@ app.use(session({
   }
 }));
 
-// Routes
+// Routes - Public routes first to avoid conflicts
+// Public OneDrive routes (no authentication required) - MUST be first
+app.use('/api/onedrive-public', onedriveRoutes);
 app.use('/api/auth', authRoutes);
 // Discord OAuth callback (separate route for browser redirect) - explicit mounting
 app.use('/auth', authRoutes);
 // OneDrive OAuth callback and PKCE (public, no authentication required)
 app.use('/auth', adminRoutes);
-// Public PKCE endpoint for OneDrive (must be before /api/admin to avoid conflicts)
-app.use('/api/onedrive', adminRoutes);
 // Webhook routes (public, no authentication required)
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
