@@ -207,6 +207,44 @@ router.get('/onedrive/status', async (req: Request, res: Response) => {
   }
 });
 
+// OneDrive OAuth callback (public route - must be before admin middleware)
+router.get('/onedrive/callback', async (req: Request, res: Response) => {
+  try {
+    console.log('🔄 [CALLBACK] ===== OneDrive OAuth Callback Started =====');
+    console.log('🔄 [CALLBACK] Request method:', req.method);
+    console.log('🔄 [CALLBACK] Request path:', req.path);
+    console.log('🔄 [CALLBACK] Request url:', req.url);
+    console.log('🔄 [CALLBACK] Query params:', req.query);
+    
+    const { code, error, state } = req.query;
+
+    if (error) {
+      console.error('❌ [CALLBACK] OneDrive OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
+    }
+
+    if (!code) {
+      console.error('❌ [CALLBACK] No authorization code received');
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
+    }
+
+    console.log('✅ [CALLBACK] Authorization code received:', code.substring(0, 20) + '...');
+    console.log('🔄 [CALLBACK] Redirecting to frontend with code...');
+    
+    // For PKCE, we need to get the code verifier from the frontend
+    // Since we can't access sessionStorage from backend, we'll use a different approach
+    // We'll redirect to frontend with the code, and let frontend handle the token exchange
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_code=${code}&onedrive_state=${state || ''}`);
+    
+    console.log('✅ [CALLBACK] ===== OneDrive OAuth Callback Completed =====');
+  } catch (error) {
+    console.error('❌ [CALLBACK] ===== OneDrive OAuth Callback Failed =====');
+    console.error('❌ [CALLBACK] Error:', error);
+    console.error('❌ [CALLBACK] ===== OneDrive OAuth Callback Failed =====');
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=callback_failed`);
+  }
+});
+
 // Apply admin middleware to all routes
 router.use(requireAdmin);
 
@@ -345,30 +383,6 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('OneDrive token exchange error:', error);
     res.status(500).json({ error: 'Failed to exchange authorization code for tokens' });
-  }
-});
-
-// OneDrive OAuth callback (public route)
-router.get('/onedrive/callback', async (req: Request, res: Response) => {
-  try {
-    const { code, error, state } = req.query;
-
-    if (error) {
-      console.error('OneDrive OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
-    }
-
-    if (!code) {
-      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
-    }
-
-    // For PKCE, we need to get the code verifier from the frontend
-    // Since we can't access sessionStorage from backend, we'll use a different approach
-    // We'll redirect to frontend with the code, and let frontend handle the token exchange
-    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_code=${code}&onedrive_state=${state || ''}`);
-  } catch (error) {
-    console.error('OneDrive callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=callback_failed`);
   }
 });
 
