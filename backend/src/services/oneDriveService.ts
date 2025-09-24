@@ -35,6 +35,7 @@ export class OneDriveService {
       console.log('🔄 [TOKEN] Refreshing OneDrive token...');
       console.log('🔄 [TOKEN] Client ID:', process.env.MICROSOFT_CLIENT_ID ? 'Set' : 'Not set');
       console.log('🔄 [TOKEN] Client Secret:', process.env.MICROSOFT_CLIENT_SECRET ? 'Set' : 'Not set');
+      console.log('🔄 [TOKEN] Redirect URI:', process.env.MICROSOFT_REDIRECT_URI || 'Not set');
       
       // Try with client secret first (for Web apps)
       const formData = new URLSearchParams();
@@ -42,6 +43,7 @@ export class OneDriveService {
       formData.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET || '');
       formData.append('refresh_token', refreshToken);
       formData.append('grant_type', 'refresh_token');
+      formData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
       formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
 
       try {
@@ -78,6 +80,7 @@ export class OneDriveService {
           pkceFormData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
           pkceFormData.append('refresh_token', refreshToken);
           pkceFormData.append('grant_type', 'refresh_token');
+          pkceFormData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
           pkceFormData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
 
           const pkceResponse = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', pkceFormData, {
