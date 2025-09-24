@@ -32,12 +32,18 @@ export class OneDriveService {
 
   private static async refreshAccessToken(refreshToken: string): Promise<string> {
     try {
-      const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-        client_id: process.env.MICROSOFT_CLIENT_ID || '',
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-        scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
+      // Microsoft expects form data, not JSON
+      const formData = new URLSearchParams();
+      formData.append('client_id', process.env.MICROSOFT_CLIENT_ID || '');
+      formData.append('client_secret', process.env.MICROSOFT_CLIENT_SECRET || '');
+      formData.append('refresh_token', refreshToken);
+      formData.append('grant_type', 'refresh_token');
+      formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
+
+      const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
 
       const { access_token, refresh_token, expires_in } = response.data;

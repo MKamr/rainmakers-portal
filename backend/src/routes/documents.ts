@@ -87,7 +87,19 @@ router.post('/upload', upload.single('file'), [
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { dealId, tags = [] } = req.body;
+    const { dealId, tags: tagsString } = req.body;
+    
+    // Parse tags if it's a string
+    let tags: string[] = [];
+    if (tagsString) {
+      try {
+        tags = typeof tagsString === 'string' ? JSON.parse(tagsString) : tagsString;
+      } catch (error) {
+        console.log('📄 [UPLOAD] Invalid tags format, using empty array:', tagsString);
+        tags = [];
+      }
+    }
+    
     console.log('📄 [UPLOAD] Deal ID:', dealId);
     console.log('📄 [UPLOAD] Tags:', tags);
 
