@@ -435,7 +435,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                 </div>
               </div>
             </div>
-              </form>
+            </form>
             ) : (
               <div className="p-8">
                 <DocumentUpload dealId={deal.id} />
