@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { useQuery } from 'react-query'
 import { documentsAPI } from '../services/api'
 import { Deal, Document } from '../types'
-import { X, Upload, Download, Trash2, Tag, User, Phone, Mail, Building, MapPin, Calendar, DollarSign, FileText, Briefcase, Home, Eye, Shield } from 'lucide-react'
+import { X, Upload, Download, Trash2, Tag, User, Phone, Mail, Building, MapPin, Calendar, DollarSign, FileText, Briefcase, Home, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
-import { useAuth } from '../hooks/useAuth'
 
 interface DealDetailsModalProps {
   deal: Deal
@@ -15,7 +14,6 @@ interface DealDetailsModalProps {
 export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
   const [showUpload, setShowUpload] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const { user } = useAuth()
 
   const { data: documents, isLoading: documentsLoading, refetch } = useQuery<Document[]>(
     ['deal-documents', deal.id],
