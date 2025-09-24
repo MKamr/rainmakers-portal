@@ -448,7 +448,6 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                                   <Download className="h-4 w-4" />
                                 </a>
                               )}
-                              {user?.isAdmin ? (
                               <button
                                 onClick={() => handleDeleteDocument(document.id)}
                                 className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-600 rounded-lg transition-all duration-200"
@@ -456,11 +455,6 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
-                              ) : (
-                                <div className="p-2 text-gray-600 bg-gray-800 rounded-lg" title="Admin only">
-                                  <Shield className="h-4 w-4" />
-                                </div>
-                              )}
                             </div>
                           </div>
                         ))}

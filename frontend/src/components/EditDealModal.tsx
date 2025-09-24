@@ -98,67 +98,66 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         </span>
 
         <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Header */}
-            <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <Edit className="h-6 w-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">✏️ Edit Deal</h3>
-                    <p className="text-sm text-gray-300">Update deal information and details</p>
-                  </div>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Edit className="h-6 w-6 text-blue-400" />
                 </div>
-                <button 
-                  type="button" 
-                  onClick={onClose} 
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div>
+                  <h3 className="text-xl font-bold text-white">✏️ Edit Deal</h3>
+                  <p className="text-sm text-gray-300">Update deal information and details</p>
+                </div>
               </div>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
+          </div>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-600">
-              <nav className="flex space-x-8 px-8">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('details')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'details'
-                      ? 'border-blue-500 text-blue-400'
-                      : 'border-transparent text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Edit className="w-4 h-4" />
-                    <span>Deal Details</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('documents')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'documents'
-                      ? 'border-blue-500 text-blue-400'
-                      : 'border-transparent text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4" />
-                    <span>Documents</span>
-                  </div>
-                </button>
-              </nav>
-            </div>
+          {/* Tabs */}
+          <div className="border-b border-gray-600">
+            <nav className="flex space-x-8 px-8">
+              <button
+                type="button"
+                onClick={() => setActiveTab('details')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'details'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Edit className="w-4 h-4" />
+                  <span>Deal Details</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('documents')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'documents'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Documents</span>
+                </div>
+              </button>
+            </nav>
+          </div>
 
-            {/* Tab Content */}
-            {activeTab === 'details' ? (
-              <div>
-                {/* Form Content */}
+          {/* Tab Content */}
+          {activeTab === 'details' ? (
+            <form onSubmit={handleSubmit(onSubmit)}>
+              {/* Form Content */}
             <div className="p-8 space-y-8">
               {/* Client Information Section */}
               <div className="space-y-6">
@@ -436,13 +435,13 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                 </div>
               </div>
             </div>
-              </div>
+              </form>
             ) : (
               <div className="p-8">
                 <DocumentUpload dealId={deal.id} />
               </div>
             )}
-          </form>
+          </div>
         </div>
       </div>
     </div>

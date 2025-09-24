@@ -129,21 +129,22 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
           disabled={isUploading}
         />
         
-        <div className="flex flex-col items-center space-y-2">
-          <Upload className="w-8 h-8 text-gray-400" />
-          <div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-            >
-              {isUploading ? 'Uploading...' : 'Click to upload documents'}
-            </button>
-            <p className="text-sm text-gray-500 mt-1">
-              PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max 10MB)
-            </p>
+          <div className="flex flex-col items-center space-y-2">
+            <Upload className="w-8 h-8 text-gray-400" />
+            <div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+              >
+                {isUploading ? 'Uploading...' : 'Click to upload documents'}
+              </button>
+              <p className="text-sm text-gray-500 mt-1">
+                PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max 10MB)
+              </p>
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Documents List */}
@@ -186,6 +187,7 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
                 <button
                   onClick={() => handleDelete(doc.id)}
                   disabled={deleteMutation.isLoading}
+                  type="button"
                   className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
                   title="Delete document"
                 >
