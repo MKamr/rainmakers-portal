@@ -37,19 +37,31 @@ const upload = multer({
 router.get('/deal/:dealId', async (req: Request, res: Response) => {
   try {
     const { dealId } = req.params;
+    console.log('📄 [DOCUMENTS] Getting documents for deal:', dealId);
+    console.log('📄 [DOCUMENTS] User ID:', req.user?.id);
 
     // Verify deal belongs to user
     const deal = await FirebaseService.getDealById(dealId);
-    if (!deal || deal.userId !== req.user!.id) {
+    if (!deal) {
+      console.log('📄 [DOCUMENTS] Deal not found:', dealId);
       return res.status(404).json({ error: 'Deal not found' });
     }
+    
+    if (deal.userId !== req.user!.id) {
+      console.log('📄 [DOCUMENTS] Deal does not belong to user. Deal userId:', deal.userId, 'Request userId:', req.user!.id);
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
+    console.log('📄 [DOCUMENTS] Deal found, getting documents from OneDrive...');
+    
     // Get documents from OneDrive
     const documents = await OneDriveService.getDealFiles(dealId);
+    console.log('📄 [DOCUMENTS] Documents retrieved:', documents.length);
+    
     res.json(documents);
   } catch (error) {
-    console.error('Get documents error:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+    console.error('📄 [DOCUMENTS] Get documents error:', error);
+    res.status(500).json({ error: 'Failed to fetch documents', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -59,22 +71,39 @@ router.post('/upload', upload.single('file'), [
   body('tags').optional().isArray().withMessage('Tags must be an array'),
 ], async (req: Request, res: Response) => {
   try {
+    console.log('📄 [UPLOAD] Upload request received');
+    console.log('📄 [UPLOAD] User ID:', req.user?.id);
+    console.log('📄 [UPLOAD] Request body:', req.body);
+    console.log('📄 [UPLOAD] File:', req.file ? { name: req.file.originalname, size: req.file.size, type: req.file.mimetype } : 'No file');
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('📄 [UPLOAD] Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     if (!req.file) {
+      console.log('📄 [UPLOAD] No file uploaded');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const { dealId, tags = [] } = req.body;
+    console.log('📄 [UPLOAD] Deal ID:', dealId);
+    console.log('📄 [UPLOAD] Tags:', tags);
 
     // Verify deal belongs to user
     const deal = await FirebaseService.getDealById(dealId);
-    if (!deal || deal.userId !== req.user!.id) {
+    if (!deal) {
+      console.log('📄 [UPLOAD] Deal not found:', dealId);
       return res.status(404).json({ error: 'Deal not found' });
     }
+    
+    if (deal.userId !== req.user!.id) {
+      console.log('📄 [UPLOAD] Deal does not belong to user. Deal userId:', deal.userId, 'Request userId:', req.user!.id);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    console.log('📄 [UPLOAD] Deal found, uploading to OneDrive...');
 
     // Upload to OneDrive
     const oneDriveFile = await OneDriveService.uploadFile(
@@ -83,6 +112,8 @@ router.post('/upload', upload.single('file'), [
       req.file.buffer,
       req.file.mimetype
     );
+
+    console.log('📄 [UPLOAD] File uploaded to OneDrive:', oneDriveFile.id);
 
     res.status(201).json({
       message: 'Document uploaded successfully',
@@ -98,8 +129,8 @@ router.post('/upload', upload.single('file'), [
       }
     });
   } catch (error) {
-    console.error('Upload document error:', error);
-    res.status(500).json({ error: 'Failed to upload document' });
+    console.error('📄 [UPLOAD] Upload error:', error);
+    res.status(500).json({ error: 'Failed to upload document', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
