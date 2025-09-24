@@ -8,6 +8,7 @@ import { requireAdmin } from '../middleware/auth';
 import { Timestamp } from 'firebase-admin/firestore';
 import axios from 'axios';
 import multer from 'multer';
+import { generatePKCEChallenge } from '../utils/pkce';
 
 const router = express.Router();
 
@@ -247,27 +248,38 @@ router.get('/deals', async (req: Request, res: Response) => {
   }
 });
 
-// OneDrive OAuth callback (public route)
-router.get('/onedrive/callback', async (req: Request, res: Response) => {
+// Generate PKCE challenge for OneDrive OAuth (public endpoint)
+router.post('/onedrive/pkce', async (req: Request, res: Response) => {
   try {
-    const { code, error } = req.query;
+    const pkceChallenge = generatePKCEChallenge();
+    
+    res.json({
+      codeChallenge: pkceChallenge.codeChallenge,
+      codeVerifier: pkceChallenge.codeVerifier,
+      codeChallengeMethod: pkceChallenge.codeChallengeMethod
+    });
+  } catch (error) {
+    console.error('PKCE generation error:', error);
+    res.status(500).json({ error: 'Failed to generate PKCE challenge' });
+  }
+});
 
-    if (error) {
-      console.error('OneDrive OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
+// Exchange OneDrive authorization code for tokens using PKCE
+router.post('/onedrive/exchange', async (req: Request, res: Response) => {
+  try {
+    const { code, codeVerifier } = req.body;
+
+    if (!code || !codeVerifier) {
+      return res.status(400).json({ error: 'Code and code verifier are required' });
     }
 
-    if (!code) {
-      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
-    }
-
-    // Exchange code for tokens
+    // Exchange code for tokens using PKCE
     const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
       client_id: process.env.MICROSOFT_CLIENT_ID || '',
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
       code,
       redirect_uri: process.env.MICROSOFT_REDIRECT_URI || '',
       grant_type: 'authorization_code',
+      code_verifier: codeVerifier,
       scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
     });
 
@@ -288,14 +300,41 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
       }
     });
 
-    // Redirect back to admin page with success
-    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_success=true&user=${encodeURIComponent(JSON.stringify({
-      email: userResponse.data.mail || userResponse.data.userPrincipalName,
-      name: userResponse.data.displayName
-    }))}`);
+    res.json({
+      success: true,
+      message: 'OneDrive connected successfully',
+      user: {
+        email: userResponse.data.mail || userResponse.data.userPrincipalName,
+        name: userResponse.data.displayName
+      }
+    });
+  } catch (error) {
+    console.error('OneDrive token exchange error:', error);
+    res.status(500).json({ error: 'Failed to exchange authorization code for tokens' });
+  }
+});
+
+// OneDrive OAuth callback (public route)
+router.get('/onedrive/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, error, state } = req.query;
+
+    if (error) {
+      console.error('OneDrive OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
+    }
+
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
+    }
+
+    // For PKCE, we need to get the code verifier from the frontend
+    // Since we can't access sessionStorage from backend, we'll use a different approach
+    // We'll redirect to frontend with the code, and let frontend handle the token exchange
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_code=${code}&onedrive_state=${state || ''}`);
   } catch (error) {
     console.error('OneDrive callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=connection_failed`);
+    res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=callback_failed`);
   }
 });
 

@@ -15,19 +15,64 @@ export function AdminPage() {
   // Handle OneDrive callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    const onedriveSuccess = urlParams.get('onedrive_success')
+    const onedriveCode = urlParams.get('onedrive_code')
     const onedriveError = urlParams.get('onedrive_error')
     
-    if (onedriveSuccess === 'true') {
-      toast.success('OneDrive connected successfully!')
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname)
+    if (onedriveCode) {
+      // Exchange code for tokens
+      handleOneDriveCodeExchange(onedriveCode)
     } else if (onedriveError) {
       toast.error(`OneDrive connection failed: ${onedriveError}`)
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname)
     }
   }, [])
+
+  const handleOneDriveCodeExchange = async (code: string) => {
+    try {
+      const codeVerifier = sessionStorage.getItem('onedrive_code_verifier')
+      
+      if (!codeVerifier) {
+        throw new Error('Code verifier not found')
+      }
+
+      const response = await fetch('/api/admin/onedrive/exchange', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code,
+          codeVerifier
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to exchange code for tokens')
+      }
+
+      await response.json()
+      
+      // Clear session storage
+      sessionStorage.removeItem('onedrive_code_verifier')
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+      
+      toast.success('OneDrive connected successfully!')
+      
+      // Refresh OneDrive status
+      window.location.reload()
+    } catch (error) {
+      console.error('OneDrive code exchange error:', error)
+      toast.error('Failed to complete OneDrive connection')
+      
+      // Clear session storage and URL parameters
+      sessionStorage.removeItem('onedrive_code_verifier')
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }
   const queryClient = useQueryClient()
   
   // Deal details modal state
@@ -285,12 +330,36 @@ export function AdminPage() {
     await saveGHLConfigMutation.mutateAsync(ghlConfig)
   }
 
-  const handleOneDriveConnect = () => {
-    const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
-    const redirectUri = encodeURIComponent('https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback')
-    const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`
-    window.location.href = authUrl
+  const handleOneDriveConnect = async () => {
+    try {
+      // Generate PKCE challenge
+      const response = await fetch('/api/onedrive/pkce', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate PKCE challenge');
+      }
+      
+      const { codeChallenge, codeVerifier } = await response.json();
+      
+      // Store code verifier for later use
+      sessionStorage.setItem('onedrive_code_verifier', codeVerifier);
+      
+      // Build authorization URL with PKCE
+      const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
+      const redirectUri = encodeURIComponent('https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback')
+      const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`
+      
+      window.location.href = authUrl
+    } catch (error) {
+      console.error('OneDrive PKCE generation error:', error);
+      toast.error('Failed to initiate OneDrive connection');
+    }
   }
 
 

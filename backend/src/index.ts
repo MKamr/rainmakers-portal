@@ -80,8 +80,10 @@ app.use(session({
 app.use('/api/auth', authRoutes);
 // Discord OAuth callback (separate route for browser redirect) - explicit mounting
 app.use('/auth', authRoutes);
-// OneDrive OAuth callback (public, no authentication required)
+// OneDrive OAuth callback and PKCE (public, no authentication required)
 app.use('/auth', adminRoutes);
+// Public PKCE endpoint for OneDrive
+app.use('/api/onedrive', adminRoutes);
 // Webhook routes (public, no authentication required)
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
