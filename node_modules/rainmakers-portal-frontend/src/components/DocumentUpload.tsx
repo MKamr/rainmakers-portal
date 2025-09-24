@@ -107,7 +107,8 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (mimeType: string) => {
+  const getFileIcon = (mimeType?: string) => {
+    if (!mimeType) return '📄';
     if (mimeType.includes('pdf')) return '📄';
     if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';

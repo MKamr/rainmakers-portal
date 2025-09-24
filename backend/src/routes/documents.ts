@@ -59,7 +59,13 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       const documents = await OneDriveService.getDealFiles(dealId);
       console.log('📄 [DOCUMENTS] Documents retrieved:', documents.length);
       
-      res.json(documents);
+      // Set userId for each document
+      const documentsWithUserId = documents.map(doc => ({
+        ...doc,
+        userId: req.user!.id
+      }));
+      
+      res.json(documentsWithUserId);
     } catch (oneDriveError: any) {
       // If folder doesn't exist (404), try to create it
       if (oneDriveError.message?.includes('Failed to fetch files') || oneDriveError.response?.status === 404) {
@@ -72,7 +78,13 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
           const documents = await OneDriveService.getDealFiles(dealId);
           console.log('📄 [DOCUMENTS] Documents retrieved after folder creation:', documents.length);
           
-          res.json(documents);
+          // Set userId for each document
+          const documentsWithUserId = documents.map(doc => ({
+            ...doc,
+            userId: req.user!.id
+          }));
+          
+          res.json(documentsWithUserId);
         } catch (createError) {
           console.error('❌ [DOCUMENTS] Failed to create deal folder:', createError);
           res.status(500).json({ error: 'Failed to create deal folder', details: createError instanceof Error ? createError.message : 'Unknown error' });
