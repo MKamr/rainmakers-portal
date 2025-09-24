@@ -79,7 +79,7 @@ app.use(session({
 
 // Routes - Public routes first to avoid conflicts
 // Public OneDrive routes (no authentication required) - MUST be first
-app.use('/api/onedrive-public', onedriveRoutes);
+app.use('/api/onedrive', onedriveRoutes);
 app.use('/api/auth', authRoutes);
 // Discord OAuth callback (separate route for browser redirect) - explicit mounting
 app.use('/auth', authRoutes);
