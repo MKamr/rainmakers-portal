@@ -157,6 +157,56 @@ const upload = multer({
   }
 });
 
+// OneDrive status endpoint (accessible to all authenticated users)
+router.get('/onedrive/status', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 Checking OneDrive connection status...');
+    
+    const token = await FirebaseService.getLatestOneDriveToken();
+    console.log('🔑 OneDrive token exists:', !!token);
+    
+    if (!token) {
+      console.log('❌ No OneDrive token found');
+      return res.json({ 
+        connected: false,
+        message: 'OneDrive not connected'
+      });
+    }
+
+    // Check if token is expired
+    const now = new Date();
+    const expiresAt = token.expiresAt.toDate();
+    const isExpired = now >= expiresAt;
+    
+    console.log('⏰ Token expires at:', expiresAt.toISOString());
+    console.log('⏰ Current time:', now.toISOString());
+    console.log('⏰ Is expired:', isExpired);
+
+    if (isExpired) {
+      console.log('⚠️ OneDrive token is expired');
+      return res.json({ 
+        connected: false,
+        expired: true,
+        expiresAt: expiresAt.toISOString(),
+        message: 'OneDrive token expired'
+      });
+    }
+
+    console.log('✅ OneDrive is connected and token is valid');
+    return res.json({ 
+      connected: true,
+      expiresAt: expiresAt.toISOString(),
+      message: 'OneDrive connected'
+    });
+  } catch (error) {
+    console.error('❌ OneDrive status check error:', error);
+    return res.status(500).json({ 
+      connected: false,
+      error: 'Failed to check OneDrive status'
+    });
+  }
+});
+
 // Apply admin middleware to all routes
 router.use(requireAdmin);
 
@@ -319,49 +369,6 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('OneDrive callback error:', error);
     res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=callback_failed`);
-  }
-});
-
-// Get OneDrive connection status
-router.get('/onedrive/status', async (req: Request, res: Response) => {
-  try {
-    console.log('🔍 Checking OneDrive connection status...');
-    
-    const token = await FirebaseService.getLatestOneDriveToken();
-    console.log('🔑 OneDrive token exists:', !!token);
-    
-    if (!token) {
-      console.log('❌ No OneDrive token found');
-      return res.json({ 
-        connected: false,
-        message: 'OneDrive not connected',
-        error: 'No OneDrive token found'
-      });
-    }
-
-    // Check if token is expired
-    const expiresAt = token.expiresAt instanceof Date ? token.expiresAt : token.expiresAt.toDate();
-    const isExpired = new Date() >= expiresAt;
-    
-    console.log('⏰ Token expiration check:', {
-      expiresAt: expiresAt.toISOString(),
-      isExpired,
-      currentTime: new Date().toISOString()
-    });
-    
-    res.json({
-      connected: true,
-      expired: isExpired,
-      expiresAt: expiresAt,
-      message: isExpired ? 'OneDrive token expired' : 'OneDrive connected successfully'
-    });
-  } catch (error) {
-    console.error('❌ OneDrive status error:', error);
-    res.status(500).json({ 
-      connected: false,
-      error: 'Failed to check OneDrive status',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
 });
 
