@@ -249,7 +249,7 @@ router.get('/deals', async (req: Request, res: Response) => {
 });
 
 // Generate PKCE challenge for OneDrive OAuth (public endpoint)
-router.post('/onedrive/pkce', async (req: Request, res: Response) => {
+router.post('/pkce', async (req: Request, res: Response) => {
   try {
     console.log('🔑 [PKCE] Generating PKCE challenge...');
     const pkceChallenge = generatePKCEChallenge();
