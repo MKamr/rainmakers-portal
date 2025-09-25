@@ -232,19 +232,65 @@ export class OneDriveService {
             console.log('✅ [ONEDRIVE] Deal folder created:', dealFolderPath);
             return response.data.id;
           } catch (createError: any) {
-            // If we get a 409 conflict, the folder already exists, get its ID
+            // If we get a 409 conflict, the folder already exists or was renamed
             if (createError.response?.status === 409) {
-              console.log('📁 [ONEDRIVE] Deal folder already exists (409 conflict), getting existing folder ID...');
-              const existingResponse = await axios.get(
-                `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
-                {
-                  headers: {
-                    'Authorization': `Bearer ${accessToken}`
+              console.log('📁 [ONEDRIVE] Deal folder conflict (409), searching for existing folder...');
+              
+              // Try to find the folder by searching in the parent directory
+              try {
+                const searchResponse = await axios.get(
+                  `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children?$filter=startswith(name,'${encodeURIComponent(folderName.split(' (')[0])}')`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}`
+                    }
+                  }
+                );
+                
+                if (searchResponse.data.value && searchResponse.data.value.length > 0) {
+                  // Find the folder that contains the dealId
+                  const matchingFolder = searchResponse.data.value.find((folder: any) => 
+                    folder.name.includes(dealId) && folder.folder
+                  );
+                  
+                  if (matchingFolder) {
+                    console.log('✅ [ONEDRIVE] Found existing deal folder:', matchingFolder.name);
+                    return matchingFolder.id;
                   }
                 }
-              );
-              console.log('✅ [ONEDRIVE] Using existing deal folder:', dealFolderPath);
-              return existingResponse.data.id;
+                
+                // If no matching folder found, try to get the folder by exact name
+                const existingResponse = await axios.get(
+                  `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}`
+                    }
+                  }
+                );
+                console.log('✅ [ONEDRIVE] Using existing deal folder:', dealFolderPath);
+                return existingResponse.data.id;
+              } catch (searchError: any) {
+                console.log('⚠️ [ONEDRIVE] Could not find existing folder, creating with unique name...');
+                // If we can't find the existing folder, create with a unique name
+                const uniqueFolderName = `${folderName} - ${Date.now()}`;
+                const uniqueResponse = await axios.post(
+                  `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+                  {
+                    name: uniqueFolderName,
+                    folder: {},
+                    '@microsoft.graph.conflictBehavior': 'rename'
+                  },
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Content-Type': 'application/json'
+                    }
+                  }
+                );
+                console.log('✅ [ONEDRIVE] Created unique deal folder:', uniqueFolderName);
+                return uniqueResponse.data.id;
+              }
             } else {
               throw createError;
             }
