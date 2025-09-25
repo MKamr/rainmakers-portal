@@ -213,23 +213,42 @@ export class OneDriveService {
         // If folder doesn't exist (404), create it
         if (error.response?.status === 404) {
           console.log('📁 [ONEDRIVE] Deal folder does not exist, creating...');
-          const response = await axios.post(
-            `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
-            {
-              name: folderName,
-              folder: {},
-              '@microsoft.graph.conflictBehavior': 'fail' // Fail if folder already exists
-            },
-            {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
+          try {
+            const response = await axios.post(
+              `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+              {
+                name: folderName,
+                folder: {},
+                '@microsoft.graph.conflictBehavior': 'rename' // Rename if folder already exists
+              },
+              {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json'
+                }
               }
-            }
-          );
+            );
 
-          console.log('✅ [ONEDRIVE] Deal folder created:', dealFolderPath);
-          return response.data.id;
+            console.log('✅ [ONEDRIVE] Deal folder created:', dealFolderPath);
+            return response.data.id;
+          } catch (createError: any) {
+            // If we get a 409 conflict, the folder already exists, get its ID
+            if (createError.response?.status === 409) {
+              console.log('📁 [ONEDRIVE] Deal folder already exists (409 conflict), getting existing folder ID...');
+              const existingResponse = await axios.get(
+                `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                  }
+                }
+              );
+              console.log('✅ [ONEDRIVE] Using existing deal folder:', dealFolderPath);
+              return existingResponse.data.id;
+            } else {
+              throw createError;
+            }
+          }
         } else {
           throw error;
         }
