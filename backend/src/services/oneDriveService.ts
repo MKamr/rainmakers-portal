@@ -93,8 +93,8 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create the hierarchical folder structure: Hardwell Capital/Hardwell Capital $/Hardwell Capital Origination/Prospects/Pre-Approved Property
-      const folderPath = 'Hardwell Capital/Hardwell Capital $/Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      // Create the hierarchical folder structure: Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property
+      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       
       console.log('📁 [ONEDRIVE] Creating hierarchical folder structure:', folderPath);
       
@@ -218,7 +218,7 @@ export class OneDriveService {
       const dealFolderName = await this.getDealFolderName(dealId);
       
       // Use the hierarchical folder structure
-      const folderPath = 'Hardwell Capital/Hardwell Capital $/Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const filePath = `${folderPath}/${dealFolderName}/${filename}`;
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
@@ -267,7 +267,7 @@ export class OneDriveService {
       const dealFolderName = await this.getDealFolderName(dealId);
       
       // Use the hierarchical folder structure
-      const folderPath = 'Hardwell Capital/Hardwell Capital $/Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const dealFolderPath = `${folderPath}/${dealFolderName}`;
       
       console.log('📁 [ONEDRIVE] Getting files from:', dealFolderPath);

@@ -174,12 +174,7 @@ export function MatrixLoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center">
-            <div className="matrix-footer">
-             
-              
-            </div>
-          </div>
+         
         </div>
       </div>
 
