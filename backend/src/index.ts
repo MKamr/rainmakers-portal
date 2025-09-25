@@ -48,7 +48,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
-    'https://rain.club'
+    'https://rain.club',
+    'https://www.rain.club'
   ],
   credentials: true
 }));
@@ -136,7 +137,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
   console.log(`🔥 Database: Firebase Firestore`);
-  console.log(`🌐 Frontend URL: https://rain.club`);
+  console.log(`🌐 Frontend URL: https://www.rain.club`);
 });
 
 export default app;
