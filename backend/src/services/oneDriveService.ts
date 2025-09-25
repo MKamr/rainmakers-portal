@@ -93,59 +93,89 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Create the hierarchical folder structure: Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property
+      // Use the existing OneDrive path structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       
-      console.log('📁 [ONEDRIVE] Creating hierarchical folder structure:', folderPath);
+      console.log('📁 [ONEDRIVE] Checking existing folder structure:', folderPath);
       
-      // Split the path into individual folder names
-      const folderNames = folderPath.split('/');
-      let currentPath = '';
-      
-      // Create each folder in the hierarchy
-      for (let i = 0; i < folderNames.length; i++) {
-        const folderName = folderNames[i];
-        currentPath += (currentPath ? '/' : '') + folderName;
-        
-        try {
-          // Check if folder exists
-          await axios.get(
-            `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(currentPath)}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`
+      // First, check if the main folder path exists
+      try {
+        await axios.get(
+          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        console.log(`✅ [ONEDRIVE] Main folder path exists: ${folderPath}`);
+      } catch (error: any) {
+        // If main folder doesn't exist (404), create it
+        if (error.response?.status === 404) {
+          console.log(`📁 [ONEDRIVE] Main folder path doesn't exist, creating: ${folderPath}`);
+          
+          // Split the path into individual folder names
+          const folderNames = folderPath.split('/');
+          let currentPath = '';
+          
+          // Create each folder in the hierarchy
+          for (let i = 0; i < folderNames.length; i++) {
+            const folderName = folderNames[i];
+            currentPath += (currentPath ? '/' : '') + folderName;
+            
+            try {
+              // Check if this specific folder exists
+              await axios.get(
+                `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(currentPath)}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                  }
+                }
+              );
+              console.log(`📁 [ONEDRIVE] Folder exists: ${currentPath}`);
+            } catch (folderError: any) {
+              // If folder doesn't exist, create it
+              if (folderError.response?.status === 404) {
+                console.log(`📁 [ONEDRIVE] Creating folder: ${currentPath}`);
+                
+                const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
+                const createUrl = i === 0 
+                  ? `${this.GRAPH_BASE_URL}/me/drive/root/children`
+                  : `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(parentPath)}:/children`;
+                
+                try {
+                  await axios.post(
+                    createUrl,
+                    {
+                      name: folderName,
+                      folder: {},
+                      '@microsoft.graph.conflictBehavior': 'rename'
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                      }
+                    }
+                  );
+                  console.log(`✅ [ONEDRIVE] Folder created: ${currentPath}`);
+                } catch (createError: any) {
+                  // If we get a 409 conflict, the folder already exists, so continue
+                  if (createError.response?.status === 409) {
+                    console.log(`📁 [ONEDRIVE] Folder already exists (409 conflict): ${currentPath}`);
+                    continue;
+                  } else {
+                    throw createError;
+                  }
+                }
+              } else {
+                throw folderError;
               }
             }
-          );
-          console.log(`📁 [ONEDRIVE] Folder exists: ${currentPath}`);
-        } catch (error: any) {
-          // If folder doesn't exist, create it
-          if (error.response?.status === 404) {
-            console.log(`📁 [ONEDRIVE] Creating folder: ${currentPath}`);
-            
-            const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
-            const createUrl = i === 0 
-              ? `${this.GRAPH_BASE_URL}/me/drive/root/children`
-              : `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(parentPath)}:/children`;
-            
-            await axios.post(
-              createUrl,
-              {
-                name: folderName,
-                folder: {},
-                '@microsoft.graph.conflictBehavior': 'rename'
-              },
-              {
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-            console.log(`✅ [ONEDRIVE] Folder created: ${currentPath}`);
-          } else {
-            throw error;
           }
+        } else {
+          throw error;
         }
       }
       
@@ -217,7 +247,7 @@ export class OneDriveService {
       // Get the dynamic folder name based on property address
       const dealFolderName = await this.getDealFolderName(dealId);
       
-      // Use the hierarchical folder structure
+      // Use the existing OneDrive folder structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const filePath = `${folderPath}/${dealFolderName}/${filename}`;
       
@@ -266,7 +296,7 @@ export class OneDriveService {
       // Get the dynamic folder name based on property address
       const dealFolderName = await this.getDealFolderName(dealId);
       
-      // Use the hierarchical folder structure
+      // Use the existing OneDrive folder structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const dealFolderPath = `${folderPath}/${dealFolderName}`;
       
