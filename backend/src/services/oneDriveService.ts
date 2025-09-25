@@ -93,93 +93,9 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Use the existing OneDrive path structure
+      // Use the existing OneDrive path structure (these folders already exist)
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       
-      console.log('📁 [ONEDRIVE] Checking existing folder structure:', folderPath);
-      
-      // First, check if the main folder path exists
-      try {
-        await axios.get(
-          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          }
-        );
-        console.log(`✅ [ONEDRIVE] Main folder path exists: ${folderPath}`);
-      } catch (error: any) {
-        // If main folder doesn't exist (404), create it
-        if (error.response?.status === 404) {
-          console.log(`📁 [ONEDRIVE] Main folder path doesn't exist, creating: ${folderPath}`);
-          
-          // Split the path into individual folder names
-          const folderNames = folderPath.split('/');
-          let currentPath = '';
-          
-          // Create each folder in the hierarchy
-          for (let i = 0; i < folderNames.length; i++) {
-            const folderName = folderNames[i];
-            currentPath += (currentPath ? '/' : '') + folderName;
-            
-            try {
-              // Check if this specific folder exists
-              await axios.get(
-                `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(currentPath)}`,
-                {
-                  headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                  }
-                }
-              );
-              console.log(`📁 [ONEDRIVE] Folder exists: ${currentPath}`);
-            } catch (folderError: any) {
-              // If folder doesn't exist, create it
-              if (folderError.response?.status === 404) {
-                console.log(`📁 [ONEDRIVE] Creating folder: ${currentPath}`);
-                
-                const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
-                const createUrl = i === 0 
-                  ? `${this.GRAPH_BASE_URL}/me/drive/root/children`
-                  : `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(parentPath)}:/children`;
-                
-                try {
-                  await axios.post(
-                    createUrl,
-                    {
-                      name: folderName,
-                      folder: {},
-                      '@microsoft.graph.conflictBehavior': 'rename'
-                    },
-                    {
-                      headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                      }
-                    }
-                  );
-                  console.log(`✅ [ONEDRIVE] Folder created: ${currentPath}`);
-                } catch (createError: any) {
-                  // If we get a 409 conflict, the folder already exists, so continue
-                  if (createError.response?.status === 409) {
-                    console.log(`📁 [ONEDRIVE] Folder already exists (409 conflict): ${currentPath}`);
-                    continue;
-                  } else {
-                    throw createError;
-                  }
-                }
-              } else {
-                throw folderError;
-              }
-            }
-          }
-        } else {
-          throw error;
-        }
-      }
-      
-      // Now create the deal-specific folder inside the final folder
       // Use property address as folder name, fallback to dealId if not provided
       const folderName = propertyAddress ? 
         `${propertyAddress} (${dealId})` : 
@@ -188,18 +104,8 @@ export class OneDriveService {
       const dealFolderPath = `${folderPath}/${folderName}`;
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
-      // First check if the folder already exists
+      // First check if the deal folder already exists
       try {
-        await axios.get(
-          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          }
-        );
-        console.log('✅ [ONEDRIVE] Deal folder already exists:', dealFolderPath);
-        // Return the existing folder ID - we need to get it from the response
         const existingResponse = await axios.get(
           `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}`,
           {
@@ -208,6 +114,7 @@ export class OneDriveService {
             }
           }
         );
+        console.log('✅ [ONEDRIVE] Deal folder already exists:', dealFolderPath);
         return existingResponse.data.id;
       } catch (error: any) {
         // If folder doesn't exist (404), create it
