@@ -61,28 +61,28 @@ export class OneDriveService {
       formData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
       formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
 
-      const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+        const response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
 
-      const { access_token, refresh_token, expires_in } = response.data;
+        const { access_token, refresh_token, expires_in } = response.data;
       console.log('✅ [TOKEN] Tokens refreshed successfully');
 
-      // Update token in Firebase
-      const token = await FirebaseService.getLatestOneDriveToken();
-      if (token) {
+        // Update token in Firebase
+        const token = await FirebaseService.getLatestOneDriveToken();
+        if (token) {
         await FirebaseService.saveOneDriveToken({
-          accessToken: access_token,
-          refreshToken: refresh_token,
+            accessToken: access_token,
+            refreshToken: refresh_token,
           expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
           scope: token.scope
-        });
+          });
         console.log('✅ [TOKEN] Updated tokens saved to Firebase');
-      }
+        }
 
-      return access_token;
+        return access_token;
     } catch (error) {
       console.error('❌ [TOKEN] Error refreshing OneDrive token:', error);
       throw new Error('Failed to refresh OneDrive token');
@@ -99,11 +99,14 @@ export class OneDriveService {
       // For SharePoint shared folders, we need to find the correct SharePoint site first
       console.log('🔍 [ONEDRIVE] Searching for SharePoint site with shared folder...');
       
-      // Try to find the SharePoint site that contains this folder
+      // Use the specific SharePoint site we know exists
       let sharePointSiteId = null;
       try {
-        const sitesResponse = await axios.get(
-          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+        console.log('🔍 [ONEDRIVE] Getting SharePoint site: hardwellcapital.sharepoint.com/sites/HardwellCapital');
+        
+        // Use the specific site hostname and site name from the URL
+        const siteResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`
@@ -111,19 +114,13 @@ export class OneDriveService {
           }
         );
         
-        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
-          // Find the site that likely contains our folder
-          const hardwellSite = sitesResponse.data.value.find((site: any) => 
-            site.displayName && site.displayName.toLowerCase().includes('hardwell')
-          );
-          
-          if (hardwellSite) {
-            sharePointSiteId = hardwellSite.id;
-            console.log('✅ [ONEDRIVE] Found SharePoint site:', hardwellSite.displayName);
-          }
+        if (siteResponse.data && siteResponse.data.id) {
+          sharePointSiteId = siteResponse.data.id;
+          console.log('✅ [ONEDRIVE] Found SharePoint site:', siteResponse.data.displayName, 'ID:', siteResponse.data.id);
         }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site, trying OneDrive approach...');
+        console.log('⚠️ [ONEDRIVE] Error accessing specific SharePoint site:', siteError.message);
+        console.log('⚠️ [ONEDRIVE] Falling back to OneDrive approach...');
       }
       
       // If we found a SharePoint site, use it; otherwise fall back to OneDrive
@@ -200,7 +197,7 @@ export class OneDriveService {
                     throw createError;
                   }
                 }
-              } else {
+        } else {
                 throw folderError;
               }
             }
@@ -248,7 +245,7 @@ export class OneDriveService {
       // If no existing folder found, try to create it
       console.log('📁 [ONEDRIVE] No existing folder found, creating new one...');
       try {
-        const response = await axios.post(
+      const response = await axios.post(
           `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
           {
             name: folderName,
@@ -299,16 +296,16 @@ export class OneDriveService {
                   `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
               {
                 name: uniqueFolderName,
-                folder: {},
-                '@microsoft.graph.conflictBehavior': 'rename'
-              },
-              {
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
+          folder: {},
+          '@microsoft.graph.conflictBehavior': 'rename'
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
             console.log('✅ [ONEDRIVE] Created unique deal folder:', uniqueResponse.data.name);
             return uniqueResponse.data.id;
           } catch (finalError: any) {
@@ -350,8 +347,10 @@ export class OneDriveService {
       // Find the SharePoint site for the upload
       let sharePointSiteId = null;
       try {
-        const sitesResponse = await axios.get(
-          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+        console.log('🔍 [ONEDRIVE] Getting SharePoint site for upload: hardwellcapital.sharepoint.com/sites/HardwellCapital');
+        
+        const siteResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`
@@ -359,17 +358,12 @@ export class OneDriveService {
           }
         );
         
-        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
-          const hardwellSite = sitesResponse.data.value.find((site: any) => 
-            site.displayName && site.displayName.toLowerCase().includes('hardwell')
-          );
-          
-          if (hardwellSite) {
-            sharePointSiteId = hardwellSite.id;
-          }
+        if (siteResponse.data && siteResponse.data.id) {
+          sharePointSiteId = siteResponse.data.id;
+          console.log('✅ [ONEDRIVE] Found SharePoint site for upload:', siteResponse.data.displayName);
         }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site for upload, using OneDrive...');
+        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for upload, using OneDrive...');
       }
       
       const baseUrl = sharePointSiteId 
@@ -419,8 +413,10 @@ export class OneDriveService {
       // Find the SharePoint site for the file retrieval
       let sharePointSiteId = null;
       try {
-        const sitesResponse = await axios.get(
-          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+        console.log('🔍 [ONEDRIVE] Getting SharePoint site for file retrieval: hardwellcapital.sharepoint.com/sites/HardwellCapital');
+        
+        const siteResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`
@@ -428,17 +424,12 @@ export class OneDriveService {
           }
         );
         
-        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
-          const hardwellSite = sitesResponse.data.value.find((site: any) => 
-            site.displayName && site.displayName.toLowerCase().includes('hardwell')
-          );
-          
-          if (hardwellSite) {
-            sharePointSiteId = hardwellSite.id;
-          }
+        if (siteResponse.data && siteResponse.data.id) {
+          sharePointSiteId = siteResponse.data.id;
+          console.log('✅ [ONEDRIVE] Found SharePoint site for file retrieval:', siteResponse.data.displayName);
         }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site for file retrieval, using OneDrive...');
+        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for file retrieval, using OneDrive...');
       }
       
       const baseUrl = sharePointSiteId 
