@@ -48,8 +48,9 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Deal not found' });
     }
     
-    if (deal.userId !== req.user!.id) {
-      console.log('📄 [DOCUMENTS] Deal does not belong to user. Deal userId:', deal.userId, 'Request userId:', req.user!.id);
+    // Allow access if user owns the deal OR if user is admin
+    if (deal.userId !== req.user!.id && !req.user!.isAdmin) {
+      console.log('📄 [DOCUMENTS] Deal does not belong to user and user is not admin. Deal userId:', deal.userId, 'Request userId:', req.user!.id, 'Is Admin:', req.user!.isAdmin);
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -157,8 +158,9 @@ router.post('/upload', upload.single('file'), [
       return res.status(404).json({ error: 'Deal not found' });
     }
     
-    if (deal.userId !== req.user!.id) {
-      console.log('📄 [UPLOAD] Deal does not belong to user. Deal userId:', deal.userId, 'Request userId:', req.user!.id);
+    // Allow access if user owns the deal OR if user is admin
+    if (deal.userId !== req.user!.id && !req.user!.isAdmin) {
+      console.log('📄 [UPLOAD] Deal does not belong to user and user is not admin. Deal userId:', deal.userId, 'Request userId:', req.user!.id, 'Is Admin:', req.user!.isAdmin);
       return res.status(403).json({ error: 'Access denied' });
     }
 

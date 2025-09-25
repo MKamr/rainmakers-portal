@@ -701,9 +701,9 @@ router.put('/:id', [
       additionalInformation: normalized.additionalInformation
     };
 
-    // Verify deal belongs to user
+    // Verify deal belongs to user or user is admin
     const deal = await FirebaseService.getDealById(id);
-    if (!deal || deal.userId !== req.user!.id) {
+    if (!deal || (deal.userId !== req.user!.id && !req.user!.isAdmin)) {
       return res.status(404).json({ error: 'Deal not found' });
     }
 
@@ -1516,9 +1516,9 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Verify deal belongs to user
+    // Verify deal belongs to user or user is admin
     const deal = await FirebaseService.getDealById(id);
-    if (!deal || deal.userId !== req.user!.id) {
+    if (!deal || (deal.userId !== req.user!.id && !req.user!.isAdmin)) {
       return res.status(404).json({ error: 'Deal not found' });
     }
 
@@ -1537,9 +1537,9 @@ router.get('/:id/documents', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Verify deal belongs to user
+    // Verify deal belongs to user or user is admin
     const deal = await FirebaseService.getDealById(id);
-    if (!deal || deal.userId !== req.user!.id) {
+    if (!deal || (deal.userId !== req.user!.id && !req.user!.isAdmin)) {
       return res.status(404).json({ error: 'Deal not found' });
     }
 
