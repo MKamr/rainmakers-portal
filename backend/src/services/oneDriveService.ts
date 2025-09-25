@@ -93,8 +93,122 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Use the existing OneDrive path structure (these folders already exist)
+      // Use the SharePoint shared folder path structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      
+      // For SharePoint shared folders, we need to find the correct SharePoint site first
+      console.log('🔍 [ONEDRIVE] Searching for SharePoint site with shared folder...');
+      
+      // Try to find the SharePoint site that contains this folder
+      let sharePointSiteId = null;
+      try {
+        const sitesResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
+          // Find the site that likely contains our folder
+          const hardwellSite = sitesResponse.data.value.find((site: any) => 
+            site.displayName && site.displayName.toLowerCase().includes('hardwell')
+          );
+          
+          if (hardwellSite) {
+            sharePointSiteId = hardwellSite.id;
+            console.log('✅ [ONEDRIVE] Found SharePoint site:', hardwellSite.displayName);
+          }
+        }
+      } catch (siteError: any) {
+        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site, trying OneDrive approach...');
+      }
+      
+      // If we found a SharePoint site, use it; otherwise fall back to OneDrive
+      const baseUrl = sharePointSiteId 
+        ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
+        : `${this.GRAPH_BASE_URL}/me/drive`;
+      
+      console.log('🔍 [ONEDRIVE] Checking if parent folder exists:', folderPath);
+      try {
+        await axios.get(
+          `${baseUrl}/root:/${encodeURIComponent(folderPath)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        console.log('✅ [ONEDRIVE] Parent folder exists:', folderPath);
+      } catch (parentError: any) {
+        if (parentError.response?.status === 404) {
+          console.log('📁 [ONEDRIVE] Parent folder does not exist, creating it...');
+          
+          // Create the parent folder structure
+          const folderNames = folderPath.split('/');
+          let currentPath = '';
+          
+          for (let i = 0; i < folderNames.length; i++) {
+            const folderName = folderNames[i];
+            currentPath += (currentPath ? '/' : '') + folderName;
+            
+            try {
+              // Check if this specific folder exists
+              await axios.get(
+                `${baseUrl}/root:/${encodeURIComponent(currentPath)}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                  }
+                }
+              );
+              console.log(`✅ [ONEDRIVE] Folder exists: ${currentPath}`);
+            } catch (folderError: any) {
+              // If folder doesn't exist, create it
+              if (folderError.response?.status === 404) {
+                console.log(`📁 [ONEDRIVE] Creating folder: ${currentPath}`);
+                
+                const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
+                const createUrl = i === 0 
+                  ? `${baseUrl}/root/children`
+                  : `${baseUrl}/root:/${encodeURIComponent(parentPath)}:/children`;
+                
+                try {
+                  await axios.post(
+                    createUrl,
+                    {
+                      name: folderName,
+                      folder: {},
+                      '@microsoft.graph.conflictBehavior': 'rename'
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                      }
+                    }
+                  );
+                  console.log(`✅ [ONEDRIVE] Folder created: ${currentPath}`);
+                } catch (createError: any) {
+                  // If we get a 409 conflict, the folder already exists, so continue
+                  if (createError.response?.status === 409) {
+                    console.log(`📁 [ONEDRIVE] Folder already exists (409 conflict): ${currentPath}`);
+                    continue;
+                  } else {
+                    throw createError;
+                  }
+                }
+              } else {
+                throw folderError;
+              }
+            }
+          }
+        } else {
+          throw parentError;
+        }
+      }
       
       // Use property address as folder name, fallback to dealId if not provided
       const folderName = propertyAddress ? 
@@ -104,11 +218,11 @@ export class OneDriveService {
       const dealFolderPath = `${folderPath}/${folderName}`;
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
-      // First, search for existing folders that might match this deal
+      // Now search for existing deal folders
       console.log('🔍 [ONEDRIVE] Searching for existing deal folders...');
       try {
         const searchResponse = await axios.get(
-          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+          `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`
@@ -135,7 +249,7 @@ export class OneDriveService {
       console.log('📁 [ONEDRIVE] No existing folder found, creating new one...');
       try {
         const response = await axios.post(
-          `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+          `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
           {
             name: folderName,
             folder: {},
@@ -156,9 +270,9 @@ export class OneDriveService {
         if (createError.response?.status === 409) {
           console.log('📁 [ONEDRIVE] Folder creation conflict (409), searching for renamed folder...');
           
-          try {
-            const searchResponse = await axios.get(
-              `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+              try {
+                const searchResponse = await axios.get(
+                  `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
               {
                 headers: {
                   'Authorization': `Bearer ${accessToken}`
@@ -181,8 +295,8 @@ export class OneDriveService {
             // If still not found, create with timestamp
             console.log('⚠️ [ONEDRIVE] Creating folder with unique timestamp...');
             const uniqueFolderName = `${folderName} - ${Date.now()}`;
-            const uniqueResponse = await axios.post(
-              `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(folderPath)}:/children`,
+                const uniqueResponse = await axios.post(
+                  `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
               {
                 name: uniqueFolderName,
                 folder: {},
@@ -218,7 +332,7 @@ export class OneDriveService {
       // Get the dynamic folder name based on property address
       const dealFolderName = await this.getDealFolderName(dealId);
       
-      // Use the existing OneDrive folder structure
+      // Use the SharePoint shared folder structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const filePath = `${folderPath}/${dealFolderName}/${filename}`;
       
@@ -233,8 +347,37 @@ export class OneDriveService {
         console.log('⚠️ [ONEDRIVE] Deal folder creation failed, proceeding with upload:', error);
       }
       
+      // Find the SharePoint site for the upload
+      let sharePointSiteId = null;
+      try {
+        const sitesResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
+          const hardwellSite = sitesResponse.data.value.find((site: any) => 
+            site.displayName && site.displayName.toLowerCase().includes('hardwell')
+          );
+          
+          if (hardwellSite) {
+            sharePointSiteId = hardwellSite.id;
+          }
+        }
+      } catch (siteError: any) {
+        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site for upload, using OneDrive...');
+      }
+      
+      const baseUrl = sharePointSiteId 
+        ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
+        : `${this.GRAPH_BASE_URL}/me/drive`;
+      
       const response = await axios.put(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(filePath)}:/content`,
+        `${baseUrl}/root:/${encodeURIComponent(filePath)}:/content`,
         fileBuffer,
         {
           headers: {
@@ -267,14 +410,43 @@ export class OneDriveService {
       // Get the dynamic folder name based on property address
       const dealFolderName = await this.getDealFolderName(dealId);
       
-      // Use the existing OneDrive folder structure
+      // Use the SharePoint shared folder structure
       const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const dealFolderPath = `${folderPath}/${dealFolderName}`;
       
       console.log('📁 [ONEDRIVE] Getting files from:', dealFolderPath);
       
+      // Find the SharePoint site for the file retrieval
+      let sharePointSiteId = null;
+      try {
+        const sitesResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites?search=Hardwell`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (sitesResponse.data.value && sitesResponse.data.value.length > 0) {
+          const hardwellSite = sitesResponse.data.value.find((site: any) => 
+            site.displayName && site.displayName.toLowerCase().includes('hardwell')
+          );
+          
+          if (hardwellSite) {
+            sharePointSiteId = hardwellSite.id;
+          }
+        }
+      } catch (siteError: any) {
+        console.log('⚠️ [ONEDRIVE] Could not find SharePoint site for file retrieval, using OneDrive...');
+      }
+      
+      const baseUrl = sharePointSiteId 
+        ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
+        : `${this.GRAPH_BASE_URL}/me/drive`;
+      
       const response = await axios.get(
-        `${this.GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(dealFolderPath)}:/children`,
+        `${baseUrl}/root:/${encodeURIComponent(dealFolderPath)}:/children`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`
