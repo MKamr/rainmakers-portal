@@ -81,6 +81,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               } 
               alt="Rainmakers Logo" 
               className="h-20 w-auto"
+              onError={(e) => {
+                console.error('Mobile logo failed to load:', e.currentTarget.src);
+                // Fallback to the external logo if local fails
+                if (e.currentTarget.src.includes('/logo_for_lighttheme.png')) {
+                  e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png";
+                }
+              }}
             />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
@@ -121,6 +128,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 } 
                 alt="Rainmakers Logo" 
                 className="h-20 w-auto"
+                onError={(e) => {
+                  console.error('Logo failed to load:', e.currentTarget.src);
+                  // Fallback to the external logo if local fails
+                  if (e.currentTarget.src.includes('/logo_for_lighttheme.png')) {
+                    e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png";
+                  }
+                }}
               />
             </div>
             <nav className="mt-5 flex-1 space-y-1 px-2 matrix-nav">
