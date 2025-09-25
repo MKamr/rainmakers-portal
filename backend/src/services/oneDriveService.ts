@@ -215,7 +215,30 @@ export class OneDriveService {
       const dealFolderPath = `${folderPath}/${folderName}`;
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
-      // Now search for existing deal folders
+      // First, check if the exact deal folder already exists
+      try {
+        const existingFolderResponse = await axios.get(
+          `${baseUrl}/root:/${encodeURIComponent(dealFolderPath)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (existingFolderResponse.data && existingFolderResponse.data.id) {
+          console.log('✅ [ONEDRIVE] Deal folder already exists:', existingFolderResponse.data.name);
+          return existingFolderResponse.data.id;
+        }
+      } catch (exactCheckError: any) {
+        if (exactCheckError.response?.status === 404) {
+          console.log('📁 [ONEDRIVE] Deal folder does not exist, proceeding with creation...');
+        } else {
+          console.log('⚠️ [ONEDRIVE] Error checking exact folder, proceeding with search...');
+        }
+      }
+      
+      // Now search for existing deal folders (fallback method)
       console.log('🔍 [ONEDRIVE] Searching for existing deal folders...');
       try {
         const searchResponse = await axios.get(
@@ -335,14 +358,8 @@ export class OneDriveService {
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
       
-      // Ensure the deal folder exists (createDealFolder handles duplicates gracefully)
-      try {
-        const deal = await FirebaseService.getDealById(dealId);
-        await this.createDealFolder(dealId, deal?.propertyAddress);
-        console.log('✅ [ONEDRIVE] Deal folder ensured to exist');
-      } catch (error) {
-        console.log('⚠️ [ONEDRIVE] Deal folder creation failed, proceeding with upload:', error);
-      }
+      // Note: Deal folder should already exist from deal creation or document check
+      // If it doesn't exist, the upload will fail with 404, which is handled by the caller
       
       // Find the SharePoint site for the upload
       let sharePointSiteId = null;
