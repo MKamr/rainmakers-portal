@@ -94,7 +94,7 @@ export class OneDriveService {
       const accessToken = await this.getAccessToken();
       
       // Use the SharePoint shared folder path structure
-      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       
       // For SharePoint shared folders, we need to find the correct SharePoint site first
       console.log('🔍 [ONEDRIVE] Searching for SharePoint site with shared folder...');
@@ -330,7 +330,7 @@ export class OneDriveService {
       const dealFolderName = await this.getDealFolderName(dealId);
       
       // Use the SharePoint shared folder structure
-      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const filePath = `${folderPath}/${dealFolderName}/${filename}`;
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
@@ -405,7 +405,7 @@ export class OneDriveService {
       const dealFolderName = await this.getDealFolderName(dealId);
       
       // Use the SharePoint shared folder structure
-      const folderPath = 'Hardwell Capital - Hardwell Capital Origination/Prospects/Pre-Approved Property';
+      const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const dealFolderPath = `${folderPath}/${dealFolderName}`;
       
       console.log('📁 [ONEDRIVE] Getting files from:', dealFolderPath);
