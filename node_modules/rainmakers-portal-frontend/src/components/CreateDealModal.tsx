@@ -445,7 +445,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <div className="flex justify-end space-x-3 pt-4">
                     <button
                       type="button"
-                      onClick={onClose}
+                      onClick={handleDocumentUploadSuccess}
                       className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
                     >
                       Skip for now

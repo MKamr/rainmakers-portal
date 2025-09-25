@@ -443,7 +443,8 @@ router.post('/', [
       const oneDriveToken = await FirebaseService.getLatestOneDriveToken();
       if (oneDriveToken) {
         console.log('📁 [DEAL CREATE] OneDrive connected, creating folder...');
-        await OneDriveService.createDealFolder(dealId, normalized.applicationPropertyAddress);
+        // Use Firebase document ID (deal.id) instead of custom dealId for consistency
+        await OneDriveService.createDealFolder(deal.id, normalized.applicationPropertyAddress);
         console.log('✅ [DEAL CREATE] OneDrive folder created');
       } else {
         console.log('⚠️ [DEAL CREATE] OneDrive not connected, skipping folder creation');
