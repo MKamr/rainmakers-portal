@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../contexts/ThemeContext'
 import { ThemeToggle } from './ThemeToggle'
 import { cn } from '../utils/cn'
 import {
@@ -20,6 +21,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { theme } = useTheme()
   const location = useLocation()
 
   const navigation = [
@@ -73,7 +75,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <div className="flex flex-shrink-0 items-center px-4 py-4 matrix-logo-section">
             <img 
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
+              src={theme === 'light' 
+                ? "/logo_for_lighttheme.png" 
+                : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png"
+              } 
               alt="Rainmakers Logo" 
               className="h-20 w-auto"
             />
@@ -110,7 +115,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 matrix-logo-section">
               <img 
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png" 
+                src={theme === 'light' 
+                  ? "/logo_for_lighttheme.png" 
+                  : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png"
+                } 
                 alt="Rainmakers Logo" 
                 className="h-20 w-auto"
               />

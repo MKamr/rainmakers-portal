@@ -3,6 +3,7 @@ import multer from 'multer';
 import { body, validationResult } from 'express-validator';
 import { FirebaseService } from '../services/firebaseService';
 import { OneDriveService } from '../services/oneDriveService';
+import { GHLService } from '../services/ghlService';
 import { Request, Response } from 'express';
 
 const router = express.Router();
@@ -172,6 +173,30 @@ router.post('/upload', upload.single('file'), [
     );
 
     console.log('📄 [UPLOAD] File uploaded to OneDrive:', oneDriveFile.id);
+
+    // Sync to GHL if configured
+    try {
+      const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+      if (ghlApiKey && deal.contactId) {
+        console.log('📄 [UPLOAD] Syncing document to GHL contact:', deal.contactId);
+        // Upload document to GHL contact
+        await GHLService.uploadDocumentToContact(
+          deal.contactId,
+          req.file.originalname,
+          req.file.buffer,
+          req.file.mimetype,
+          ghlApiKey
+        );
+        console.log('✅ [UPLOAD] Document synced to GHL contact:', deal.contactId);
+      } else {
+        console.log('⚠️ [UPLOAD] GHL not configured or missing contactId, skipping sync...');
+        if (!ghlApiKey) console.log('  - Missing GHL API key');
+        if (!deal.contactId) console.log('  - Missing deal contactId');
+      }
+    } catch (error) {
+      console.warn('⚠️ [UPLOAD] Failed to sync document to GHL:', error);
+      // Don't fail the upload if GHL sync fails
+    }
 
     res.status(201).json({
       message: 'Document uploaded successfully',
