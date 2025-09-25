@@ -21,7 +21,7 @@ export class OneDriveService {
       // Try to get the deal from Firebase to get property address
       const deal = await FirebaseService.getDealById(dealId);
       if (deal && deal.propertyAddress) {
-        return `${deal.propertyAddress} (${dealId})`;
+        return deal.propertyAddress;
       }
       return dealId;
     } catch (error) {
@@ -208,9 +208,7 @@ export class OneDriveService {
       }
       
       // Use property address as folder name, fallback to dealId if not provided
-      const folderName = propertyAddress ? 
-        `${propertyAddress} (${dealId})` : 
-        dealId;
+      const folderName = propertyAddress || dealId;
       
       const dealFolderPath = `${folderPath}/${folderName}`;
       console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
@@ -251,9 +249,11 @@ export class OneDriveService {
         );
         
         if (searchResponse.data.value && searchResponse.data.value.length > 0) {
-          // Look for folders that contain the dealId
+          // Look for folders that match the property address or dealId
           const matchingFolder = searchResponse.data.value.find((folder: any) => 
-            folder.name.includes(dealId) && folder.folder
+            (propertyAddress && folder.name === propertyAddress) || 
+            (!propertyAddress && folder.name === dealId) ||
+            folder.name.includes(dealId)
           );
           
           if (matchingFolder) {
