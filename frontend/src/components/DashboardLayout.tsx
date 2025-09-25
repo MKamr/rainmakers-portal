@@ -110,7 +110,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 matrix-logo-section">
               <img 
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large.png-aJ8jGAYeTNZVQNZW5iEh2N8jrIepqT.jpeg" 
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png" 
                 alt="Rainmakers Logo" 
                 className="h-20 w-auto"
               />

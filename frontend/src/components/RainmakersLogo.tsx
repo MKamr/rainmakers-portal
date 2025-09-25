@@ -21,7 +21,7 @@ export function RainmakersLogo({ size = 'md', showText = true, className = '' }:
     <div className={`flex items-center ${className}`}>
       <div className={`flex-shrink-0 ${sizeClasses[size]} matrix-logo-container`}>
         <img 
-          src="/rainmakers-logo-large.png" 
+          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png" 
           alt="Rainmakers Logo" 
           className="w-full h-full object-contain matrix-logo-image"
         />
