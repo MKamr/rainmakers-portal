@@ -177,7 +177,7 @@ export function MatrixLoginPage() {
           <div className="text-center">
             <div className="matrix-footer">
              
-              <p className="text-yellow-400 font-mono text-xs">&gt; SECURE DEAL MANAGEMENT SYSTEM READY</p>
+              
             </div>
           </div>
         </div>
