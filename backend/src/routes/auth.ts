@@ -12,7 +12,7 @@ router.get('/discord/callback', async (req, res) => {
 
     if (error) {
       console.error('Discord OAuth error:', error);
-      let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
+      let frontendUrl = process.env.FRONTEND_URL || 'https://rain.club';
       
       // Clean the URL
       frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
@@ -26,7 +26,7 @@ router.get('/discord/callback', async (req, res) => {
 
     if (!code) {
       console.error('No code provided in Discord callback');
-      let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
+      let frontendUrl = process.env.FRONTEND_URL || 'https://rain.club';
       
       frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
       if (!frontendUrl.startsWith('http')) {
@@ -54,7 +54,7 @@ router.get('/discord/callback', async (req, res) => {
     );
 
     // Redirect to frontend with token
-    let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
+    let frontendUrl = process.env.FRONTEND_URL || 'https://rain.club';
     
     frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
     if (!frontendUrl.startsWith('http')) {
@@ -76,7 +76,7 @@ router.get('/discord/callback', async (req, res) => {
     console.error('Discord auth error:', error);
     
     // Redirect to frontend with error
-    let frontendUrl = process.env.FRONTEND_URL || 'https://rainmakers-portal-frontend.vercel.app';
+    let frontendUrl = process.env.FRONTEND_URL || 'https://rain.club';
     frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
     if (!frontendUrl.startsWith('http')) {
       frontendUrl = `https://${frontendUrl}`;

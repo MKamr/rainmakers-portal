@@ -124,7 +124,7 @@ export function MatrixLoginPage() {
   }, [])
 
   const redirectToDiscord = () => {
-    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent("https://rain.club/auth/discord/callback")}&scope=identify%20email`
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${(import.meta as any).env.VITE_DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent("https://rainmakers-portal-backend.vercel.app/auth/discord/callback")}&scope=identify%20email`
     window.location.href = discordAuthUrl
   }
 
