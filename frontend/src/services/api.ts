@@ -235,9 +235,6 @@ export const adminAPI = {
   }): Promise<{ success: boolean; dealId: string; message: string }> =>
     api.post('/admin/ghl/import-opportunity', data).then(res => res.data),
 
-  getAllUsers: (): Promise<User[]> =>
-    api.get('/admin/users').then(res => res.data),
-
   // Pipeline-specific methods
   getGHLPipelines: (): Promise<{ pipelines: any[] }> =>
     api.get('/admin/ghl/pipelines').then(res => res.data),

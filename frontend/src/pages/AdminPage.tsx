@@ -54,7 +54,7 @@ function GHLImportTab() {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await adminAPI.getAllUsers()
+      const response = await adminAPI.getUsers()
       setUsers(response)
     } catch (error) {
       console.error('Error fetching users:', error)
