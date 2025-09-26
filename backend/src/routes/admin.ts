@@ -12,6 +12,97 @@ import { generatePKCEChallenge } from '../utils/pkce';
 
 const router = express.Router();
 
+// GHL Opportunities Import Routes
+router.get('/ghl/opportunities', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [GHL IMPORT] Fetching opportunities...');
+    const opportunities = await GHLService.listOpportunities();
+    
+    console.log('✅ [GHL IMPORT] Opportunities fetched:', opportunities.opportunities?.length || 0);
+    res.json(opportunities);
+  } catch (error: any) {
+    console.error('❌ [GHL IMPORT] Error fetching opportunities:', error);
+    res.status(500).json({ error: 'Failed to fetch opportunities' });
+  }
+});
+
+router.post('/ghl/import-opportunity', requireAdmin, [
+  body('opportunityId').notEmpty().withMessage('Opportunity ID is required'),
+  body('userId').notEmpty().withMessage('User ID is required'),
+  body('opportunity').isObject().withMessage('Opportunity data is required')
+], async (req: Request, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { opportunityId, userId, opportunity } = req.body;
+    
+    console.log('📥 [GHL IMPORT] Importing opportunity:', opportunityId, 'for user:', userId);
+    
+    // Verify user exists
+    const user = await FirebaseService.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create deal in Firebase
+    const dealData = {
+      userId: userId,
+      dealId: `GHL-${opportunityId}`, // Prefix to identify GHL imports
+      propertyAddress: opportunity.name || 'Imported from GHL',
+      contactName: opportunity.contact?.name || '',
+      contactEmail: opportunity.contact?.email || '',
+      contactPhone: opportunity.contact?.phone || '',
+      ghlOpportunityId: opportunityId,
+      ghlContactId: opportunity.contactId,
+      ghlPipelineId: opportunity.pipelineId,
+      ghlStageId: opportunity.stageId,
+      status: opportunity.status || 'active',
+      monetaryValue: opportunity.monetaryValue || 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: 'ghl_import'
+    };
+
+    const deal = await FirebaseService.createDeal(dealData);
+    
+    console.log('✅ [GHL IMPORT] Deal created successfully:', deal.id);
+    
+    res.json({ 
+      success: true, 
+      dealId: deal.id,
+      message: 'Opportunity imported successfully' 
+    });
+  } catch (error: any) {
+    console.error('❌ [GHL IMPORT] Error importing opportunity:', error);
+    res.status(500).json({ error: 'Failed to import opportunity' });
+  }
+});
+
+router.get('/users', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('👥 [ADMIN] Fetching all users...');
+    const users = await FirebaseService.getAllUsers();
+    
+    // Return only necessary user info for the dropdown
+    const userList = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isWhitelisted: user.isWhitelisted
+    }));
+    
+    console.log('✅ [ADMIN] Users fetched:', userList.length);
+    res.json(userList);
+  } catch (error: any) {
+    console.error('❌ [ADMIN] Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 // Test environment variables
 router.get('/env/test', async (req: Request, res: Response) => {
   try {

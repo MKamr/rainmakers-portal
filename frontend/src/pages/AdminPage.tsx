@@ -4,10 +4,204 @@ import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List } from 'lucide-react'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 
+// GHL Import Tab Component
+function GHLImportTab() {
+  const [opportunities, setOpportunities] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
+  const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Fetch opportunities
+  const fetchOpportunities = async () => {
+    setIsLoading(true)
+    try {
+      const response = await adminAPI.getGHLOpportunities()
+      setOpportunities(response.opportunities || [])
+    } catch (error) {
+      console.error('Error fetching opportunities:', error)
+      toast.error('Failed to fetch opportunities')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Fetch users
+  const fetchUsers = async () => {
+    try {
+      const response = await adminAPI.getAllUsers()
+      setUsers(response)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      toast.error('Failed to fetch users')
+    }
+  }
+
+  // Import opportunity
+  const importOpportunity = async () => {
+    if (!selectedOpportunity || !selectedUserId) {
+      toast.error('Please select an opportunity and a user')
+      return
+    }
+
+    setIsImporting(true)
+    try {
+      await adminAPI.importGHLOpportunity({
+        opportunityId: selectedOpportunity.id,
+        userId: selectedUserId,
+        opportunity: selectedOpportunity
+      })
+      
+      toast.success('Opportunity imported successfully!')
+      setSelectedOpportunity(null)
+      setSelectedUserId('')
+    } catch (error) {
+      console.error('Error importing opportunity:', error)
+      toast.error('Failed to import opportunity')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchOpportunities()
+    fetchUsers()
+  }, [])
+
+  // Filter opportunities based on search term
+  const filteredOpportunities = opportunities.filter(opp => 
+    opp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    opp.contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    opp.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-white mb-4">
+            Import GHL Opportunities
+          </h3>
+          
+          {/* Search and Refresh */}
+          <div className="flex space-x-4 mb-6">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search opportunities by name, contact name, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+            <button
+              onClick={fetchOpportunities}
+              disabled={isLoading}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50"
+            >
+              {isLoading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+
+          {/* Opportunities List */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-300">
+              Opportunities ({filteredOpportunities.length})
+            </h4>
+            
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredOpportunities.map((opportunity) => (
+                  <div
+                    key={opportunity.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedOpportunity?.id === opportunity.id
+                        ? 'border-yellow-500 bg-yellow-900/20'
+                        : 'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                    }`}
+                    onClick={() => setSelectedOpportunity(opportunity)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h5 className="font-medium text-white">{opportunity.name}</h5>
+                        <p className="text-sm text-gray-400">
+                          Contact: {opportunity.contact?.name || 'N/A'} ({opportunity.contact?.email || 'N/A'})
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Value: ${opportunity.monetaryValue || 0} | Status: {opportunity.status || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {opportunity.createdAt ? new Date(opportunity.createdAt).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Import Section */}
+          {selectedOpportunity && (
+            <div className="mt-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+              <h4 className="text-md font-medium text-white mb-4">Import Selected Opportunity</h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Selected Opportunity
+                  </label>
+                  <div className="p-3 bg-gray-600 rounded-md">
+                    <p className="text-white font-medium">{selectedOpportunity.name}</p>
+                    <p className="text-sm text-gray-400">
+                      Contact: {selectedOpportunity.contact?.name} ({selectedOpportunity.contact?.email})
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Assign to User
+                  </label>
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="">Select a user...</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username} ({user.email}) {user.isAdmin ? '[Admin]' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={importOpportunity}
+                  disabled={!selectedUserId || isImporting}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isImporting ? 'Importing...' : 'Import Opportunity'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -333,6 +527,7 @@ export function AdminPage() {
     { id: 'overview', name: 'Overview', icon: BarChart3 },
     { id: 'users', name: 'Users', icon: Users },
     { id: 'deals', name: 'Deals', icon: FileText },
+    { id: 'ghl-import', name: 'GHL Import', icon: Import },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
 
@@ -813,6 +1008,10 @@ export function AdminPage() {
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'ghl-import' && (
+        <GHLImportTab />
       )}
 
       {activeTab === 'settings' && (

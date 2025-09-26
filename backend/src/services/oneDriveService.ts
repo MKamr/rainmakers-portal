@@ -156,7 +156,7 @@ export class OneDriveService {
               await axios.get(
                 `${baseUrl}/root:/${encodeURIComponent(currentPath)}`,
                 {
-                  headers: {
+            headers: {
                     'Authorization': `Bearer ${accessToken}`
                   }
                 }

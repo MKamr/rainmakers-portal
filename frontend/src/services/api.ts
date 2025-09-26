@@ -223,6 +223,20 @@ export const adminAPI = {
     opportunityFields: any[];
   }> =>
     api.post('/admin/ghl/fetch-custom-fields').then(res => res.data),
+
+  // GHL Import methods
+  getGHLOpportunities: (): Promise<{ opportunities: any[] }> =>
+    api.get('/admin/ghl/opportunities').then(res => res.data),
+
+  importGHLOpportunity: (data: {
+    opportunityId: string;
+    userId: string;
+    opportunity: any;
+  }): Promise<{ success: boolean; dealId: string; message: string }> =>
+    api.post('/admin/ghl/import-opportunity', data).then(res => res.data),
+
+  getAllUsers: (): Promise<User[]> =>
+    api.get('/admin/users').then(res => res.data),
 };
 
 export default api;
