@@ -236,9 +236,6 @@ export const adminAPI = {
     api.post('/admin/ghl/import-opportunity', data).then(res => res.data),
 
   // Pipeline-specific methods
-  getGHLPipelines: (): Promise<{ pipelines: any[] }> =>
-    api.get('/admin/ghl/pipelines').then(res => res.data),
-
   getGHLPipelineOpportunities: (pipelineId: string): Promise<{ opportunities: any[] }> =>
     api.get(`/admin/ghl/pipeline/${pipelineId}/opportunities`).then(res => res.data),
 };
