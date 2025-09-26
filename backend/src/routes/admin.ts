@@ -81,6 +81,37 @@ router.post('/ghl/import-opportunity', requireAdmin, [
   }
 });
 
+router.get('/ghl/pipelines', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [GHL PIPELINES] Fetching pipelines...');
+    const headers = await GHLService.getHeaders();
+    const response = await axios.get(`${GHLService.GHL_BASE_URL}/pipelines/`, { headers });
+    
+    const pipelines = response.data.pipelines || [];
+    console.log('✅ [GHL PIPELINES] Pipelines fetched:', pipelines.length);
+    
+    res.json({ pipelines });
+  } catch (error: any) {
+    console.error('❌ [GHL PIPELINES] Error fetching pipelines:', error);
+    res.status(500).json({ error: 'Failed to fetch pipelines' });
+  }
+});
+
+router.get('/ghl/pipeline/:pipelineId/opportunities', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { pipelineId } = req.params;
+    console.log('🔍 [GHL PIPELINE] Fetching opportunities for pipeline:', pipelineId);
+    
+    const opportunities = await GHLService.getOpportunitiesByPipeline(pipelineId);
+    
+    console.log('✅ [GHL PIPELINE] Opportunities fetched:', opportunities.length);
+    res.json({ opportunities });
+  } catch (error: any) {
+    console.error('❌ [GHL PIPELINE] Error fetching pipeline opportunities:', error);
+    res.status(500).json({ error: 'Failed to fetch pipeline opportunities' });
+  }
+});
+
 router.get('/users', requireAdmin, async (req: Request, res: Response) => {
   try {
     console.log('👥 [ADMIN] Fetching all users...');

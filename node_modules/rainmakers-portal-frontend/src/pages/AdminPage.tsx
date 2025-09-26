@@ -12,17 +12,36 @@ import { safeFormatDate } from '../utils/dateUtils'
 function GHLImportTab() {
   const [opportunities, setOpportunities] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [pipelines, setPipelines] = useState<any[]>([])
+  const [selectedPipeline, setSelectedPipeline] = useState<string>('')
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null)
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Fetch opportunities
-  const fetchOpportunities = async () => {
+  // Fetch pipelines
+  const fetchPipelines = async () => {
+    try {
+      const response = await adminAPI.getGHLPipelines()
+      setPipelines(response.pipelines || [])
+    } catch (error) {
+      console.error('Error fetching pipelines:', error)
+      toast.error('Failed to fetch pipelines')
+    }
+  }
+
+  // Fetch opportunities for selected pipeline
+  const fetchOpportunities = async (pipelineId?: string) => {
+    if (!pipelineId && !selectedPipeline) {
+      toast.error('Please select a pipeline first')
+      return
+    }
+    
+    const targetPipelineId = pipelineId || selectedPipeline
     setIsLoading(true)
     try {
-      const response = await adminAPI.getGHLOpportunities()
+      const response = await adminAPI.getGHLPipelineOpportunities(targetPipelineId)
       setOpportunities(response.opportunities || [])
     } catch (error) {
       console.error('Error fetching opportunities:', error)
@@ -70,9 +89,16 @@ function GHLImportTab() {
   }
 
   useEffect(() => {
-    fetchOpportunities()
+    fetchPipelines()
     fetchUsers()
   }, [])
+
+  // Fetch opportunities when pipeline is selected
+  useEffect(() => {
+    if (selectedPipeline) {
+      fetchOpportunities(selectedPipeline)
+    }
+  }, [selectedPipeline])
 
   // Filter opportunities based on search term
   const filteredOpportunities = opportunities.filter(opp => 
@@ -90,6 +116,25 @@ function GHLImportTab() {
             Import GHL Opportunities
           </h3>
           
+          {/* Pipeline Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Select Pipeline
+            </label>
+            <select
+              value={selectedPipeline}
+              onChange={(e) => setSelectedPipeline(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="">Select a pipeline...</option>
+              {pipelines.map((pipeline) => (
+                <option key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name} ({pipeline.stages?.length || 0} stages)
+                </option>
+              ))}
+            </select>
+          </div>
+          
           {/* Search and Refresh */}
           <div className="flex space-x-4 mb-6">
             <div className="flex-1">
@@ -102,8 +147,8 @@ function GHLImportTab() {
               />
             </div>
             <button
-              onClick={fetchOpportunities}
-              disabled={isLoading}
+              onClick={() => fetchOpportunities()}
+              disabled={isLoading || !selectedPipeline}
               className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50"
             >
               {isLoading ? 'Loading...' : 'Refresh'}
@@ -114,11 +159,20 @@ function GHLImportTab() {
           <div className="space-y-4">
             <h4 className="text-md font-medium text-gray-300">
               Opportunities ({filteredOpportunities.length})
+              {selectedPipeline && (
+                <span className="text-sm text-gray-400 ml-2">
+                  from {pipelines.find(p => p.id === selectedPipeline)?.name || 'Selected Pipeline'}
+                </span>
+              )}
             </h4>
             
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <LoadingSpinner />
+              </div>
+            ) : !selectedPipeline ? (
+              <div className="text-center py-8 text-gray-400">
+                Please select a pipeline to view opportunities
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">

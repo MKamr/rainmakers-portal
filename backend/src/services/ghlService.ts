@@ -425,6 +425,8 @@ export class GHLService {
           allOpportunities.push(...opportunitiesWithPipeline);
         } catch (pipelineError: any) {
           console.warn(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
+          console.warn(`⚠️ [GHL LIST] Pipeline error response:`, pipelineError.response?.data);
+          console.warn(`⚠️ [GHL LIST] Pipeline error status:`, pipelineError.response?.status);
           // Continue with other pipelines
         }
       }
@@ -441,6 +443,28 @@ export class GHLService {
       } else if (error.response?.status === 403) {
         throw new Error('GHL API access forbidden. Please check your API permissions.');
       }
+      throw error;
+    }
+  }
+
+  static async getOpportunitiesByPipeline(pipelineId: string): Promise<any[]> {
+    try {
+      const headers = await this.getHeaders();
+      
+      console.log(`🔍 [GHL PIPELINE] Fetching opportunities from pipeline ID: ${pipelineId}`);
+      const response = await axios.get(
+        `${this.GHL_BASE_URL}/pipelines/${pipelineId}/opportunities/`, 
+        { headers }
+      );
+      
+      const opportunities = response.data.opportunities || [];
+      console.log(`✅ [GHL PIPELINE] Found ${opportunities.length} opportunities in pipeline ${pipelineId}`);
+      
+      return opportunities;
+    } catch (error: any) {
+      console.error(`❌ [GHL PIPELINE] Error fetching opportunities from pipeline ${pipelineId}:`, error);
+      console.error(`❌ [GHL PIPELINE] Error response:`, error.response?.data);
+      console.error(`❌ [GHL PIPELINE] Error status:`, error.response?.status);
       throw error;
     }
   }
