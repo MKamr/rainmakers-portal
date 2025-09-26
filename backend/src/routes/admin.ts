@@ -100,9 +100,10 @@ router.get('/ghl/pipelines', requireAdmin, async (req: Request, res: Response) =
 router.get('/ghl/pipeline/:pipelineId/opportunities', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { pipelineId } = req.params;
-    console.log('🔍 [GHL PIPELINE] Fetching opportunities for pipeline:', pipelineId);
+    const { stageId } = req.query;
+    console.log('🔍 [GHL PIPELINE] Fetching opportunities for pipeline:', pipelineId, 'stage:', stageId);
     
-    const opportunities = await GHLService.getOpportunitiesByPipeline(pipelineId);
+    const opportunities = await GHLService.getOpportunitiesByStage(pipelineId, stageId as string);
     
     console.log('✅ [GHL PIPELINE] Opportunities fetched:', opportunities.length);
     res.json({ opportunities });
