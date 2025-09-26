@@ -392,13 +392,45 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      const headers = await this.getV2Headers();
+      const headers = await this.getHeaders();
       
-      console.log('🔍 [GHL LIST] Fetching opportunities...');
-      const response = await axios.get(`${this.GHL_V2_BASE_URL}/opportunities/`, { headers });
+      console.log('🔍 [GHL LIST] Fetching opportunities from all pipelines...');
       
-      console.log('✅ [GHL LIST] Opportunities fetched successfully');
-      return response.data;
+      // First, get all pipelines
+      const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
+      const pipelines = pipelinesResponse.data.pipelines || [];
+      
+      console.log(`📋 [GHL LIST] Found ${pipelines.length} pipelines`);
+      
+      // Fetch opportunities from each pipeline
+      const allOpportunities = [];
+      for (const pipeline of pipelines) {
+        try {
+          console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name}`);
+          const opportunitiesResponse = await axios.get(
+            `${this.GHL_BASE_URL}/pipelines/${pipeline.id}/opportunities/`, 
+            { headers }
+          );
+          
+          const opportunities = opportunitiesResponse.data.opportunities || [];
+          console.log(`📊 [GHL LIST] Found ${opportunities.length} opportunities in pipeline: ${pipeline.name}`);
+          
+          // Add pipeline info to each opportunity
+          const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
+            ...opp,
+            pipelineName: pipeline.name,
+            pipelineId: pipeline.id
+          }));
+          
+          allOpportunities.push(...opportunitiesWithPipeline);
+        } catch (pipelineError: any) {
+          console.warn(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
+          // Continue with other pipelines
+        }
+      }
+      
+      console.log(`✅ [GHL LIST] Total opportunities fetched: ${allOpportunities.length}`);
+      return { opportunities: allOpportunities };
     } catch (error: any) {
       console.error('❌ [GHL LIST] Error fetching opportunities:', error);
       console.error('❌ [GHL LIST] Error response:', error.response?.data);

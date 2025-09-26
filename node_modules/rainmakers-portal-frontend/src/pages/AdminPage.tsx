@@ -78,7 +78,8 @@ function GHLImportTab() {
   const filteredOpportunities = opportunities.filter(opp => 
     opp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     opp.contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opp.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    opp.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    opp.pipelineName?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -94,7 +95,7 @@ function GHLImportTab() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search opportunities by name, contact name, or email..."
+                placeholder="Search opportunities by name, contact name, email, or pipeline..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
@@ -139,6 +140,9 @@ function GHLImportTab() {
                         </p>
                         <p className="text-sm text-gray-400">
                           Value: ${opportunity.monetaryValue || 0} | Status: {opportunity.status || 'N/A'}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Pipeline: {opportunity.pipelineName || 'N/A'}
                         </p>
                       </div>
                       <div className="text-xs text-gray-500">
