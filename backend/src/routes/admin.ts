@@ -47,24 +47,61 @@ router.post('/ghl/import-opportunity', requireAdmin, [
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Create deal in Firebase
+    // Create deal in Firebase with all fields
     const dealData = {
       userId: userId,
       dealId: `GHL-${opportunityId}`, // Prefix to identify GHL imports
+      
+      // Basic deal information
       propertyAddress: opportunity.name || 'Imported from GHL',
+      propertyName: opportunity.name || 'Imported from GHL',
+      propertyType: opportunity.customFields?.find((f: any) => f.key === 'property_type')?.value || '',
+      propertyVintage: opportunity.customFields?.find((f: any) => f.key === 'property_vintage')?.value || '',
+      
+      // Contact information
       contactName: opportunity.contact?.name || '',
       contactEmail: opportunity.contact?.email || '',
       contactPhone: opportunity.contact?.phone || '',
+      
+      // Deal details
+      dealType: opportunity.customFields?.find((f: any) => f.key === 'deal_type')?.value || 'Acquisition',
+      stage: opportunity.stageName || opportunity.stage || 'Qualification',
+      status: opportunity.status || 'Open',
+      
+      // Financial information
+      loanRequest: opportunity.customFields?.find((f: any) => f.key === 'loan_request')?.value || 
+                   opportunity.monetaryValue ? `$${opportunity.monetaryValue}` : '',
+      sponsorLiquidity: opportunity.customFields?.find((f: any) => f.key === 'sponsor_liquidity')?.value || '',
+      sponsorNetWorth: opportunity.customFields?.find((f: any) => f.key === 'sponsor_net_worth')?.value || '',
+      
+      // Additional information
+      notes: opportunity.customFields?.find((f: any) => f.key === 'notes')?.value || '',
+      additionalInformation: opportunity.customFields?.find((f: any) => f.key === 'additional_information')?.value || '',
+      opportunitySource: opportunity.customFields?.find((f: any) => f.key === 'opportunity_source')?.value || 'GHL Import',
+      
+      // GHL references
       ghlOpportunityId: opportunityId,
       ghlContactId: opportunity.contactId,
       ghlPipelineId: opportunity.pipelineId,
       ghlStageId: opportunity.stageId,
-      status: opportunity.status || 'active',
-      monetaryValue: opportunity.monetaryValue || 0,
+      
+      // System fields
       createdAt: new Date(),
       updatedAt: new Date(),
       source: 'ghl_import'
     };
+
+    // Log the deal data being created
+    console.log('📋 [GHL IMPORT] Deal data to be created:', {
+      userId: dealData.userId,
+      dealId: dealData.dealId,
+      propertyAddress: dealData.propertyAddress,
+      contactName: dealData.contactName,
+      dealType: dealData.dealType,
+      stage: dealData.stage,
+      loanRequest: dealData.loanRequest,
+      ghlOpportunityId: dealData.ghlOpportunityId
+    });
 
     const deal = await FirebaseService.createDeal(dealData);
     
