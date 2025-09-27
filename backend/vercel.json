@@ -8,6 +8,18 @@
   ],
   "routes": [
     {
+      "src": "/favicon\\.(ico|png|svg)",
+      "status": 404
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/index.ts"
+    },
+    {
+      "src": "/auth/(.*)",
+      "dest": "/src/index.ts"
+    },
+    {
       "src": "/(.*)",
       "dest": "/src/index.ts"
     }
