@@ -25,15 +25,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation()
 
   const navigation = [
-    { name: 'Home', href: '/', icon: Home },
+    { name: 'Deals', href: '/', icon: FileText },
+    { name: 'Home', href: '/home', icon: Home },
   ]
-
-  // Only show Deals for non-admin users
-  if (!user?.isAdmin) {
-    navigation.push(
-      { name: 'Deals', href: '/deals', icon: FileText }
-    )
-  }
 
   if (user?.isAdmin) {
     navigation.push({ name: 'Admin', href: '/admin', icon: Users })
