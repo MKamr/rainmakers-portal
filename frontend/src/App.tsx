@@ -122,7 +122,8 @@ function App() {
     <ThemeProvider>
       <DashboardLayout>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<DealsPage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

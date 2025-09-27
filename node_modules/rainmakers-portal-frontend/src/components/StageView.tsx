@@ -146,8 +146,8 @@ export function StageView({ deals }: StageViewProps) {
             <h3 className="text-xl font-bold text-white mb-3">🎯 Ready to Build Your Empire?</h3>
             <p className="text-lg text-gray-300 mb-2">Your deal pipeline is waiting to be activated</p>
             <p className="text-sm text-gray-400 mb-8 max-w-md mx-auto">
-              Every successful real estate investor started with their first deal. 
-              Launch your journey by creating your inaugural opportunity and watch your portfolio grow.
+              Every successful "rainmaker" started with their first deal. 
+              Launch your journey by creating your first opportunity and watch your pipeline grow.
             </p>
             <button className="inline-flex items-center px-6 py-3 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25">
               <Plus className="h-4 w-4 mr-2" />

@@ -88,12 +88,39 @@ export class GHLService {
       throw new Error('GHL v2 token or API key not configured');
     }
     
+    console.log('🔑 [GHL] Using token:', token.substring(0, 20) + '...');
+    
     return {
       'Authorization': `Bearer ${token}`,
       'Version': '2021-07-28', // Required for v2 API
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
+  }
+
+  // Token validation method
+  static async validateToken(): Promise<boolean> {
+    try {
+      const headers = await this.getV2Headers();
+      console.log('🔑 [GHL] Validating token...');
+      
+      // Try a simple API call to validate token
+      const response = await axios.get(`${this.GHL_V2_BASE_URL}/locations/`, { 
+        headers,
+        params: { limit: 1 }
+      });
+      
+      console.log('✅ [GHL] Token validation successful');
+      return true;
+    } catch (error) {
+      console.error('❌ [GHL] Token validation failed:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        console.error('❌ [GHL] Validation response status:', axiosError.response?.status);
+        console.error('❌ [GHL] Validation response data:', axiosError.response?.data);
+      }
+      return false;
+    }
   }
 
   // Contact operations
@@ -298,6 +325,33 @@ export class GHLService {
     }
   }
 
+  // Helper method to create a minimal contact for deal creation
+  static async createMinimalContact(contactData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    locationId: string;
+  }): Promise<string> {
+    try {
+      const minimalContact = {
+        firstName: contactData.firstName,
+        lastName: contactData.lastName,
+        email: contactData.email,
+        phone: contactData.phone,
+        locationId: contactData.locationId,
+        name: `${contactData.firstName} ${contactData.lastName}`
+      };
+      
+      console.log('👤 [GHL] Creating minimal contact for deal:', minimalContact);
+      const contact = await this.createContact(minimalContact);
+      return contact.id;
+    } catch (error) {
+      console.error('❌ [GHL] Failed to create minimal contact:', error);
+      throw new Error('Failed to create minimal contact for deal');
+    }
+  }
+
   static async createDeal(dealData: {
     name: string;
     pipelineId: string;
@@ -312,6 +366,13 @@ export class GHLService {
       key: string;
       field_value: any;
     }>;
+    // Add contact data for creating minimal contact if needed
+    contactData?: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+    };
   }): Promise<GHLDeal> {
     try {
       // Validate required fields
@@ -349,9 +410,29 @@ export class GHLService {
         payload.source = dealData.source;
       }
       
-      // Only add contactId if it's provided and not empty
-      if (dealData.contactId && dealData.contactId.trim() !== '') {
-        payload.contactId = dealData.contactId;
+      // Handle contactId - create minimal contact if not provided
+      let contactId = dealData.contactId;
+      if (!contactId || contactId.trim() === '') {
+        if (dealData.contactData) {
+          console.log('👤 [GHL] No contactId provided, creating minimal contact...');
+          try {
+            contactId = await this.createMinimalContact({
+              ...dealData.contactData,
+              locationId: dealData.locationId
+            });
+            console.log('✅ [GHL] Minimal contact created with ID:', contactId);
+          } catch (contactError) {
+            console.error('❌ [GHL] Failed to create minimal contact:', contactError);
+            throw new Error('Failed to create contact for opportunity');
+          }
+        } else {
+          console.log('⚠️ [GHL] No contactId or contactData provided, opportunity creation may fail');
+        }
+      }
+      
+      // Add contactId to payload if we have one
+      if (contactId && contactId.trim() !== '') {
+        payload.contactId = contactId;
       }
       
       console.log('🔗 [GHL] Creating opportunity with data:', JSON.stringify(payload, null, 2));

@@ -471,6 +471,16 @@ router.post('/', [
         console.log('⏭️ [DEAL CREATE] GHL sync disabled, skipping...');
       } else if (ghlPipelineId && ghlPipelineId.trim() !== '' && ghlStageId && ghlStageId.trim() !== '' && ghlLocationId && ghlLocationId.trim() !== '') {
         console.log('🔗 [DEAL CREATE] GHL is configured, proceeding with sync...');
+        
+        // Validate GHL token first
+        console.log('🔑 [DEAL CREATE] Validating GHL token...');
+        const isTokenValid = await GHLService.validateToken();
+        if (!isTokenValid) {
+          console.error('❌ [DEAL CREATE] GHL token validation failed, skipping GHL sync');
+          throw new Error('GHL token is invalid or has insufficient permissions');
+        }
+        console.log('✅ [DEAL CREATE] GHL token validation successful');
+        
         // First, create or find the contact
         console.log('👤 [DEAL CREATE] Creating/finding GHL contact...');
         console.log('👤 [DEAL CREATE] Searching for contact with email:', req.body.contactEmail);
@@ -521,7 +531,7 @@ router.post('/', [
           console.warn('⚠️ [DEAL CREATE] Failed to create/find contact:', contactError);
           console.log('🔄 [DEAL CREATE] Trying to create opportunity without contactId...');
           
-          // Fallback: Try to create opportunity without contactId
+          // Fallback: Try to create opportunity with minimal contact
           try {
             const ghlDeal = await GHLService.createDeal({
               name: normalized.applicationPropertyAddress || dealId,
@@ -529,7 +539,13 @@ router.post('/', [
               stageId: ghlStageId,
               locationId: ghlLocationId,
               source: normalized.source, // Add Discord username as source
-              // No contactId - let GHL create opportunity without contact
+              // Provide contact data for minimal contact creation
+              contactData: {
+                firstName,
+                lastName,
+                email: normalized.contactEmail,
+                phone: normalized.contactPhone
+              },
               customFields: []
             });
             
