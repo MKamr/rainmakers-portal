@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { dealsAPI } from '../services/api'
+import { dealsAPI, adminAPI } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { CreateDealModal } from '../components/CreateDealModal'
@@ -19,18 +19,23 @@ export function DealsPage() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  const { data: deals, isLoading, error } = useQuery('deals', dealsAPI.getDeals, {
-    onSuccess: (data) => {
-      console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
-    },
-    onError: (error) => {
-      console.error('❌ [DEALS PAGE] Failed to load deals:', error);
+  // Use different API based on user role
+  const { data: deals, isLoading, error } = useQuery(
+    ['deals', user?.isAdmin], 
+    () => user?.isAdmin ? adminAPI.getAllDeals({}) : dealsAPI.getDeals,
+    {
+      onSuccess: (data) => {
+        console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
+      },
+      onError: (error) => {
+        console.error('❌ [DEALS PAGE] Failed to load deals:', error);
+      }
     }
-  })
+  )
 
   const deleteDealMutation = useMutation(dealsAPI.deleteDeal, {
     onSuccess: () => {
-      queryClient.invalidateQueries('deals')
+      queryClient.invalidateQueries(['deals', user?.isAdmin])
       toast.success('Deal deleted successfully')
     },
     onError: () => {
@@ -206,6 +211,12 @@ export function DealsPage() {
                             <span className="flex items-center">
                               <span className="mr-1">&gt;</span>
                               UPDATED: {safeFormatDate(deal.updatedAt, 'MMM d, yyyy').toUpperCase()}
+                            </span>
+                          )}
+                          {user?.isAdmin && deal.createdBy && (
+                            <span className="flex items-center">
+                              <span className="mr-1">&gt;</span>
+                              BY: {deal.createdBy.toUpperCase()}
                             </span>
                           )}
                         </span>
