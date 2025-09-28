@@ -22,7 +22,13 @@ export function DealsPage() {
   // Use different API based on user role
   const { data: deals, isLoading, error } = useQuery(
     ['deals', user?.isAdmin], 
-    () => user?.isAdmin ? adminAPI.getAllDeals({}) : dealsAPI.getDeals,
+    async () => {
+      if (user?.isAdmin) {
+        return await adminAPI.getAllDeals({});
+      } else {
+        return await dealsAPI.getDeals();
+      }
+    },
     {
       onSuccess: (data) => {
         console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
