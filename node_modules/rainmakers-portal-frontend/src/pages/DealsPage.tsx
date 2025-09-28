@@ -7,7 +7,7 @@ import { CreateDealModal } from '../components/CreateDealModal'
 import { EditDealModal } from '../components/EditDealModal'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Plus, Eye, Edit, Trash2, FileText } from 'lucide-react'
+import { Plus, Eye, Edit, Trash2, FileText, List, Grid3X3 } from 'lucide-react'
 import { safeFormatDate } from '../utils/dateUtils'
 import toast from 'react-hot-toast'
 
@@ -16,15 +16,23 @@ export function DealsPage() {
   const [editingDeal, setEditingDeal] = useState<any>(null)
   const [viewingDeal, setViewingDeal] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'list' | 'pipeline'>('list')
+  const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('list')
+  const [dealFilters, setDealFilters] = useState({
+    userId: '',
+    status: '',
+    propertyType: '',
+    startDate: '',
+    endDate: ''
+  })
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
   // Use different API based on user role
   const { data: deals, isLoading, error } = useQuery(
-    ['deals', user?.isAdmin], 
+    ['deals', user?.isAdmin, dealFilters], 
     async () => {
       if (user?.isAdmin) {
-        return await adminAPI.getAllDeals({});
+        return await adminAPI.getAllDeals(dealFilters);
       } else {
         return await dealsAPI.getDeals();
       }
@@ -38,6 +46,11 @@ export function DealsPage() {
       }
     }
   )
+
+  // Fetch users for admin filter
+  const { data: users } = useQuery('users', adminAPI.getUsers, {
+    enabled: !!user?.isAdmin
+  })
 
   const deleteDealMutation = useMutation(dealsAPI.deleteDeal, {
     onSuccess: () => {
@@ -53,6 +66,21 @@ export function DealsPage() {
     if (window.confirm('Are you sure you want to delete this deal?')) {
       await deleteDealMutation.mutateAsync(dealId)
     }
+  }
+
+  // Admin filter handlers
+  const handleDealFilterChange = (key: string, value: string) => {
+    setDealFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const clearDealFilters = () => {
+    setDealFilters({
+      userId: '',
+      status: '',
+      propertyType: '',
+      startDate: '',
+      endDate: ''
+    })
   }
 
   if (isLoading) {
@@ -122,36 +150,226 @@ export function DealsPage() {
         )}
       </div>
 
-      {/* Tab Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 matrix-nav">
-        <div className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
-              activeTab === 'list'
-                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            Deal List
-          </button>
-          <button
-            onClick={() => setActiveTab('pipeline')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
-              activeTab === 'pipeline'
-                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            Deal Pipeline
-          </button>
+      {/* Admin View Toggle and Filters Header */}
+      {user?.isAdmin && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setDealsViewMode('list')}
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                dealsViewMode === 'list' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <List className="h-4 w-4 mr-2" />
+              List View
+            </button>
+            <button
+              onClick={() => setDealsViewMode('stages')}
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                dealsViewMode === 'stages' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Stage View
+            </button>
+          </div>
+          <div className="text-sm text-gray-300">
+            Showing {deals?.length || 0} deals
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Tab Content */}
-      {activeTab === 'list' ? (
-        /* Deals Table */
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md matrix-table">
+      {/* Admin Deals Filters */}
+      {user?.isAdmin && (
+        <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4">Filter Deals</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">User</label>
+              <select
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={dealFilters.userId}
+                onChange={(e) => handleDealFilterChange('userId', e.target.value)}
+              >
+                <option value="">All Users</option>
+                {users?.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+              <select
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={dealFilters.status}
+                onChange={(e) => handleDealFilterChange('status', e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+                <option value="Under Review">Under Review</option>
+                <option value="In Underwriting">In Underwriting</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Property Type</label>
+              <select
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={dealFilters.propertyType}
+                onChange={(e) => handleDealFilterChange('propertyType', e.target.value)}
+              >
+                <option value="">All Types</option>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Office">Office</option>
+                <option value="Industrial">Industrial</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={dealFilters.startDate}
+                onChange={(e) => handleDealFilterChange('startDate', e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={dealFilters.endDate}
+                onChange={(e) => handleDealFilterChange('endDate', e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-between">
+            <button
+              onClick={clearDealFilters}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Regular User Tab Navigation */}
+      {!user?.isAdmin && (
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 matrix-nav">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
+                activeTab === 'list'
+                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Deal List
+            </button>
+            <button
+              onClick={() => setActiveTab('pipeline')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
+                activeTab === 'pipeline'
+                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Deal Pipeline
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      {user?.isAdmin ? (
+        /* Admin Deals View */
+        <div className="space-y-4">
+          {dealsViewMode === 'list' ? (
+            /* Admin Deals List View */
+            <div className="bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-700">
+              <ul className="divide-y divide-gray-700">
+                {deals?.map((deal) => (
+                  <li key={deal.id}>
+                    <div className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-blue-400 truncate">
+                              {deal.dealId}
+                            </p>
+                            <div className="flex space-x-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                deal.status === 'Under Review' ? 'bg-yellow-900 text-yellow-200' :
+                                deal.status === 'In Underwriting' ? 'bg-blue-900 text-blue-200' :
+                                deal.status === 'LOE Sent' ? 'bg-purple-900 text-purple-200' :
+                                deal.status === 'Closed' ? 'bg-green-900 text-green-200' :
+                                'bg-gray-700 text-gray-300'
+                              }`}>
+                                {deal.status}
+                              </span>
+                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-900 text-indigo-200">
+                                {deal.stage || 'Qualification'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-1">
+                            <p className="text-lg font-medium text-white truncate">
+                              {deal.propertyName}
+                            </p>
+                            <p className="text-sm text-gray-400 truncate">
+                              {deal.propertyAddress}
+                            </p>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-sm text-gray-400">
+                            <span>
+                              {safeFormatDate(deal.createdAt, 'MMM d, yyyy')}
+                            </span>
+                            <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
+                              Created by: {users?.find(u => u.id === deal.userId)?.name || users?.find(u => u.id === deal.userId)?.email || 'Unknown User'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <button
+                            onClick={() => setViewingDeal(deal)}
+                            className="inline-flex items-center px-3 py-2 border border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            /* Admin Stage View */
+            <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
+              <StageView deals={deals || []} />
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Regular User Tab Content */
+        activeTab === 'list' ? (
+          /* Deals Table */
+          <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md matrix-table">
         {deals?.length === 0 ? (
           <div className="text-center py-12 matrix-empty-state">
             <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 matrix-icon" />
@@ -258,11 +476,12 @@ export function DealsPage() {
           </ul>
         )}
         </div>
-      ) : (
-        /* Deal Pipeline */
-        <div className="matrix-content">
-          <StageView deals={deals || []} />
-        </div>
+        ) : (
+          /* Deal Pipeline */
+          <div className="matrix-content">
+            <StageView deals={deals || []} />
+          </div>
+        )
       )}
 
       {/* Modals */}
