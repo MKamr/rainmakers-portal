@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         sidebarOpen ? 'block' : 'hidden'
       )}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex w-full max-w-sm flex-1 flex-col bg-white dark:bg-black matrix-mobile-sidebar">
+        <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-black matrix-mobile-sidebar">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
@@ -84,7 +84,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               }}
             />
           </div>
-          <div className="mt-5 h-0 flex-1 overflow-y-auto">
+          <div className="mt-5 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-3 matrix-nav">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       'group flex items-center px-3 py-3 text-base font-medium rounded-md matrix-nav-item',
                       isActive
                         ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 matrix-nav-active'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
                     )}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -106,6 +106,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 )
               })}
             </nav>
+          </div>
+          
+          {/* Mobile User Section */}
+          <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4 matrix-user-section">
+            <div className="group block w-full flex-shrink-0">
+              <div className="flex items-center">
+                <div>
+                  {user?.avatar ? (
+                    <img
+                      className="inline-block h-8 w-8 rounded-full matrix-user-avatar"
+                      src={user.avatar}
+                      alt={user.username}
+                    />
+                  ) : (
+                    <div className="inline-block h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
+                      <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                    </div>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white matrix-username">
+                    {user?.username}
+                  </p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 matrix-user-role">
+                    {user?.isAdmin ? 'ADMIN' : 'USER'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="ml-auto p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 matrix-logout-btn"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -142,7 +177,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       'group flex items-center px-2 py-2 text-sm font-medium rounded-md matrix-nav-item',
                       isActive
                         ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 matrix-nav-active'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
                     )}
                   >
                     <item.icon className="mr-3 h-5 w-5 flex-shrink-0 matrix-nav-icon" />
