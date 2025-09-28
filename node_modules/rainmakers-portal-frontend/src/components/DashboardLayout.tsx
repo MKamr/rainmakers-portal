@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         sidebarOpen ? 'block' : 'hidden'
       )}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-black matrix-mobile-sidebar">
+        <div className="relative flex w-full max-w-xs h-full flex-col bg-white dark:bg-black matrix-mobile-sidebar">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
@@ -84,7 +84,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               }}
             />
           </div>
-          <div className="mt-5 flex-1 overflow-y-auto">
+          <div className="mt-5 flex-1 overflow-y-auto min-h-0">
             <nav className="space-y-1 px-3 matrix-nav">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
@@ -109,7 +109,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           
           {/* Mobile User Section */}
-          <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4 matrix-user-section">
+          <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4 mt-auto matrix-user-section">
             <div className="group block w-full flex-shrink-0">
               <div className="flex items-center">
                 <div>
