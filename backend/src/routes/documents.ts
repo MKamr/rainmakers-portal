@@ -69,27 +69,32 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       
       res.json(documentsWithUserId);
     } catch (oneDriveError: any) {
-      // If folder doesn't exist (404), try to create it
+      // If folder doesn't exist (404), only create it for non-admin users
       if (oneDriveError.message?.includes('Failed to fetch files') || oneDriveError.response?.status === 404) {
-        console.log('📁 [DOCUMENTS] Deal folder not found, creating hierarchical folder structure...');
-        try {
-          await OneDriveService.createDealFolder(dealId, deal.propertyAddress);
-          console.log('✅ [DOCUMENTS] Deal folder created, retrying...');
-          
-          // Retry getting documents
-          const documents = await OneDriveService.getDealFiles(dealId);
-          console.log('📄 [DOCUMENTS] Documents retrieved after folder creation:', documents.length);
-          
-          // Set userId for each document
-          const documentsWithUserId = documents.map(doc => ({
-            ...doc,
-            userId: req.user!.id
-          }));
-          
-          res.json(documentsWithUserId);
-        } catch (createError) {
-          console.error('❌ [DOCUMENTS] Failed to create deal folder:', createError);
-          res.status(500).json({ error: 'Failed to create deal folder', details: createError instanceof Error ? createError.message : 'Unknown error' });
+        if (req.user!.isAdmin) {
+          console.log('📁 [DOCUMENTS] Admin user - folder not found, returning empty array instead of creating folder');
+          res.json([]);
+        } else {
+          console.log('📁 [DOCUMENTS] Deal folder not found, creating hierarchical folder structure...');
+          try {
+            await OneDriveService.createDealFolder(dealId, deal.propertyAddress);
+            console.log('✅ [DOCUMENTS] Deal folder created, retrying...');
+            
+            // Retry getting documents
+            const documents = await OneDriveService.getDealFiles(dealId);
+            console.log('📄 [DOCUMENTS] Documents retrieved after folder creation:', documents.length);
+            
+            // Set userId for each document
+            const documentsWithUserId = documents.map(doc => ({
+              ...doc,
+              userId: req.user!.id
+            }));
+            
+            res.json(documentsWithUserId);
+          } catch (createError) {
+            console.error('❌ [DOCUMENTS] Failed to create deal folder:', createError);
+            res.status(500).json({ error: 'Failed to create deal folder', details: createError instanceof Error ? createError.message : 'Unknown error' });
+          }
         }
       } else {
         throw oneDriveError;
