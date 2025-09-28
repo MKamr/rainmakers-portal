@@ -617,7 +617,7 @@ export function AdminPage() {
         <div className="flex space-x-3 matrix-export-buttons">
           <button
             onClick={exportDeals}
-            className="matrix-button matrix-export-btn bg-gray-800 dark:bg-gray-700 text-yellow-400 dark:text-yellow-300 border-2 border-yellow-400 dark:border-yellow-300 px-4 py-2 rounded-md font-semibold hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300 shadow-lg hover:shadow-yellow-400/25"
+            className="matrix-button matrix-export-btn bg-gray-800 dark:bg-gray-800 text-yellow-400 dark:text-yellow-300 border-2 border-yellow-400 dark:border-yellow-300 px-4 py-2 rounded-md font-semibold hover:bg-gray-700 dark:hover:bg-gray-700 transition-all duration-300 shadow-lg hover:shadow-yellow-400/25"
             disabled={!deals || deals.length === 0}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -625,7 +625,7 @@ export function AdminPage() {
           </button>
           <button
             onClick={exportUsers}
-            className="matrix-button matrix-export-btn bg-gray-800 dark:bg-gray-700 text-yellow-400 dark:text-yellow-300 border-2 border-yellow-400 dark:border-yellow-300 px-4 py-2 rounded-md font-semibold hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300 shadow-lg hover:shadow-yellow-400/25"
+            className="matrix-button matrix-export-btn bg-gray-800 dark:bg-gray-800 text-yellow-400 dark:text-yellow-300 border-2 border-yellow-400 dark:border-yellow-300 px-4 py-2 rounded-md font-semibold hover:bg-gray-700 dark:hover:bg-gray-700 transition-all duration-300 shadow-lg hover:shadow-yellow-400/25"
             disabled={!users || users.length === 0}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -658,18 +658,18 @@ export function AdminPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Enhanced Stats */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="bg-gray-800 overflow-hidden shadow rounded-lg border border-gray-700">
-              <div className="p-5">
+              <div className="p-3 sm:p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Users className="h-6 w-6 text-blue-400" />
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ml-3 sm:ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-300 truncate">Total Users</dt>
-                      <dd className="text-lg font-medium text-white">{analytics?.users.total || 0}</dd>
-                      <dd className="text-sm text-gray-400">
+                      <dt className="text-xs sm:text-sm font-medium text-gray-300 truncate">Total Users</dt>
+                      <dd className="text-base sm:text-lg font-medium text-white">{analytics?.users.total || 0}</dd>
+                      <dd className="text-xs sm:text-sm text-gray-400">
                         {analytics?.users.active || 0} active • {analytics?.users.admins || 0} admins
                       </dd>
                     </dl>
@@ -718,10 +718,10 @@ export function AdminPage() {
           </div>
 
           {/* Performance Overview */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:gap-5 lg:grid-cols-2">
             <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-white mb-4">
+              <div className="px-3 py-4 sm:px-4 sm:py-5 sm:p-6">
+                <h3 className="text-base sm:text-lg leading-6 font-medium text-white mb-3 sm:mb-4">
                   Deal Status Breakdown
                 </h3>
                 <div className="space-y-2">
@@ -918,13 +918,13 @@ export function AdminPage() {
           </div>
 
           {/* Deals Filters */}
-          <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
-            <h3 className="text-lg font-medium text-white mb-4">Filter Deals</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="bg-gray-800 shadow rounded-lg p-4 sm:p-6 border border-gray-700">
+            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">Filter Deals</h3>
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">User</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">User</label>
                 <select
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-2 sm:px-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   value={dealFilters.userId}
                   onChange={(e) => handleDealFilterChange('userId', e.target.value)}
                 >

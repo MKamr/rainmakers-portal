@@ -268,11 +268,11 @@ export function DealsPage() {
 
       {/* Regular User Tab Navigation */}
       {!user?.isAdmin && (
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 matrix-nav">
-          <div className="flex space-x-8">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4 matrix-nav">
+          <div className="flex space-x-4 sm:space-x-8">
             <button
               onClick={() => setActiveTab('list')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
+              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
                 activeTab === 'list'
                   ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
@@ -282,7 +282,7 @@ export function DealsPage() {
             </button>
             <button
               onClick={() => setActiveTab('pipeline')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm matrix-tab ${
+              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
                 activeTab === 'pipeline'
                   ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
@@ -369,7 +369,7 @@ export function DealsPage() {
         /* Regular User Tab Content */
         activeTab === 'list' ? (
           /* Deals Table */
-          <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md matrix-table">
+          <div className="bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-md matrix-table">
         {deals?.length === 0 ? (
           <div className="text-center py-12 matrix-empty-state">
             <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 matrix-icon" />
@@ -403,7 +403,7 @@ export function DealsPage() {
                           {deal.dealId}
                         </p>
                         <div className="ml-2 flex-shrink-0 flex space-x-2">
-                          <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full matrix-status bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-yellow-400 dark:border-yellow-300">
+                          <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full matrix-status bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-yellow-400 dark:border-yellow-300">
                             {deal.status?.toUpperCase() || 'OPEN'}
                           </span>
                           <span 

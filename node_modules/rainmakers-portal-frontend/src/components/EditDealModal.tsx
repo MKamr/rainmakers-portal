@@ -89,24 +89,24 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex min-h-screen items-end justify-center px-2 pt-2 pb-2 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
         <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
           &#8203;
         </span>
 
-        <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700">
+        <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700 w-full max-h-[95vh] overflow-y-auto">
           {/* Header */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
+          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-600">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <Edit className="h-6 w-6 text-blue-400" />
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-blue-500/20 rounded-lg">
+                  <Edit className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">✏️ Edit Deal</h3>
-                  <p className="text-sm text-gray-300">Update deal information and details</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-white">✏️ Edit Deal</h3>
+                  <p className="text-xs sm:text-sm text-gray-300">Update deal information and details</p>
                 </div>
               </div>
               <button 
@@ -165,7 +165,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                     <h4 className="text-lg font-semibold text-white">Client Information</h4>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-300">
                         First Name <span className="text-red-400">*</span>
@@ -173,7 +173,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                       <div className="relative">
                         <input
                           {...register('clientFirstName', { required: 'First Name is required' })}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
                           placeholder="Enter first name"
                         />
                         {errors.clientFirstName && (
@@ -189,7 +189,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                       <div className="relative">
                         <input
                           {...register('clientLastName', { required: 'Last Name is required' })}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
                           placeholder="Enter last name"
                         />
                         {errors.clientLastName && (
@@ -241,12 +241,12 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                     <h4 className="text-lg font-semibold text-white">Deal Information</h4>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-300">Deal Type</label>
                       <select
                         {...register('dealType')}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
                       >
                         <option value="">Select deal type</option>
                         <option value="Purchase">Purchase</option>
@@ -260,7 +260,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                       <label className="block text-sm font-medium text-gray-300">Property Type</label>
                       <select
                         {...register('propertyType')}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
                       >
                         <option value="">Select property type</option>
                         <option value="Multifamily">Multifamily</option>
@@ -310,7 +310,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                     <h4 className="text-lg font-semibold text-white">Financial Information</h4>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-300">Sponsor Net Worth</label>
                       <input

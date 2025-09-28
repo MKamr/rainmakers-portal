@@ -252,52 +252,43 @@ export function StageView({ deals }: StageViewProps) {
               {isExpanded && group.deals.length > 0 && (
                 <div className="bg-gray-800 border-t border-gray-700">
                   <div className="px-6 py-4">
-                    {/* Excel-like Table */}
+                    {/* Spreadsheet-like Table */}
                     <div className="overflow-x-auto">
                       <div className="min-w-full">
                         {/* Fixed Header Row */}
-                        <div className="sticky top-0 z-10 bg-gray-800 border-b border-gray-600">
+                        <div className="sticky top-0 z-10 bg-gray-700 border-b-2 border-gray-500">
                           <div className="flex min-w-max">
                             {/* Selection Column */}
-                            <div className="w-12 px-3 py-3 flex items-center justify-center border-r border-gray-600">
-                              <CheckSquare className="h-4 w-4 text-gray-400" />
+                            <div className="w-12 px-2 py-2 flex items-center justify-center border-r border-gray-500 bg-gray-600">
+                              <CheckSquare className="h-3 w-3 text-gray-300" />
                             </div>
                             
-                            {/* Form Fields Columns */}
-                            <div className="w-40 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Client First Name
+                            {/* Spreadsheet Headers */}
+                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              me
                             </div>
-                            <div className="w-40 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Client Last Name
-                            </div>
-                            <div className="w-32 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Client Phone
                             </div>
-                            <div className="w-48 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
+                            <div className="w-48 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Client Email
                             </div>
-                            <div className="w-32 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
+                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Deal Type
                             </div>
-                            <div className="w-32 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
+                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Property Type
                             </div>
-                            <div className="w-64 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Property Address
-                            </div>
-                            <div className="w-32 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Property Vintage
-                            </div>
-                            <div className="w-40 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Sponsor Net Worth
-                            </div>
-                            <div className="w-40 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
-                              Sponsor Liquidity
-                            </div>
-                            <div className="w-40 px-3 py-3 text-sm font-semibold text-gray-300 border-r border-gray-600">
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Loan Request
                             </div>
-                            <div className="w-64 px-3 py-3 text-sm font-semibold text-gray-300">
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Sponsor Net Worth
+                            </div>
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Sponsor Liquidity
+                            </div>
+                            <div className="w-64 px-2 py-2 text-xs font-bold text-white bg-gray-600">
                               Additional Information
                             </div>
                           </div>
@@ -308,63 +299,63 @@ export function StageView({ deals }: StageViewProps) {
                           {group.deals.map((deal, index) => (
                             <div 
                               key={deal.id} 
-                              className={`flex min-w-max hover:bg-gray-650 transition-colors ${
-                                index % 2 === 0 ? 'bg-gray-700' : 'bg-gray-750'
+                              className={`flex min-w-max hover:bg-gray-600 transition-colors ${
+                                index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'
                               }`}
                             >
                               {/* Selection Column */}
-                              <div className="w-12 px-3 py-3 flex items-center justify-center border-r border-gray-600">
-                              <button
-                                onClick={() => toggleDealSelection(deal.id)}
-                                className="text-gray-400 hover:text-white"
-                              >
-                                {selectedDeals.has(deal.id) ? (
-                                  <CheckSquare className="h-4 w-4" />
-                                ) : (
-                                  <Square className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
+                              <div className="w-12 px-2 py-2 flex items-center justify-center border-r border-gray-500">
+                                <button
+                                  onClick={() => toggleDealSelection(deal.id)}
+                                  className="text-gray-400 hover:text-white"
+                                >
+                                  {selectedDeals.has(deal.id) ? (
+                                    <CheckSquare className="h-3 w-3" />
+                                  ) : (
+                                    <Square className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
 
-                              {/* Form Fields Data */}
-                              <div className="w-40 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.contactName?.split(' ')[0] || 'N/A'}
+                              {/* Spreadsheet Data */}
+                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {/* Empty for "me" column */}
                               </div>
-                              <div className="w-40 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.contactName?.split(' ').slice(1).join(' ') || 'N/A'}
-                              </div>
-                              <div className="w-32 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.contactPhone || 'N/A'}
                               </div>
-                              <div className="w-48 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
+                              <div className="w-48 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.contactEmail || 'N/A'}
                               </div>
-                              <div className="w-32 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
+                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.dealType || deal.applicationDealType || 'N/A'}
                               </div>
-                              <div className="w-32 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
+                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.propertyType || deal.applicationPropertyType || 'N/A'}
                               </div>
-                              <div className="w-64 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.propertyAddress || deal.applicationPropertyAddress || 'N/A'}
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.loanRequest || deal.applicationLoanRequest 
+                                  ? formatCurrency(Number(deal.loanRequest || deal.applicationLoanRequest))
+                                  : 'N/A'
+                                }
                               </div>
-                              <div className="w-32 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.propertyVintage || deal.applicationPropertyVintage || 'N/A'}
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.sponsorNetWorth || deal.applicationSponsorNetWorth 
+                                  ? formatCurrency(Number(deal.sponsorNetWorth || deal.applicationSponsorNetWorth))
+                                  : 'N/A'
+                                }
                               </div>
-                              <div className="w-40 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.sponsorNetWorth || deal.applicationSponsorNetWorth || 'N/A'}
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.sponsorLiquidity || deal.applicationSponsorLiquidity 
+                                  ? formatCurrency(Number(deal.sponsorLiquidity || deal.applicationSponsorLiquidity))
+                                  : 'N/A'
+                                }
                               </div>
-                              <div className="w-40 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.sponsorLiquidity || deal.applicationSponsorLiquidity || 'N/A'}
-                              </div>
-                              <div className="w-40 px-3 py-3 text-sm text-white border-r border-gray-600 truncate">
-                                {deal.loanRequest || deal.applicationLoanRequest || 'N/A'}
-                            </div>
-                              <div className="w-64 px-3 py-3 text-sm text-white truncate">
+                              <div className="w-64 px-2 py-2 text-xs text-white truncate">
                                 {deal.additionalInformation || deal.applicationAdditionalInformation || 'N/A'}
-                          </div>
-                        </div>
-                      ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

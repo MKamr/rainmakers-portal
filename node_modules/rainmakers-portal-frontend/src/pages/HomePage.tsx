@@ -20,7 +20,7 @@ export function HomePage() {
       <div className="matrix-bg-overlay"></div>
       
       {/* Analytics Dashboard */}
-      <div className="p-6 matrix-content">
+      <div className="p-3 sm:p-6 matrix-content">
         <AnalyticsDashboard deals={deals || []} />
       </div>
       

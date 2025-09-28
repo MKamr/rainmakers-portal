@@ -79,24 +79,24 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex min-h-screen items-end justify-center px-2 pt-2 pb-2 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
         <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
           &#8203;
         </span>
 
-        <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700">
+        <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:align-middle border border-gray-700 w-full max-h-[95vh] overflow-y-auto">
           {/* Header */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
+          <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-600">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-yellow-500/20 rounded-lg">
-                  <Sparkles className="h-6 w-6 text-yellow-400" />
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-yellow-500/20 rounded-lg">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">🚀 Create New Deal</h3>
-                  <p className="text-sm text-gray-300">Create your next investment opportunity</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-white">🚀 Create New Deal</h3>
+                  <p className="text-xs sm:text-sm text-gray-300">Create your next investment opportunity</p>
                 </div>
               </div>
               <button 
@@ -111,7 +111,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
 
           {/* Tabs */}
           <div className="border-b border-gray-600">
-            <nav className="flex space-x-8 px-8">
+            <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-8">
               <button
                 type="button"
                 onClick={() => setActiveTab('details')}
@@ -156,7 +156,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <h4 className="text-lg font-semibold text-white">Client Information</h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">
                       First Name <span className="text-red-400">*</span>
@@ -164,7 +164,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                     <div className="relative">
                       <input
                         {...register('clientFirstName', { required: 'First Name is required' })}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 text-sm"
                         placeholder="Enter first name"
                       />
                     </div>
@@ -183,7 +183,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                     <div className="relative">
                       <input
                         {...register('clientLastName', { required: 'Last Name is required' })}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 text-sm"
                         placeholder="Enter last name"
                       />
                     </div>
@@ -196,7 +196,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">
                       Phone Number <span className="text-red-400">*</span>
@@ -247,7 +247,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <h4 className="text-lg font-semibold text-white">Deal Information</h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">Deal Type</label>
                     <div className="relative">
@@ -325,7 +325,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <h4 className="text-lg font-semibold text-white">Financial Information</h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">Sponsor Net Worth</label>
                     <div className="relative">
@@ -384,7 +384,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   <textarea
                     rows={4}
                     {...register('anyAdditionalInformation')}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 resize-none"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 resize-none text-sm"
                     placeholder="Any additional information about the deal, requirements, or special considerations..."
                   />
                 </div>
@@ -392,7 +392,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-700 px-8 py-6 border-t border-gray-600">
+            <div className="bg-gray-700 px-4 py-4 sm:px-8 sm:py-6 border-t border-gray-600">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-400">
                   <span className="text-red-400">*</span> Required fields

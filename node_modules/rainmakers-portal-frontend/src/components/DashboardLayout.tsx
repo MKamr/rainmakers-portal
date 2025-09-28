@@ -47,7 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 matrix-dashboard">
+    <div className="min-h-screen bg-gray-50 dark:bg-black matrix-dashboard">
       {/* Matrix Background Effect */}
       <div className="matrix-bg-overlay"></div>
       
@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         sidebarOpen ? 'block' : 'hidden'
       )}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-gray-800 matrix-mobile-sidebar">
+        <div className="relative flex w-full max-w-sm flex-1 flex-col bg-white dark:bg-black matrix-mobile-sidebar">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
@@ -74,7 +74,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png"
               } 
               alt="Rainmakers Logo" 
-              className="h-20 w-auto"
+              className="h-16 w-auto"
               onError={(e) => {
                 console.error('Mobile logo failed to load:', e.currentTarget.src);
                 // Fallback to the external logo if local fails
@@ -85,7 +85,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
-            <nav className="space-y-1 px-2 matrix-nav">
+            <nav className="space-y-1 px-3 matrix-nav">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
@@ -93,7 +93,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     key={item.name}
                     to={item.href}
                     className={cn(
-                      'group flex items-center px-2 py-2 text-base font-medium rounded-md matrix-nav-item',
+                      'group flex items-center px-3 py-3 text-base font-medium rounded-md matrix-nav-item',
                       isActive
                         ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 matrix-nav-active'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
@@ -112,7 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 matrix-desktop-sidebar">
+        <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-gray-700 matrix-desktop-sidebar">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 matrix-logo-section">
               <img 
@@ -163,7 +163,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       alt={user.username}
                     />
                   ) : (
-                    <div className="inline-block h-9 w-9 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center matrix-user-avatar">
+                    <div className="inline-block h-9 w-9 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
                       <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                     </div>
                   )}
@@ -191,7 +191,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1 matrix-main-content">
         {/* Desktop header */}
-        <div className="sticky top-0 z-10 hidden lg:flex h-16 flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 matrix-header">
+        <div className="sticky top-0 z-10 hidden lg:flex h-16 flex-shrink-0 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700 matrix-header">
           <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1">
               <div className="flex w-full flex-col md:ml-0">

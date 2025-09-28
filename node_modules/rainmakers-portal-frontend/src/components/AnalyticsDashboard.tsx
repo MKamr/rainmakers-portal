@@ -74,62 +74,62 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
   }
 
   return (
-    <div className="space-y-6 matrix-analytics-container">
+    <div className="space-y-4 sm:space-y-6 matrix-analytics-container">
       {/* Matrix Background Effect */}
       <div className="matrix-bg-overlay"></div>
       
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 matrix-metrics-grid">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-metric-card">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 matrix-metrics-grid">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-metric-card">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="p-3 rounded-md bg-blue-100 dark:bg-blue-900 matrix-icon-container">
-                <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400 matrix-icon" />
+              <div className="p-2 sm:p-3 rounded-md bg-blue-100 dark:bg-blue-900 matrix-icon-container">
+                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 matrix-icon" />
               </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">TOTAL LOAN VOLUME</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{formatCurrency(totalLoanAmount)}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">TOTAL LOAN VOLUME</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{formatCurrency(totalLoanAmount)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-metric-card">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-metric-card">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="p-3 rounded-md bg-green-100 dark:bg-green-900 matrix-icon-container">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400 matrix-icon" />
+              <div className="p-2 sm:p-3 rounded-md bg-green-100 dark:bg-green-900 matrix-icon-container">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400 matrix-icon" />
               </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">TOTAL DEALS</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{totalDeals}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">TOTAL DEALS</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{totalDeals}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-metric-card">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-metric-card">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="p-3 rounded-md bg-yellow-100 dark:bg-yellow-900 matrix-icon-container">
-                <Activity className="h-6 w-6 text-yellow-600 dark:text-yellow-400 matrix-icon" />
+              <div className="p-2 sm:p-3 rounded-md bg-yellow-100 dark:bg-yellow-900 matrix-icon-container">
+                <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400 matrix-icon" />
               </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">ACTIVE DEALS</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{activeDeals}</p>
+            <div className="ml-3 sm:ml-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 matrix-metric-label">ACTIVE DEALS</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white matrix-metric-value">{activeDeals}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Detailed Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 matrix-analytics-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 matrix-analytics-grid">
         {/* Stage Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-analytics-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white matrix-section-title">DEALS BY STAGE</h3>
-            <PieChart className="h-5 w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-analytics-card">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-900 dark:text-white matrix-section-title">DEALS BY STAGE</h3>
+            <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
           </div>
           <div className="space-y-3">
             {Object.entries(stageDistribution).map(([stage, count]) => (
@@ -140,7 +140,7 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div className="w-20 bg-gray-200 dark:bg-gray-800 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full" 
                       style={{ width: `${(count / totalDeals) * 100}%` }}
@@ -154,17 +154,17 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
         </div>
 
         {/* Property Type Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-analytics-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white matrix-section-title">PROPERTY TYPES</h3>
-            <Building className="h-5 w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-analytics-card">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-900 dark:text-white matrix-section-title">PROPERTY TYPES</h3>
+            <Building className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
           </div>
           <div className="space-y-3">
             {Object.entries(propertyTypeDistribution).map(([type, count]) => (
               <div key={type} className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-300 matrix-data-label">{type}</span>
                 <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 matrix-progress-bg">
+                  <div className="w-20 bg-gray-200 dark:bg-gray-800 rounded-full h-2 matrix-progress-bg">
                     <div 
                       className="bg-green-600 h-2 rounded-full matrix-progress-bar" 
                       style={{ width: `${(count / totalDeals) * 100}%` }}
@@ -178,17 +178,17 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
         </div>
 
         {/* Deal Type Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-analytics-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white matrix-section-title">DEAL TYPES</h3>
-            <PieChart className="h-5 w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-analytics-card">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-900 dark:text-white matrix-section-title">DEAL TYPES</h3>
+            <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
           </div>
           <div className="space-y-3">
             {Object.entries(dealTypeDistribution).map(([type, count]) => (
               <div key={type} className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-300 matrix-data-label">{type}</span>
                 <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 matrix-progress-bg">
+                  <div className="w-20 bg-gray-200 dark:bg-gray-800 rounded-full h-2 matrix-progress-bg">
                     <div 
                       className="bg-purple-600 h-2 rounded-full matrix-progress-bar" 
                       style={{ width: `${(count / totalDeals) * 100}%` }}
@@ -203,21 +203,21 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
       </div>
 
       {/* Financial Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 matrix-financial-section">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-analytics-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white matrix-section-title">AVERAGE LOAN AMOUNT</h3>
-            <DollarSign className="h-5 w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-3 sm:gap-6 matrix-financial-section">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-analytics-card">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-lg font-medium text-gray-900 dark:text-white matrix-section-title">AVERAGE LOAN AMOUNT</h3>
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white matrix-financial-value">{formatCurrency(averageLoanAmount)}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white matrix-financial-value">{formatCurrency(averageLoanAmount)}</p>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 matrix-analytics-card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white matrix-section-title">RECENT ACTIVITY</h3>
-          <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 matrix-analytics-card">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-sm sm:text-lg font-medium text-gray-900 dark:text-white matrix-section-title">RECENT ACTIVITY</h3>
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 matrix-section-icon" />
         </div>
         <div className="space-y-3">
           {recentDeals.slice(0, 5).map((deal) => (
