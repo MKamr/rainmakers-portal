@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LoginPage } from './pages/LoginPage'
@@ -7,6 +8,22 @@ import { HomePage } from './pages/HomePage'
 import { DealsPage } from './pages/DealsPage'
 import { AdminPage } from './pages/AdminPage'
 import { LoadingSpinner } from './components/LoadingSpinner'
+
+// Join redirect component
+function JoinRedirect() {
+  useEffect(() => {
+    window.location.href = 'https://whop.com/rainmakers/'
+  }, [])
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-300">Redirecting to Rainmakers...</p>
+      </div>
+    </div>
+  )
+}
 
 function App() {
   const { user, isLoading } = useAuth()
@@ -45,7 +62,10 @@ function App() {
     console.log('❌ App: No user or token, showing login')
     return (
       <ThemeProvider>
-        <LoginPage />
+        <Routes>
+          <Route path="/join" element={<JoinRedirect />} />
+          <Route path="*" element={<LoginPage />} />
+        </Routes>
       </ThemeProvider>
     )
   }
@@ -126,6 +146,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/join" element={<JoinRedirect />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </DashboardLayout>
