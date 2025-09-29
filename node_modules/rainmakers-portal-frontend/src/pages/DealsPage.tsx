@@ -38,12 +38,12 @@ export function DealsPage() {
       }
     },
     {
-      onSuccess: (data) => {
-        console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
-      },
-      onError: (error) => {
-        console.error('❌ [DEALS PAGE] Failed to load deals:', error);
-      }
+    onSuccess: (data) => {
+      console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
+    },
+    onError: (error) => {
+      console.error('❌ [DEALS PAGE] Failed to load deals:', error);
+    }
     }
   )
 
@@ -270,28 +270,28 @@ export function DealsPage() {
       {!user?.isAdmin && (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4 matrix-nav">
           <div className="flex space-x-4 sm:space-x-8">
-            <button
-              onClick={() => setActiveTab('list')}
+          <button
+            onClick={() => setActiveTab('list')}
               className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
-                activeTab === 'list'
-                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-              }`}
-            >
-              Deal List
-            </button>
-            <button
-              onClick={() => setActiveTab('pipeline')}
+              activeTab === 'list'
+                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+            }`}
+          >
+            Deal List
+          </button>
+          <button
+            onClick={() => setActiveTab('pipeline')}
               className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
-                activeTab === 'pipeline'
-                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-              }`}
-            >
-              Deal Pipeline
-            </button>
-          </div>
+              activeTab === 'pipeline'
+                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+            }`}
+          >
+            Deal Pipeline
+          </button>
         </div>
+      </div>
       )}
 
       {/* Content */}
@@ -339,7 +339,7 @@ export function DealsPage() {
                               {safeFormatDate(deal.createdAt, 'MMM d, yyyy')}
                             </span>
                             <span className="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">
-                              Created by: {users?.find(u => u.id === deal.userId)?.name || users?.find(u => u.id === deal.userId)?.email || 'Unknown User'}
+                              Created by: {users?.find(u => u.id === deal.userId)?.username || users?.find(u => u.id === deal.userId)?.name || 'Unknown User'}
                             </span>
                           </div>
                         </div>
@@ -361,14 +361,14 @@ export function DealsPage() {
           ) : (
             /* Admin Stage View */
             <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
-              <StageView deals={deals || []} />
+              <StageView deals={deals || []} onCreateDeal={() => setShowCreateModal(true)} />
             </div>
           )}
         </div>
       ) : (
         /* Regular User Tab Content */
         activeTab === 'list' ? (
-          /* Deals Table */
+        /* Deals Table */
           <div className="bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-md matrix-table">
         {deals?.length === 0 ? (
           <div className="text-center py-12 matrix-empty-state">
@@ -476,11 +476,11 @@ export function DealsPage() {
           </ul>
         )}
         </div>
-        ) : (
-          /* Deal Pipeline */
-          <div className="matrix-content">
-            <StageView deals={deals || []} />
-          </div>
+      ) : (
+        /* Deal Pipeline */
+        <div className="matrix-content">
+          <StageView deals={deals || []} onCreateDeal={() => setShowCreateModal(true)} />
+        </div>
         )
       )}
 

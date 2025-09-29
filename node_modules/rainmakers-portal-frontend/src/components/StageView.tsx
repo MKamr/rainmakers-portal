@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 interface StageViewProps {
   deals: Deal[]
+  onCreateDeal?: () => void
 }
 
 interface StageGroup {
@@ -15,7 +16,7 @@ interface StageGroup {
   stage?: string // Keep original stage name for reference
 }
 
-export function StageView({ deals }: StageViewProps) {
+export function StageView({ deals, onCreateDeal }: StageViewProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set())
 
@@ -149,7 +150,10 @@ export function StageView({ deals }: StageViewProps) {
               Every successful "rainmaker" started with their first deal. 
               Launch your journey by creating your first opportunity and watch your pipeline grow.
             </p>
-            <button className="inline-flex items-center px-6 py-3 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25">
+            <button 
+              onClick={onCreateDeal}
+              className="inline-flex items-center px-6 py-3 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Launch Your First Deal
             </button>
