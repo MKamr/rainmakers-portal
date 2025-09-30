@@ -15,6 +15,14 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/favicon\\.(ico|png|svg)",
+      "dest": "/favicon.$1"
+    },
+    {
+      "src": "/rainmakers-logo-small\\.png",
+      "dest": "/rainmakers-logo-small.png"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
