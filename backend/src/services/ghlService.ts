@@ -485,10 +485,40 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      console.log('🔍 [GHL LIST] Fetching all opportunities using v1 API...');
+      console.log('🔍 [GHL LIST] Fetching opportunities from all pipelines...');
       
-      // Use the working v1 API method
-      const allOpportunities = await this.listAllOpportunities();
+      // First, get all pipelines
+      const headers = await this.getHeaders();
+      const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
+      const pipelines = pipelinesResponse.data.pipelines || [];
+      
+      console.log(`📋 [GHL LIST] Found ${pipelines.length} pipelines`);
+      
+      // Fetch opportunities from each pipeline
+      const allOpportunities = [];
+      for (const pipeline of pipelines) {
+        try {
+          console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name}`);
+          
+          // Use the working pipeline-specific method
+          const opportunities = await this.getOpportunitiesByPipeline(pipeline.id);
+          console.log(`📊 [GHL LIST] Found ${opportunities.length} opportunities in pipeline: ${pipeline.name}`);
+          
+          // Add pipeline info to each opportunity
+          const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
+            ...opp,
+            pipelineName: pipeline.name,
+            pipelineId: pipeline.id
+          }));
+          
+          allOpportunities.push(...opportunitiesWithPipeline);
+        } catch (pipelineError: any) {
+          console.warn(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
+          console.warn(`⚠️ [GHL LIST] Pipeline error response:`, pipelineError.response?.data);
+          console.warn(`⚠️ [GHL LIST] Pipeline error status:`, pipelineError.response?.status);
+          // Continue with other pipelines
+        }
+      }
       
       console.log(`✅ [GHL LIST] Total opportunities fetched: ${allOpportunities.length}`);
       return { opportunities: allOpportunities };
