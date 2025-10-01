@@ -487,39 +487,10 @@ export class GHLService {
     try {
       const headers = await this.getV2Headers();
       
-      console.log('🔍 [GHL LIST] Fetching opportunities from all pipelines...');
+      console.log('🔍 [GHL LIST] Fetching all opportunities directly...');
       
-      // First, get all pipelines using v2 API
-      const pipelinesResponse = await axios.get(`${this.GHL_V2_BASE_URL}/pipelines/`, { headers });
-      const pipelines = pipelinesResponse.data.pipelines || [];
-      
-      console.log(`📋 [GHL LIST] Found ${pipelines.length} pipelines`);
-      
-      // Fetch opportunities from each pipeline
-      const allOpportunities = [];
-      for (const pipeline of pipelines) {
-        try {
-          console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name}`);
-          
-          // Use the paginated method with v2 API
-          const opportunities = await this.getOpportunitiesByPipelineV2(pipeline.id);
-          console.log(`📊 [GHL LIST] Found ${opportunities.length} opportunities in pipeline: ${pipeline.name}`);
-          
-          // Add pipeline info to each opportunity
-          const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
-            ...opp,
-            pipelineName: pipeline.name,
-            pipelineId: pipeline.id
-          }));
-          
-          allOpportunities.push(...opportunitiesWithPipeline);
-        } catch (pipelineError: any) {
-          console.warn(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
-          console.warn(`⚠️ [GHL LIST] Pipeline error response:`, pipelineError.response?.data);
-          console.warn(`⚠️ [GHL LIST] Pipeline error status:`, pipelineError.response?.status);
-          // Continue with other pipelines
-        }
-      }
+      // Fetch opportunities directly from v2 API (no pipeline discovery needed)
+      const allOpportunities = await this.getAllOpportunitiesV2();
       
       console.log(`✅ [GHL LIST] Total opportunities fetched: ${allOpportunities.length}`);
       return { opportunities: allOpportunities };
@@ -533,6 +504,59 @@ export class GHLService {
       } else if (error.response?.status === 403) {
         throw new Error('GHL API access forbidden. Please check your API permissions.');
       }
+      throw error;
+    }
+  }
+
+  static async getAllOpportunitiesV2(): Promise<any[]> {
+    try {
+      const headers = await this.getV2Headers();
+      const allOpportunities: any[] = [];
+      let page = 1;
+      let hasMorePages = true;
+      
+      console.log('🔍 [GHL OPPORTUNITIES V2] Fetching all opportunities...');
+      
+      while (hasMorePages) {
+        console.log(`📄 [GHL OPPORTUNITIES V2] Fetching page ${page}...`);
+        
+        const response = await axios.get(
+          `${this.GHL_V2_BASE_URL}/opportunities/`, 
+          { 
+            headers,
+            params: {
+              page: page,
+              limit: 100 // Maximum per page
+            }
+          }
+        );
+        
+        const opportunities = response.data.opportunities || [];
+        const meta = response.data.meta || {};
+        
+        console.log(`📊 [GHL OPPORTUNITIES V2] Page ${page}: Found ${opportunities.length} opportunities`);
+        console.log(`📊 [GHL OPPORTUNITIES V2] Meta:`, meta);
+        
+        allOpportunities.push(...opportunities);
+        
+        // Check if there are more pages
+        hasMorePages = meta.next_page_url ? true : false;
+        page++;
+        
+        // Safety check to prevent infinite loops
+        if (page > 50) {
+          console.warn(`⚠️ [GHL OPPORTUNITIES V2] Reached maximum page limit (50), stopping pagination`);
+          break;
+        }
+      }
+      
+      console.log(`✅ [GHL OPPORTUNITIES V2] Total opportunities fetched: ${allOpportunities.length} from ${page - 1} pages`);
+      
+      return allOpportunities;
+    } catch (error: any) {
+      console.error(`❌ [GHL OPPORTUNITIES V2] Error fetching opportunities:`, error);
+      console.error(`❌ [GHL OPPORTUNITIES V2] Error response:`, error.response?.data);
+      console.error(`❌ [GHL OPPORTUNITIES V2] Error status:`, error.response?.status);
       throw error;
     }
   }
