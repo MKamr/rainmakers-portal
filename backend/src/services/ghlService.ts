@@ -104,10 +104,22 @@ export class GHLService {
       const headers = await this.getV2Headers();
       console.log('🔑 [GHL] Validating token...');
       
-      // Try a simple API call to validate token
-      const response = await axios.get(`${this.GHL_V2_BASE_URL}/locations/`, { 
+      // Get the stored location ID from Firebase configurations
+      const locationId = await FirebaseService.getConfiguration('ghl_location_id');
+      
+      if (!locationId) {
+        console.error('❌ [GHL] No location ID found in configurations');
+        return false;
+      }
+      
+      // Use the stored location ID to validate the token with a simple API call
+      // This is more efficient than calling the locations endpoint
+      const response = await axios.get(`${this.GHL_V2_BASE_URL}/contacts/`, { 
         headers,
-        params: { limit: 1 }
+        params: { 
+          limit: 1,
+          locationId: locationId
+        }
       });
       
       console.log('✅ [GHL] Token validation successful');
@@ -921,19 +933,18 @@ export class GHLService {
   // Custom Fields API methods
   static async getLocationId(): Promise<string | null> {
     try {
-      const headers = await this.getHeaders();
-      const response = await axios.get(`${this.GHL_BASE_URL}/locations/`, { headers });
+      // Get the stored location ID from Firebase configurations instead of calling the API
+      const locationId = await FirebaseService.getConfiguration('ghl_location_id');
       
-      const locations = response.data.locations || [];
-      if (locations.length > 0) {
-        console.log('✅ [GHL LOCATIONS] Found location:', locations[0].id);
-        return locations[0].id;
+      if (locationId) {
+        console.log('✅ [GHL LOCATIONS] Found location from config:', locationId);
+        return locationId;
       }
       
-      console.log('⚠️ [GHL LOCATIONS] No locations found');
+      console.log('⚠️ [GHL LOCATIONS] No location ID found in configurations');
       return null;
     } catch (error: any) {
-      console.error('❌ [GHL LOCATIONS] Error fetching location ID:', error);
+      console.error('❌ [GHL LOCATIONS] Error getting location ID from config:', error);
       return null;
     }
   }
