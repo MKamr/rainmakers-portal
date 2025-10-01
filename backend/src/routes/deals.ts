@@ -1567,4 +1567,282 @@ router.get('/:id/documents', async (req: Request, res: Response) => {
   }
 });
 
+// Compare deals between our system and GHL
+router.get('/compare/ghl', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [DEAL COMPARE] Starting GHL comparison...');
+    
+    // Get all deals from our system
+    const ourDeals = await FirebaseService.getAllDeals();
+    console.log(`📊 [DEAL COMPARE] Found ${ourDeals.length} deals in our system`);
+    
+    // Get all opportunities from GHL
+    const ghlOpportunities = await GHLService.listOpportunities();
+    console.log(`📊 [DEAL COMPARE] Found ${ghlOpportunities.opportunities?.length || 0} opportunities in GHL`);
+    
+    const comparisons = [];
+    
+    // Compare each deal
+    for (const ourDeal of ourDeals) {
+      console.log(`🔍 [DEAL COMPARE] Comparing deal: ${ourDeal.dealId}`);
+      
+      // Find matching GHL opportunity by ghlOpportunityId (most reliable)
+      let ghlOpportunity = null;
+      
+      if (ghlOpportunities.opportunities && ourDeal.ghlOpportunityId) {
+        // First try to find by ghlOpportunityId (most reliable)
+        ghlOpportunity = ghlOpportunities.opportunities.find(opp => 
+          opp.id === ourDeal.ghlOpportunityId
+        );
+        
+        // If not found by ghlOpportunityId, try to find by dealId in custom fields as fallback
+        if (!ghlOpportunity) {
+          ghlOpportunity = ghlOpportunities.opportunities.find(opp => {
+            if (opp.customFields && Array.isArray(opp.customFields)) {
+              return opp.customFields.some(field => 
+                field.key === 'dealId' && field.field_value === ourDeal.dealId
+              );
+            }
+            return false;
+          });
+        }
+      }
+      
+      // Create comparison object
+      const comparison = {
+        ourDeal: {
+          id: ourDeal.id,
+          dealId: ourDeal.dealId,
+          propertyName: ourDeal.propertyName,
+          propertyAddress: ourDeal.propertyAddress,
+          propertyType: ourDeal.propertyType,
+          stage: ourDeal.stage,
+          status: ourDeal.status,
+          contactName: ourDeal.contactName,
+          contactEmail: ourDeal.contactEmail,
+          contactPhone: ourDeal.contactPhone,
+          dealType: ourDeal.dealType,
+          propertyVintage: ourDeal.propertyVintage,
+          sponsorNetWorth: ourDeal.sponsorNetWorth,
+          sponsorLiquidity: ourDeal.sponsorLiquidity,
+          loanRequest: ourDeal.loanRequest,
+          additionalInformation: ourDeal.additionalInformation,
+          createdAt: ourDeal.createdAt,
+          updatedAt: ourDeal.updatedAt
+        },
+        ghlOpportunity: ghlOpportunity ? {
+          id: ghlOpportunity.id,
+          name: ghlOpportunity.name,
+          status: ghlOpportunity.status,
+          pipelineId: ghlOpportunity.pipelineId,
+          stageId: ghlOpportunity.stageId,
+          contactId: ghlOpportunity.contactId,
+          monetaryValue: ghlOpportunity.monetaryValue,
+          customFields: ghlOpportunity.customFields,
+          createdAt: ghlOpportunity.createdAt,
+          updatedAt: ghlOpportunity.updatedAt
+        } : null,
+        differences: [],
+        hasDifferences: false
+      };
+      
+      // Compare fields if GHL opportunity exists
+      if (ghlOpportunity) {
+        const differences = [];
+        
+        // Compare basic fields
+        if (ourDeal.propertyName !== ghlOpportunity.name) {
+          differences.push({
+            field: 'propertyName',
+            ourValue: ourDeal.propertyName,
+            ghlValue: ghlOpportunity.name,
+            type: 'basic'
+          });
+        }
+        
+        // Compare custom fields
+        if (ghlOpportunity.customFields && Array.isArray(ghlOpportunity.customFields)) {
+          const ghlCustomFields = ghlOpportunity.customFields.reduce((acc, field) => {
+            acc[field.key] = field.field_value;
+            return acc;
+          }, {});
+          
+          // Compare deal-specific fields
+          const fieldsToCompare = [
+            'dealType', 'propertyType', 'propertyAddress', 'propertyVintage',
+            'sponsorNetWorth', 'sponsorLiquidity', 'loanRequest', 'additionalInformation'
+          ];
+          
+          fieldsToCompare.forEach(field => {
+            const ourValue = ourDeal[field];
+            const ghlValue = ghlCustomFields[field];
+            
+            if (ourValue !== ghlValue) {
+              differences.push({
+                field,
+                ourValue,
+                ghlValue,
+                type: 'custom'
+              });
+            }
+          });
+        }
+        
+        comparison.differences = differences;
+        comparison.hasDifferences = differences.length > 0;
+      } else {
+        comparison.differences = [{ field: 'ghl_opportunity', ourValue: 'exists', ghlValue: 'not_found', type: 'missing' }];
+        comparison.hasDifferences = true;
+      }
+      
+      comparisons.push(comparison);
+    }
+    
+    console.log(`✅ [DEAL COMPARE] Comparison completed. ${comparisons.length} deals compared`);
+    
+    res.json({
+      message: 'Deal comparison completed successfully',
+      totalDeals: comparisons.length,
+      dealsWithDifferences: comparisons.filter(c => c.hasDifferences).length,
+      comparisons,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [DEAL COMPARE] Error comparing deals:', error);
+    res.status(500).json({
+      error: 'Failed to compare deals',
+      message: error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+// Sync deal data from GHL to our system
+router.post('/sync/ghl', async (req: Request, res: Response) => {
+  try {
+    const { dealIds } = req.body;
+    
+    if (!dealIds || !Array.isArray(dealIds) || dealIds.length === 0) {
+      return res.status(400).json({ error: 'dealIds array is required' });
+    }
+    
+    console.log(`🔄 [DEAL SYNC] Starting sync for ${dealIds.length} deals...`);
+    
+    const syncResults = [];
+    
+    for (const dealId of dealIds) {
+      try {
+        console.log(`🔄 [DEAL SYNC] Syncing deal: ${dealId}`);
+        
+        // Get our deal
+        const ourDeal = await FirebaseService.getDealById(dealId);
+        if (!ourDeal) {
+          syncResults.push({ dealId, success: false, error: 'Deal not found in our system' });
+          continue;
+        }
+        
+        // Get GHL opportunity
+        const ghlOpportunities = await GHLService.listOpportunities();
+        let ghlOpportunity = null;
+        
+        if (ghlOpportunities.opportunities) {
+          // First try to find by ghlOpportunityId (most reliable)
+          if (ourDeal.ghlOpportunityId) {
+            ghlOpportunity = ghlOpportunities.opportunities.find(opp => 
+              opp.id === ourDeal.ghlOpportunityId
+            );
+          }
+          
+          // If not found by ghlOpportunityId, try to find by dealId in custom fields as fallback
+          if (!ghlOpportunity) {
+            ghlOpportunity = ghlOpportunities.opportunities.find(opp => {
+              if (opp.customFields && Array.isArray(opp.customFields)) {
+                return opp.customFields.some(field => 
+                  field.key === 'dealId' && field.field_value === ourDeal.dealId
+                );
+              }
+              return false;
+            });
+          }
+        }
+        
+        if (!ghlOpportunity) {
+          syncResults.push({ dealId, success: false, error: 'GHL opportunity not found' });
+          continue;
+        }
+        
+        // Update our deal with GHL data
+        const updateData: any = {};
+        
+        // Update basic fields
+        if (ghlOpportunity.name && ghlOpportunity.name !== ourDeal.propertyName) {
+          updateData.propertyName = ghlOpportunity.name;
+        }
+        
+        // Update custom fields
+        if (ghlOpportunity.customFields && Array.isArray(ghlOpportunity.customFields)) {
+          const ghlCustomFields = ghlOpportunity.customFields.reduce((acc, field) => {
+            acc[field.key] = field.field_value;
+            return acc;
+          }, {});
+          
+          // Map GHL custom fields to our deal fields
+          const fieldMapping = {
+            'dealType': 'dealType',
+            'propertyType': 'propertyType',
+            'propertyAddress': 'propertyAddress',
+            'propertyVintage': 'propertyVintage',
+            'sponsorNetWorth': 'sponsorNetWorth',
+            'sponsorLiquidity': 'sponsorLiquidity',
+            'loanRequest': 'loanRequest',
+            'additionalInformation': 'additionalInformation'
+          };
+          
+          Object.entries(fieldMapping).forEach(([ghlField, ourField]) => {
+            if (ghlCustomFields[ghlField] !== undefined && ghlCustomFields[ghlField] !== ourDeal[ourField]) {
+              updateData[ourField] = ghlCustomFields[ghlField];
+            }
+          });
+        }
+        
+        // Update the deal if there are changes
+        if (Object.keys(updateData).length > 0) {
+          updateData.updatedAt = new Date();
+          await FirebaseService.updateDeal(dealId, updateData);
+          syncResults.push({ dealId, success: true, updatedFields: Object.keys(updateData) });
+        } else {
+          syncResults.push({ dealId, success: true, message: 'No changes needed' });
+        }
+        
+      } catch (dealError: any) {
+        console.error(`❌ [DEAL SYNC] Error syncing deal ${dealId}:`, dealError);
+        syncResults.push({ dealId, success: false, error: dealError.message });
+      }
+    }
+    
+    const successful = syncResults.filter(r => r.success).length;
+    const failed = syncResults.filter(r => !r.success).length;
+    
+    console.log(`✅ [DEAL SYNC] Sync completed. ${successful} successful, ${failed} failed`);
+    
+    res.json({
+      message: 'Deal sync completed',
+      totalRequested: dealIds.length,
+      successful,
+      failed,
+      results: syncResults,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [DEAL SYNC] Error syncing deals:', error);
+    res.status(500).json({
+      error: 'Failed to sync deals',
+      message: error.message,
+      details: error.response?.data
+    });
+  }
+});
+
 export default router;

@@ -4,9 +4,10 @@ import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import } from 'lucide-react'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, GitCompare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
+import GHLComparison from '../components/GHLComparison'
 
 // GHL Import Tab Component
 function GHLImportTab() {
@@ -586,6 +587,7 @@ export function AdminPage() {
     { id: 'users', name: 'Users', icon: Users },
     { id: 'deals', name: 'Deals', icon: FileText },
     { id: 'ghl-import', name: 'GHL Import', icon: Import },
+    { id: 'ghl-compare', name: 'GHL Compare', icon: GitCompare },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
 
@@ -1070,6 +1072,10 @@ export function AdminPage() {
 
       {activeTab === 'ghl-import' && (
         <GHLImportTab />
+      )}
+
+      {activeTab === 'ghl-compare' && (
+        <GHLComparison />
       )}
 
       {activeTab === 'settings' && (
