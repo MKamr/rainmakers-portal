@@ -160,7 +160,21 @@ const GHLComparison: React.FC = () => {
 
   const getGHLCustomFieldValue = (ghlOpportunity: ComparisonData['ghlOpportunity'], field: string): any => {
     if (!ghlOpportunity?.customFields) return null;
-    const customField = ghlOpportunity.customFields.find(f => f.key === field);
+    
+    // Map our field names to GHL field keys
+    const fieldKeyMap: { [key: string]: string } = {
+      'propertyAddress': 'opportunity.property_address',
+      'propertyType': 'opportunity.property_type',
+      'dealType': 'opportunity.deal_type',
+      'propertyVintage': 'opportunity.property_vintage',
+      'sponsorNetWorth': 'opportunity.sponsor_net_worth',
+      'sponsorLiquidity': 'opportunity.sponsor_liquidity',
+      'loanRequest': 'opportunity.loan_request',
+      'additionalInformation': 'opportunity.additional_information'
+    };
+    
+    const ghlFieldKey = fieldKeyMap[field] || field;
+    const customField = ghlOpportunity.customFields.find(f => f.key === ghlFieldKey);
     return customField?.field_value || null;
   };
 

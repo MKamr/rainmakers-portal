@@ -1667,19 +1667,25 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
             return acc;
           }, {});
           
-          // Compare deal-specific fields
+          // Compare deal-specific fields using correct GHL field keys
           const fieldsToCompare = [
-            'dealType', 'propertyType', 'propertyAddress', 'propertyVintage',
-            'sponsorNetWorth', 'sponsorLiquidity', 'loanRequest', 'additionalInformation'
+            { ourField: 'dealType', ghlField: 'opportunity.deal_type' },
+            { ourField: 'propertyType', ghlField: 'opportunity.property_type' },
+            { ourField: 'propertyAddress', ghlField: 'opportunity.property_address' },
+            { ourField: 'propertyVintage', ghlField: 'opportunity.property_vintage' },
+            { ourField: 'sponsorNetWorth', ghlField: 'opportunity.sponsor_net_worth' },
+            { ourField: 'sponsorLiquidity', ghlField: 'opportunity.sponsor_liquidity' },
+            { ourField: 'loanRequest', ghlField: 'opportunity.loan_request' },
+            { ourField: 'additionalInformation', ghlField: 'opportunity.additional_information' }
           ];
           
-          fieldsToCompare.forEach(field => {
-            const ourValue = ourDeal[field];
-            const ghlValue = ghlCustomFields[field];
+          fieldsToCompare.forEach(({ ourField, ghlField }) => {
+            const ourValue = ourDeal[ourField];
+            const ghlValue = ghlCustomFields[ghlField];
             
             if (ourValue !== ghlValue) {
               differences.push({
-                field,
+                field: ourField,
                 ourValue,
                 ghlValue,
                 type: 'custom'
@@ -1787,16 +1793,16 @@ router.post('/sync/ghl', async (req: Request, res: Response) => {
             return acc;
           }, {});
           
-          // Map GHL custom fields to our deal fields
+          // Map GHL custom fields to our deal fields using correct GHL field keys
           const fieldMapping = {
-            'dealType': 'dealType',
-            'propertyType': 'propertyType',
-            'propertyAddress': 'propertyAddress',
-            'propertyVintage': 'propertyVintage',
-            'sponsorNetWorth': 'sponsorNetWorth',
-            'sponsorLiquidity': 'sponsorLiquidity',
-            'loanRequest': 'loanRequest',
-            'additionalInformation': 'additionalInformation'
+            'opportunity.deal_type': 'dealType',
+            'opportunity.property_type': 'propertyType',
+            'opportunity.property_address': 'propertyAddress',
+            'opportunity.property_vintage': 'propertyVintage',
+            'opportunity.sponsor_net_worth': 'sponsorNetWorth',
+            'opportunity.sponsor_liquidity': 'sponsorLiquidity',
+            'opportunity.loan_request': 'loanRequest',
+            'opportunity.additional_information': 'additionalInformation'
           };
           
           Object.entries(fieldMapping).forEach(([ghlField, ourField]) => {
