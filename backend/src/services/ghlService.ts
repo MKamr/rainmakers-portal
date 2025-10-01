@@ -485,12 +485,10 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      const headers = await this.getV2Headers();
+      console.log('🔍 [GHL LIST] Fetching all opportunities using v1 API...');
       
-      console.log('🔍 [GHL LIST] Fetching all opportunities directly...');
-      
-      // Fetch opportunities directly from v2 API (no pipeline discovery needed)
-      const allOpportunities = await this.getAllOpportunitiesV2();
+      // Use the working v1 API method
+      const allOpportunities = await this.listAllOpportunities();
       
       console.log(`✅ [GHL LIST] Total opportunities fetched: ${allOpportunities.length}`);
       return { opportunities: allOpportunities };
