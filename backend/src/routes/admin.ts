@@ -507,6 +507,105 @@ router.put('/users/:id', [
   }
 });
 
+// Discord Auto-Access Management
+// Get all Discord auto-access users
+router.get('/discord-auto-access', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [DISCORD AUTO-ACCESS] Fetching auto-access users...');
+    
+    const autoAccessUsers = await FirebaseService.getDiscordAutoAccessUsers();
+    
+    res.json({
+      message: 'Discord auto-access users fetched successfully',
+      totalUsers: autoAccessUsers.length,
+      users: autoAccessUsers,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ [DISCORD AUTO-ACCESS] Error fetching auto-access users:', error);
+    res.status(500).json({
+      error: 'Failed to fetch Discord auto-access users',
+      message: error.message
+    });
+  }
+});
+
+// Add Discord username to auto-access list
+router.post('/discord-auto-access', [
+  body('discordUsername').notEmpty().withMessage('Discord username is required'),
+  body('notes').optional().isString().withMessage('Notes must be a string'),
+], async (req: Request, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { discordUsername, notes } = req.body;
+    
+    console.log('➕ [DISCORD AUTO-ACCESS] Adding Discord username:', discordUsername);
+    
+    // Check if username already exists
+    const existingUser = await FirebaseService.getDiscordAutoAccessUserByUsername(discordUsername);
+    if (existingUser) {
+      return res.status(400).json({ 
+        error: 'Discord username already exists in auto-access list',
+        username: discordUsername
+      });
+    }
+    
+    // Add to auto-access list
+    const autoAccessUser = await FirebaseService.addDiscordAutoAccessUser({
+      discordUsername,
+      notes: notes || '',
+      addedBy: req.user!.id,
+      addedByUsername: req.user!.username
+    });
+    
+    console.log('✅ [DISCORD AUTO-ACCESS] Added user:', autoAccessUser.id);
+    
+    res.status(201).json({
+      message: 'Discord username added to auto-access list successfully',
+      user: autoAccessUser,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ [DISCORD AUTO-ACCESS] Error adding auto-access user:', error);
+    res.status(500).json({
+      error: 'Failed to add Discord username to auto-access list',
+      message: error.message
+    });
+  }
+});
+
+// Remove Discord username from auto-access list
+router.delete('/discord-auto-access/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('🗑️ [DISCORD AUTO-ACCESS] Removing auto-access user:', id);
+    
+    const deleted = await FirebaseService.removeDiscordAutoAccessUser(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Auto-access user not found' });
+    }
+    
+    console.log('✅ [DISCORD AUTO-ACCESS] Removed user:', id);
+    
+    res.json({
+      message: 'Discord username removed from auto-access list successfully',
+      id,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ [DISCORD AUTO-ACCESS] Error removing auto-access user:', error);
+    res.status(500).json({
+      error: 'Failed to remove Discord username from auto-access list',
+      message: error.message
+    });
+  }
+});
+
 // Get all deals (admin view) with filters
 router.get('/deals', async (req: Request, res: Response) => {
   try {

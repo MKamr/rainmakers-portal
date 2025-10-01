@@ -49,12 +49,18 @@ export class DiscordService {
     let user = await FirebaseService.getUserByDiscordId(discordUser.id);
 
     if (!user) {
+      // Check if user is in auto-access list
+      const autoAccessUser = await FirebaseService.getDiscordAutoAccessUserByUsername(discordUser.username);
+      const isAutoAccess = !!autoAccessUser;
+
+      console.log(`🔍 [DISCORD] User ${discordUser.username} auto-access check:`, isAutoAccess);
+
       // Create user data without undefined values
       const userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'> = {
         discordId: discordUser.id,
         username: discordUser.username,
         email: discordUser.email,
-        isWhitelisted: false, // Admin needs to whitelist
+        isWhitelisted: isAutoAccess, // Auto-whitelist if in auto-access list
         isAdmin: false
       };
 
@@ -64,6 +70,10 @@ export class DiscordService {
       }
 
       user = await FirebaseService.createUser(userData);
+      
+      if (isAutoAccess) {
+        console.log(`✅ [DISCORD] User ${discordUser.username} automatically granted access via auto-access list`);
+      }
     } else {
       // Update user info - only update fields that have values
       const updateData: Partial<User> = {

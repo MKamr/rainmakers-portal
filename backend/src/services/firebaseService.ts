@@ -69,6 +69,16 @@ export interface User {
   updatedAt: Timestamp;
 }
 
+export interface DiscordAutoAccessUser {
+  id: string;
+  discordUsername: string;
+  notes: string;
+  addedBy: string;
+  addedByUsername: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface Deal {
   id: string;
   userId: string;
@@ -115,6 +125,7 @@ export interface OneDriveToken {
 export class FirebaseService {
   private static usersCollection = db.collection('users');
   private static dealsCollection = db.collection('deals');
+  private static discordAutoAccessCollection = db.collection('discordAutoAccess');
 
   // User methods
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
@@ -170,6 +181,60 @@ export class FirebaseService {
   static async getAllUsers(): Promise<User[]> {
     const snapshot = await FirebaseService.usersCollection.get();
     return snapshot.docs.map(doc => doc.data() as User);
+  }
+
+  // Discord Auto-Access methods
+  static async getDiscordAutoAccessUsers(): Promise<DiscordAutoAccessUser[]> {
+    const snapshot = await FirebaseService.discordAutoAccessCollection.get();
+    return snapshot.docs.map(doc => doc.data() as DiscordAutoAccessUser);
+  }
+
+  static async getDiscordAutoAccessUserByUsername(discordUsername: string): Promise<DiscordAutoAccessUser | null> {
+    try {
+      const snapshot = await FirebaseService.discordAutoAccessCollection
+        .where('discordUsername', '==', discordUsername)
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      return snapshot.docs[0].data() as DiscordAutoAccessUser;
+    } catch (error) {
+      console.error('Error getting Discord auto-access user by username:', error);
+      return null;
+    }
+  }
+
+  static async addDiscordAutoAccessUser(userData: Omit<DiscordAutoAccessUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<DiscordAutoAccessUser> {
+    const newUserRef = FirebaseService.discordAutoAccessCollection.doc();
+    const now = Timestamp.now();
+    const newUser: DiscordAutoAccessUser = {
+      id: newUserRef.id,
+      ...userData,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await newUserRef.set(newUser);
+    return newUser;
+  }
+
+  static async removeDiscordAutoAccessUser(id: string): Promise<boolean> {
+    try {
+      const userRef = FirebaseService.discordAutoAccessCollection.doc(id);
+      const userDoc = await userRef.get();
+      
+      if (!userDoc.exists) {
+        return false;
+      }
+      
+      await userRef.delete();
+      return true;
+    } catch (error) {
+      console.error('Error removing Discord auto-access user:', error);
+      return false;
+    }
   }
 
   // Deal methods - Updated to handle flexible data structure and filter undefined values
