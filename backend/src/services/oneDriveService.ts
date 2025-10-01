@@ -25,7 +25,6 @@ export class OneDriveService {
       }
       return dealId;
     } catch (error) {
-      console.warn('⚠️ [ONEDRIVE] Could not get deal info, using dealId as folder name:', error);
       return dealId;
     }
   }
@@ -47,10 +46,6 @@ export class OneDriveService {
 
   private static async refreshAccessToken(refreshToken: string): Promise<string> {
     try {
-      console.log('🔄 [TOKEN] Refreshing OneDrive token (Web App Flow)...');
-      console.log('🔄 [TOKEN] Client ID:', process.env.MICROSOFT_CLIENT_ID ? 'Set' : 'Not set');
-      console.log('🔄 [TOKEN] Client Secret:', process.env.MICROSOFT_CLIENT_SECRET ? 'Set' : 'Not set');
-      console.log('🔄 [TOKEN] Redirect URI:', process.env.MICROSOFT_REDIRECT_URI || 'Not set');
       
       // Use Web app flow with client secret
       const formData = new URLSearchParams();
@@ -68,7 +63,6 @@ export class OneDriveService {
         });
 
         const { access_token, refresh_token, expires_in } = response.data;
-      console.log('✅ [TOKEN] Tokens refreshed successfully');
 
         // Update token in Firebase
         const token = await FirebaseService.getLatestOneDriveToken();
@@ -79,12 +73,10 @@ export class OneDriveService {
           expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
           scope: token.scope
           });
-        console.log('✅ [TOKEN] Updated tokens saved to Firebase');
         }
 
         return access_token;
     } catch (error) {
-      console.error('❌ [TOKEN] Error refreshing OneDrive token:', error);
       throw new Error('Failed to refresh OneDrive token');
     }
   }
@@ -97,12 +89,10 @@ export class OneDriveService {
       const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       
       // For SharePoint shared folders, we need to find the correct SharePoint site first
-      console.log('🔍 [ONEDRIVE] Searching for SharePoint site with shared folder...');
       
       // Use the specific SharePoint site we know exists
       let sharePointSiteId = null;
       try {
-        console.log('🔍 [ONEDRIVE] Getting SharePoint site: hardwellcapital.sharepoint.com/sites/HardwellCapital');
         
         // Use the specific site hostname and site name from the URL
         const siteResponse = await axios.get(
@@ -116,11 +106,8 @@ export class OneDriveService {
         
         if (siteResponse.data && siteResponse.data.id) {
           sharePointSiteId = siteResponse.data.id;
-          console.log('✅ [ONEDRIVE] Found SharePoint site:', siteResponse.data.displayName, 'ID:', siteResponse.data.id);
         }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Error accessing specific SharePoint site:', siteError.message);
-        console.log('⚠️ [ONEDRIVE] Falling back to OneDrive approach...');
       }
       
       // If we found a SharePoint site, use it; otherwise fall back to OneDrive
@@ -128,7 +115,6 @@ export class OneDriveService {
         ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
         : `${this.GRAPH_BASE_URL}/me/drive`;
       
-      console.log('🔍 [ONEDRIVE] Checking if parent folder exists:', folderPath);
       try {
         await axios.get(
           `${baseUrl}/root:/${encodeURIComponent(folderPath)}`,
@@ -138,10 +124,8 @@ export class OneDriveService {
             }
           }
         );
-        console.log('✅ [ONEDRIVE] Parent folder exists:', folderPath);
       } catch (parentError: any) {
         if (parentError.response?.status === 404) {
-          console.log('📁 [ONEDRIVE] Parent folder does not exist, creating it...');
           
           // Create the parent folder structure
           const folderNames = folderPath.split('/');
@@ -161,11 +145,9 @@ export class OneDriveService {
                   }
                 }
               );
-              console.log(`✅ [ONEDRIVE] Folder exists: ${currentPath}`);
             } catch (folderError: any) {
               // If folder doesn't exist, create it
               if (folderError.response?.status === 404) {
-                console.log(`📁 [ONEDRIVE] Creating folder: ${currentPath}`);
                 
                 const parentPath = i === 0 ? 'root' : folderNames.slice(0, i).join('/');
                 const createUrl = i === 0 
@@ -187,11 +169,9 @@ export class OneDriveService {
                       }
                     }
                   );
-                  console.log(`✅ [ONEDRIVE] Folder created: ${currentPath}`);
                 } catch (createError: any) {
                   // If we get a 409 conflict, the folder already exists, so continue
                   if (createError.response?.status === 409) {
-                    console.log(`📁 [ONEDRIVE] Folder already exists (409 conflict): ${currentPath}`);
                     continue;
                   } else {
                     throw createError;
@@ -211,7 +191,6 @@ export class OneDriveService {
       const folderName = propertyAddress || dealId;
       
       const dealFolderPath = `${folderPath}/${folderName}`;
-      console.log(`📁 [ONEDRIVE] Creating deal folder: ${dealFolderPath}`);
       
       // First, check if the exact deal folder already exists
       try {
@@ -225,19 +204,15 @@ export class OneDriveService {
         );
         
         if (existingFolderResponse.data && existingFolderResponse.data.id) {
-          console.log('✅ [ONEDRIVE] Deal folder already exists:', existingFolderResponse.data.name);
           return existingFolderResponse.data.id;
         }
       } catch (exactCheckError: any) {
         if (exactCheckError.response?.status === 404) {
-          console.log('📁 [ONEDRIVE] Deal folder does not exist, proceeding with creation...');
         } else {
-          console.log('⚠️ [ONEDRIVE] Error checking exact folder, proceeding with search...');
         }
       }
       
       // Now search for existing deal folders (fallback method)
-      console.log('🔍 [ONEDRIVE] Searching for existing deal folders...');
       try {
         const searchResponse = await axios.get(
           `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
@@ -257,16 +232,13 @@ export class OneDriveService {
           );
           
           if (matchingFolder) {
-            console.log('✅ [ONEDRIVE] Found existing deal folder:', matchingFolder.name);
             return matchingFolder.id;
           }
         }
       } catch (searchError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not search parent folder, proceeding with creation...');
       }
 
       // If no existing folder found, try to create it
-      console.log('📁 [ONEDRIVE] No existing folder found, creating new one...');
       try {
       const response = await axios.post(
           `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,

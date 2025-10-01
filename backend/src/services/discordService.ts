@@ -53,7 +53,6 @@ export class DiscordService {
       const autoAccessUser = await FirebaseService.getDiscordAutoAccessUserByUsername(discordUser.username);
       const isAutoAccess = !!autoAccessUser;
 
-      console.log(`🔍 [DISCORD] User ${discordUser.username} auto-access check:`, isAutoAccess);
 
       // Create user data without undefined values
       const userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -72,7 +71,6 @@ export class DiscordService {
       user = await FirebaseService.createUser(userData);
       
       if (isAutoAccess) {
-        console.log(`✅ [DISCORD] User ${discordUser.username} automatically granted access via auto-access list`);
       }
     } else {
       // Update user info - only update fields that have values

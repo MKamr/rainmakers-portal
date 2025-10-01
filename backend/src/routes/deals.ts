@@ -42,10 +42,8 @@ const loadGHLFieldMapping = () => {
       });
     }
     
-    console.log('✅ [FIELD MAPPING] Loaded', Object.keys(fieldMapping).length, 'fields from GHL custom fields');
     return fieldMapping;
   } catch (error) {
-    console.error('❌ [FIELD MAPPING] Error loading GHL custom fields:', error);
     return {};
   }
 };
@@ -138,7 +136,6 @@ const separateFieldsByModel = (updates: any, fieldMapping: { [fieldId: string]: 
     }
   });
   
-  console.log('🔍 [FIELD MAPPING] Available field keys:', Object.keys(fieldKeyToIdMap).slice(0, 10), '...');
   
   // Process each update field
   Object.entries(updates).forEach(([fieldName, value]) => {
@@ -160,7 +157,6 @@ const separateFieldsByModel = (updates: any, fieldMapping: { [fieldId: string]: 
       
       if (fieldId && fieldMapping[fieldId]) {
         const fieldInfo = fieldMapping[fieldId];
-        console.log(`🔍 [FIELD MAPPING] Field "${fieldName}" (ID: ${fieldId}) belongs to model: ${fieldInfo.model}`);
         
         if (fieldInfo.model === 'opportunity') {
           opportunityCustomFields[fieldId] = value;
@@ -168,7 +164,6 @@ const separateFieldsByModel = (updates: any, fieldMapping: { [fieldId: string]: 
           contactCustomFields[fieldId] = value;
         }
       } else {
-        console.log(`⚠️ [FIELD MAPPING] Field "${fieldName}" not found in GHL field mapping`);
       }
     }
   });
@@ -255,9 +250,7 @@ const mapGHLStageToSystemStage = (ghlStageName: string): string => {
 // Function to map our system stage names to GHL stage IDs
 const mapSystemStageToGHLStageId = async (systemStage: string, pipelineId: string): Promise<string | null> => {
   try {
-    console.log('🔍 [STAGE MAPPING] Fetching stages for pipeline:', pipelineId);
     const stages = await GHLService.getPipelineStages(pipelineId);
-    console.log('🔍 [STAGE MAPPING] Available stages:', stages.map((s: any) => ({ name: s.name, id: s.id })));
     
     // Try to find a stage that matches our system stage name
     const matchingStage = stages.find((stage: any) => {
@@ -267,15 +260,11 @@ const mapSystemStageToGHLStageId = async (systemStage: string, pipelineId: strin
     });
     
     if (matchingStage) {
-      console.log('✅ [STAGE MAPPING] Found GHL stage:', matchingStage.name, '->', matchingStage.id);
       return matchingStage.id;
     }
     
-    console.log('⚠️ [STAGE MAPPING] No matching GHL stage found for:', systemStage);
-    console.log('⚠️ [STAGE MAPPING] Available stage names:', stages.map((s: any) => s.name));
     return null;
   } catch (error) {
-    console.error('❌ [STAGE MAPPING] Error mapping stage to GHL:', error);
     return null;
   }
 };
@@ -292,10 +281,8 @@ const generateDealId = (): string => {
 // Test endpoint to check all deals in Firebase
 router.get('/debug/all-deals', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [DEBUG] Fetching all deals from Firebase...');
     
     const allDeals = await FirebaseService.getAllDeals();
-    console.log('🔍 [DEBUG] Total deals in Firebase:', allDeals.length);
     
     const dealsByUser = allDeals.reduce((acc, deal) => {
       if (!acc[deal.userId]) {
@@ -305,12 +292,6 @@ router.get('/debug/all-deals', async (req: Request, res: Response) => {
       return acc;
     }, {} as { [userId: string]: Deal[] });
     
-    console.log('🔍 [DEBUG] Deals by user:', Object.keys(dealsByUser).map(userId => ({
-      userId,
-      count: dealsByUser[userId].length,
-      deals: dealsByUser[userId].map(d => ({ id: d.id, title: d.title, status: d.status }))
-    })));
-    
     res.json({
       totalDeals: allDeals.length,
       dealsByUser,
@@ -318,7 +299,6 @@ router.get('/debug/all-deals', async (req: Request, res: Response) => {
       currentUserDeals: dealsByUser[req.user?.id || ''] || []
     });
   } catch (error) {
-    console.error('❌ [DEBUG] Error fetching all deals:', error);
     res.status(500).json({ error: 'Failed to fetch debug data' });
   }
 });
@@ -326,51 +306,17 @@ router.get('/debug/all-deals', async (req: Request, res: Response) => {
 // Get user's deals
 router.get('/', async (req: Request, res: Response) => {
   try {
-    console.log('📋 [DEALS] Fetching deals for user:', req.user!.id);
-    console.log('🔍 [DEALS] User details:', {
-      id: req.user!.id,
-      username: req.user!.username,
-      email: req.user!.email,
-      isAdmin: req.user!.isAdmin,
-      isWhitelisted: req.user!.isWhitelisted
-    });
     
     // Debug: Check all deals in Firebase
     const allDeals = await FirebaseService.getAllDeals();
-    console.log('🔍 [DEALS DEBUG] Total deals in Firebase:', allDeals.length);
-    console.log('🔍 [DEALS DEBUG] All deals details:', allDeals.map(deal => ({
-      id: deal.id,
-      userId: deal.userId,
-      title: deal.title,
-      status: deal.status,
-      stage: deal.stage,
-      value: deal.value
-    })));
     
     // Debug: Check if any deals have the current user's ID
     const userDeals = allDeals.filter(deal => deal.userId === req.user!.id);
-    console.log('🔍 [DEALS DEBUG] Deals matching current user ID:', userDeals.length);
-    console.log('🔍 [DEALS DEBUG] Current user ID:', req.user!.id);
-    console.log('🔍 [DEALS DEBUG] User ID type:', typeof req.user!.id);
     
     const deals = await FirebaseService.getDealsByUserId(req.user!.id);
-    console.log('📋 [DEALS] Found deals for user:', deals.length);
-    console.log('📋 [DEALS] Deal details:', deals.map(deal => ({
-      id: deal.id,
-      clientName: (deal as any).clientName || 'No client name',
-      status: deal.status,
-      createdAt: deal.createdAt
-    })));
     
     res.json(deals);
   } catch (error) {
-    console.error('❌ [DEALS] Get deals error:', error);
-    if (error && typeof error === 'object' && 'message' in error) {
-      console.error('❌ [DEALS] Error details:', {
-        message: (error as any).message,
-        stack: (error as any).stack
-      });
-    }
     res.status(500).json({ error: 'Failed to fetch deals' });
   }
 });
@@ -391,13 +337,9 @@ router.post('/', [
   body('anyAdditionalInformation').optional(),
 ], async (req: Request, res: Response) => {
   try {
-    console.log('🚀 [DEAL CREATE] Starting deal creation process');
-    console.log('📝 [DEAL CREATE] Request body:', JSON.stringify(req.body, null, 2));
-    console.log('👤 [DEAL CREATE] User:', req.user);
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ [DEAL CREATE] Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -405,10 +347,8 @@ router.post('/', [
     const { normalized, meta } = normalizeDealFormFields(req.body);
 
     const dealId = generateDealId();
-    console.log('🆔 [DEAL CREATE] Generated deal ID:', dealId);
 
     // Create deal in Firebase
-    console.log('🔥 [DEAL CREATE] Creating deal in Firebase...');
     const dealData = {
       dealId,
       propertyName: normalized.applicationPropertyAddress || 'Unknown Property',
@@ -432,89 +372,58 @@ router.post('/', [
       loanRequest: normalized.loanRequest,
       additionalInformation: normalized.additionalInformation
     } as any;
-    console.log('📊 [DEAL CREATE] Deal data for Firebase:', JSON.stringify(dealData, null, 2));
     
     const deal = await FirebaseService.createDeal(dealData);
-    console.log('✅ [DEAL CREATE] Deal created in Firebase:', deal.id);
 
     // Create folder in OneDrive (only if configured)
-    console.log('📁 [DEAL CREATE] Checking OneDrive configuration...');
     try {
       const oneDriveToken = await FirebaseService.getLatestOneDriveToken();
       if (oneDriveToken) {
-        console.log('📁 [DEAL CREATE] OneDrive connected, creating folder...');
         // Use Firebase document ID (deal.id) instead of custom dealId for consistency
         await OneDriveService.createDealFolder(deal.id, normalized.applicationPropertyAddress);
-        console.log('✅ [DEAL CREATE] OneDrive folder created');
       } else {
-        console.log('⚠️ [DEAL CREATE] OneDrive not connected, skipping folder creation');
       }
     } catch (error) {
-      console.warn('⚠️ [DEAL CREATE] Failed to create OneDrive folder:', error);
       // Don't fail the deal creation if OneDrive fails
     }
 
     // Sync with GHL if configured
-    console.log('🔗 [DEAL CREATE] Attempting GHL sync...');
     try {
       const ghlPipelineId = await FirebaseService.getConfiguration('ghl_pipeline_id');
       const ghlStageId = await FirebaseService.getConfiguration('ghl_under_review_stage_id'); // This should be the "Qualification" stage
       const ghlLocationId = await FirebaseService.getConfiguration('ghl_location_id'); // Add locationId
       const skipGHL = await FirebaseService.getConfiguration('skip_ghl_sync'); // Add option to skip GHL
       
-      console.log('🔧 [DEAL CREATE] GHL Config - Pipeline ID:', ghlPipelineId, '(type:', typeof ghlPipelineId, ')');
-      console.log('🔧 [DEAL CREATE] GHL Config - Stage ID:', ghlStageId, '(type:', typeof ghlStageId, ')');
-      console.log('🔧 [DEAL CREATE] GHL Config - Location ID:', ghlLocationId, '(type:', typeof ghlLocationId, ')');
-      console.log('🔧 [DEAL CREATE] Skip GHL Sync:', skipGHL);
       
       if (skipGHL === 'true') {
-        console.log('⏭️ [DEAL CREATE] GHL sync disabled, skipping...');
       } else if (ghlPipelineId && ghlPipelineId.trim() !== '' && ghlStageId && ghlStageId.trim() !== '' && ghlLocationId && ghlLocationId.trim() !== '') {
-        console.log('🔗 [DEAL CREATE] GHL is configured, proceeding with sync...');
         
         // Validate GHL token first
-        console.log('🔑 [DEAL CREATE] Validating GHL token...');
         const isTokenValid = await GHLService.validateToken();
         if (!isTokenValid) {
-          console.error('❌ [DEAL CREATE] GHL token validation failed, skipping GHL sync');
           throw new Error('GHL token is invalid or has insufficient permissions');
         }
-        console.log('✅ [DEAL CREATE] GHL token validation successful');
         
         // First, create or find the contact
-        console.log('👤 [DEAL CREATE] Creating/finding GHL contact...');
-        console.log('👤 [DEAL CREATE] Searching for contact with email:', req.body.contactEmail);
         let ghlContact;
         
         try {
           // TEMPORARY: Always create new contact to avoid search issues
-          console.log('👤 [DEAL CREATE] Creating new contact (skipping search due to GHL search issues)...');
           const contactName = normalized.contactName || 'Unknown Contact';
           const nameParts = contactName.split(' ');
           const firstName = nameParts[0] || 'Unknown';
           const lastName = nameParts.slice(1).join(' ') || 'Contact';
           
-          console.log('👤 [DEAL CREATE] Contact name parts:', { firstName, lastName, fullName: contactName });
-          console.log('👤 [DEAL CREATE] Contact data to create:', {
-            firstName,
-            lastName,
-            email: normalized.contactEmail || '',
-            phone: normalized.contactPhone || '',
-            companyName: req.body.businessName || ''
-          });
           
           // Load GHL field mapping and build contact custom fields from normalized
           const fieldMappingForCreate = loadGHLFieldMapping();
           const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
-          console.log('🔍 [DEAL CREATE] Contact custom fields found:', Object.keys(contactFieldsForCreate));
           
           const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
             const fieldInfo = fieldMappingForCreate[fieldId];
-            console.log(`🔍 [DEAL CREATE] Processing contact field ${fieldId}:`, { value, fieldInfo });
             return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
           });
           
-          console.log('🔍 [DEAL CREATE] Final contact custom fields array:', JSON.stringify(contactCustomFieldsArrayForCreate, null, 2));
 
           ghlContact = await GHLService.createContact({
             firstName,
@@ -525,11 +434,7 @@ router.post('/', [
             companyName: '',
             customFields: contactCustomFieldsArrayForCreate
           });
-          console.log('✅ [DEAL CREATE] Created new GHL contact:', ghlContact.id);
-          console.log('✅ [DEAL CREATE] Contact details:', JSON.stringify(ghlContact, null, 2));
         } catch (contactError) {
-          console.warn('⚠️ [DEAL CREATE] Failed to create/find contact:', contactError);
-          console.log('🔄 [DEAL CREATE] Trying to create opportunity without contactId...');
           
           // Fallback: Try to create opportunity with minimal contact
           try {
@@ -549,7 +454,6 @@ router.post('/', [
               customFields: []
             });
             
-            console.log('✅ [DEAL CREATE] GHL opportunity created without contact:', ghlDeal.id);
             
             // Update deal with GHL info
             await FirebaseService.updateDeal(deal.id, {
@@ -557,42 +461,31 @@ router.post('/', [
               pipelineId: ghlDeal.pipelineId,
               stageId: ghlDeal.stageId
             });
-            console.log('✅ [DEAL CREATE] Deal updated with GHL info');
             return; // Exit early since we handled it
           } catch (fallbackError) {
-            console.warn('⚠️ [DEAL CREATE] Fallback also failed:', fallbackError);
             throw contactError; // Throw original error
           }
         }
 
         // Check if we have a valid contact
         if (!ghlContact || !ghlContact.id) {
-          console.error('❌ [DEAL CREATE] No valid GHL contact available, skipping opportunity creation');
           throw new Error('No valid GHL contact available');
         }
 
         // Check for existing opportunities for this contact in this pipeline
-        console.log('🔍 [DEAL CREATE] Checking for existing opportunities...');
-        console.log('🔍 [DEAL CREATE] Contact ID:', ghlContact.id);
-        console.log('🔍 [DEAL CREATE] Pipeline ID:', ghlPipelineId);
         const existingOpportunities = await GHLService.getOpportunitiesByContact(ghlContact.id, ghlPipelineId);
-        console.log('🔍 [DEAL CREATE] Found opportunities:', existingOpportunities.length);
-        console.log('🔍 [DEAL CREATE] Opportunity details:', JSON.stringify(existingOpportunities, null, 2));
         
         let ghlDeal;
         if (existingOpportunities.length > 0) {
           // Update existing opportunity
-          console.log('🔄 [DEAL CREATE] Updating existing GHL opportunity:', existingOpportunities[0].id);
           ghlDeal = await GHLService.updateOpportunity(existingOpportunities[0].id, {
             title: `${dealId}`,
             status: 'open',
             stageId: ghlStageId,
             customFields: []
           });
-          console.log('✅ [DEAL CREATE] GHL opportunity updated:', ghlDeal.id);
         } else {
           // Create new opportunity
-          console.log('🚀 [DEAL CREATE] Creating new GHL opportunity...');
           try {
           ghlDeal = await GHLService.createDeal({
             name: normalized.applicationPropertyAddress || dealId,
@@ -607,16 +500,12 @@ router.post('/', [
             // After creation/update, push source and opportunity custom fields
             const fieldMappingForOpp = loadGHLFieldMapping();
             const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
-            console.log('🔍 [DEAL CREATE] Opportunity custom fields found:', Object.keys(oppFieldsForCreate));
-            console.log('🔍 [DEAL CREATE] Field mapping loaded:', Object.keys(fieldMappingForOpp).length, 'fields');
             
             const oppCustomFieldsArrayForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
               const fieldInfo = fieldMappingForOpp[fieldId];
-              console.log(`🔍 [DEAL CREATE] Processing field ${fieldId}:`, { value, fieldInfo });
               return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
             });
             
-            console.log('🔍 [DEAL CREATE] Final custom fields array:', JSON.stringify(oppCustomFieldsArrayForCreate, null, 2));
             
             if (ghlDeal && ghlDeal.id) {
               try {
@@ -625,20 +514,15 @@ router.post('/', [
                   customFields: oppCustomFieldsArrayForCreate
                 });
               } catch (postCreateUpdateErr) {
-                console.warn('⚠️ [DEAL CREATE] Failed to update opportunity with source/custom fields:', postCreateUpdateErr);
               }
-              console.log('✅ [DEAL CREATE] GHL opportunity created:', ghlDeal.id);
             } else {
-              console.warn('⚠️ [DEAL CREATE] Opportunity creation failed, skipping custom fields update');
             }
           } catch (opportunityError) {
-            console.error('❌ [DEAL CREATE] Failed to create GHL opportunity:', opportunityError);
             ghlDeal = null; // Set to null so we don't try to access its properties
           }
         }
 
         // Update deal with GHL info
-        console.log('🔄 [DEAL CREATE] Updating deal with GHL info...');
         const dealUpdateData: any = {
           contactId: ghlContact.id // Always save the contact ID
         };
@@ -650,28 +534,14 @@ router.post('/', [
         }
         
         await FirebaseService.updateDeal(deal.id, dealUpdateData);
-        console.log('✅ [DEAL CREATE] Deal updated with GHL info:', JSON.stringify(dealUpdateData, null, 2));
       } else {
-        console.log('⚠️ [DEAL CREATE] GHL not configured or missing required fields, skipping sync...');
-        console.log('⚠️ [DEAL CREATE] Missing fields:');
-        if (!ghlPipelineId || ghlPipelineId.trim() === '') console.log('  - pipelineId');
-        if (!ghlStageId || ghlStageId.trim() === '') console.log('  - stageId');
-        if (!ghlLocationId || ghlLocationId.trim() === '') console.log('  - locationId');
       }
     } catch (error) {
-      console.warn('⚠️ [DEAL CREATE] Failed to sync with GHL:', error);
       // Don't fail the deal creation if GHL sync fails
     }
 
-    console.log('🎉 [DEAL CREATE] Deal creation completed successfully!');
     res.status(201).json(deal);
   } catch (error) {
-    console.error('❌ [DEAL CREATE] Deal creation failed:', error);
-    console.error('❌ [DEAL CREATE] Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     res.status(500).json({ error: 'Failed to create deal' });
   }
 });
@@ -740,7 +610,6 @@ router.put('/:id', [
     // Sync with GHL if deal has GHL ID
     if (deal.ghlOpportunityId) {
       try {
-        console.log('🔗 [DEAL UPDATE] Syncing with GHL...');
         
         // Map deal fields to GHL custom fields
         const ghlUpdateData: any = {};
@@ -769,31 +638,24 @@ router.put('/:id', [
           if (updates.pipeline.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i)) {
             // It's already a pipeline ID
             ghlUpdateData.pipelineId = updates.pipeline;
-            console.log('✅ [DEAL UPDATE] Using pipeline ID directly:', updates.pipeline);
           } else {
             // It's a pipeline name, we'll look it up later
-            console.log('🔍 [DEAL UPDATE] Pipeline name provided, will look up ID:', updates.pipeline);
           }
         }
         
         // Handle stage mapping for outbound sync
         if (updates.stage && updates.pipeline) {
           try {
-            console.log('🔄 [DEAL UPDATE] Mapping stage to GHL:', updates.stage);
             // Use the pipeline ID if we have it, otherwise use the pipeline name
             const pipelineIdForMapping = ghlUpdateData.pipelineId || updates.pipeline;
             const ghlStageId = await mapSystemStageToGHLStageId(updates.stage, pipelineIdForMapping);
             if (ghlStageId) {
               ghlUpdateData.pipelineStageId = ghlStageId;
-              console.log('✅ [DEAL UPDATE] Mapped stage to GHL ID:', ghlStageId);
             } else {
-              console.log('⚠️ [DEAL UPDATE] Could not map stage, skipping pipelineStageId to avoid validation error');
               // Don't set pipelineStageId if we can't map it to a valid GHL stage ID
               // This prevents the 400 error from GHL API
             }
       } catch (error) {
-            console.error('❌ [DEAL UPDATE] Error mapping stage:', error);
-            console.log('⚠️ [DEAL UPDATE] Skipping pipelineStageId due to mapping error');
             // Don't set pipelineStageId if there's an error mapping
           }
         }
@@ -813,12 +675,9 @@ router.put('/:id', [
             
             if (user) {
               ghlUpdateData.assignedTo = user.id;
-              console.log('✅ [DEAL UPDATE] Mapped owner to user ID:', updates.owner, '->', user.id);
             } else {
-              console.log('⚠️ [DEAL UPDATE] Could not find user ID for owner:', updates.owner);
             }
           } catch (error) {
-            console.log('⚠️ [DEAL UPDATE] Error fetching users, skipping assignedTo:', error);
           }
         }
         
@@ -826,19 +685,14 @@ router.put('/:id', [
         
         // Load GHL field mapping to determine field ownership dynamically
         const fieldMapping = loadGHLFieldMapping();
-        console.log('🔍 [FIELD MAPPING] Loaded field mapping with', Object.keys(fieldMapping).length, 'fields');
         
         // Dynamically separate fields based on GHL field model
         const { opportunityCustomFields, contactCustomFields } = separateFieldsByModel(normalized, fieldMapping);
         
-        console.log('🔍 [FIELD SEPARATION] Opportunity fields:', Object.keys(opportunityCustomFields).length);
-        console.log('🔍 [FIELD SEPARATION] Contact fields:', Object.keys(contactCustomFields).length);
         
         // Sync Contact-level fields if we have a contactId and contact fields to update
         if (deal.contactId && Object.keys(contactCustomFields).length > 0) {
           try {
-            console.log('👤 [DEAL UPDATE] Syncing Contact-level fields to GHL contact:', deal.contactId);
-            console.log('👤 [DEAL UPDATE] Contact custom fields:', JSON.stringify(contactCustomFields, null, 2));
             
             // Format: Array with id, key and field_value for Contact API
             const contactCustomFieldsArray = Object.entries(contactCustomFields).map(([fieldId, value]) => {
@@ -851,20 +705,15 @@ router.put('/:id', [
             });
             
             await GHLService.updateContactCustomFields(deal.contactId, contactCustomFieldsArray);
-            console.log('✅ [DEAL UPDATE] Successfully synced Contact-level fields to GHL');
           } catch (contactError: any) {
-            console.warn('⚠️ [DEAL UPDATE] Failed to sync Contact-level fields to GHL:', contactError);
             // Don't fail the deal update if contact sync fails
           }
         } else if (Object.keys(contactCustomFields).length > 0) {
-          console.log('⚠️ [DEAL UPDATE] No contactId available for Contact-level field sync');
         }
         
         
         // Update opportunity first without custom fields
-        console.log('🔗 [DEAL UPDATE] GHL update data (without custom fields):', JSON.stringify(ghlUpdateData, null, 2));
         
-        console.log('🔗 [DEAL UPDATE] GHL update data:', JSON.stringify(ghlUpdateData, null, 2));
         
         // Get the pipeline ID from the pipeline name for the update data
         const pipelineName = updates.pipeline || deal.pipeline;
@@ -872,9 +721,7 @@ router.put('/:id', [
           const pipelineId = await GHLService.getPipelineId(pipelineName);
           if (pipelineId) {
             ghlUpdateData.pipelineId = pipelineId;
-            console.log('✅ [DEAL UPDATE] Using pipeline ID:', pipelineId);
           } else {
-            console.log('⚠️ [DEAL UPDATE] Could not find pipeline ID for:', pipelineName);
           }
         }
         
@@ -891,25 +738,16 @@ router.put('/:id', [
           });
           
           ghlUpdateData.customFields = opportunityCustomFieldsArray;
-          console.log('🔗 [DEAL UPDATE] Opportunity custom fields:', JSON.stringify(opportunityCustomFieldsArray, null, 2));
         }
         
-        console.log('🚀 [DEAL UPDATE] Calling GHL updateDeal with:', {
-          dealId: deal.ghlOpportunityId,
-          data: ghlUpdateData,
-          pipelineId: ghlUpdateData.pipelineId
-        });
         
         await GHLService.updateDeal(deal.ghlOpportunityId, ghlUpdateData);
-        console.log('✅ [DEAL UPDATE] Successfully synced with GHL');
         
         // Custom fields are included in the main update above
       } catch (error: any) {
-        console.warn('⚠️ [DEAL UPDATE] Failed to sync with GHL:', error);
         
         // If it's a 404 error, the GHL opportunity might be invalid
         if (error.message?.includes('not found')) {
-          console.warn(`⚠️ [DEAL UPDATE] GHL opportunity ID ${deal.ghlOpportunityId} is invalid. Consider creating a new opportunity in GHL.`);
         }
         
         // Don't fail the deal update if GHL sync fails
@@ -918,7 +756,6 @@ router.put('/:id', [
 
     res.json(updatedDeal);
   } catch (error) {
-    console.error('Update deal error:', error);
     res.status(500).json({ error: 'Failed to update deal' });
   }
 });
@@ -931,16 +768,13 @@ router.post('/webhook/ghl-opportunity-update', async (req: Request, res: Respons
     const providedSecret = req.headers['x-webhook-secret'] as string;
     
     if (webhookSecret && providedSecret !== webhookSecret) {
-      console.log('❌ [GHL WEBHOOK] Invalid webhook secret');
       return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    console.log('🔗 [GHL WEBHOOK] Received opportunity update:', JSON.stringify(req.body, null, 2));
     
     const { opportunity } = req.body;
     
     if (!opportunity || !opportunity.id) {
-      console.log('❌ [GHL WEBHOOK] Invalid opportunity data received');
       return res.status(400).json({ error: 'Invalid opportunity data' });
     }
     

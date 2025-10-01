@@ -3,24 +3,14 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
-  console.log('🔥 [FIREBASE] Initializing Firebase Admin...');
   
   // Try environment variables first (for production)
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   
-  console.log('🔥 [FIREBASE] Environment check:', {
-    hasPrivateKey: !!privateKey,
-    hasClientEmail: !!clientEmail,
-    hasProjectId: !!projectId,
-    projectId: projectId,
-    nodeEnv: process.env.NODE_ENV,
-    vercel: process.env.VERCEL
-  });
   
   if (privateKey && clientEmail && projectId) {
-    console.log('🔥 [FIREBASE] Using Firebase environment variables...');
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: projectId,
@@ -29,9 +19,7 @@ if (!admin.apps.length) {
       }),
       projectId: projectId
     });
-    console.log('🔥 [FIREBASE] Firebase initialized with environment variables');
   } else {
-    console.log('🔥 [FIREBASE] Environment variables not found, trying service account file...');
     try {
       // Fallback to service account file
       const serviceAccount = require('../../firebase-service-account.json');
@@ -39,14 +27,7 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
         projectId: serviceAccount.project_id
       });
-      console.log('🔥 [FIREBASE] Firebase initialized with service account file');
     } catch (error) {
-      console.error('🔥 [FIREBASE] Both environment variables and service account file are not available.');
-      console.error('🔥 [FIREBASE] Missing Firebase credentials:', {
-        privateKey: !!privateKey,
-        clientEmail: !!clientEmail,
-        projectId: !!projectId
-      });
       throw new Error('Firebase credentials not properly configured');
     }
   }
@@ -154,7 +135,6 @@ export class FirebaseService {
       }
       return snapshot.docs[0].data() as User;
     } catch (error) {
-      console.error('Error getting user by Discord ID:', error);
       throw error;
     }
   }

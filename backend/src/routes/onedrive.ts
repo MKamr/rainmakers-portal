@@ -5,18 +5,6 @@ const router = Router();
 
 // Test route to verify /api/onedrive mount is working
 router.get('/test', async (req: Request, res: Response) => {
-  console.log('🧪 [TEST] ===== OneDrive Test Route Hit =====');
-  console.log('🧪 [TEST] Request method:', req.method);
-  console.log('🧪 [TEST] Request path:', req.path);
-  console.log('🧪 [TEST] Request url:', req.url);
-  console.log('🧪 [TEST] Request headers:', {
-    'user-agent': req.headers['user-agent'],
-    'origin': req.headers.origin,
-    'referer': req.headers.referer,
-    'content-type': req.headers['content-type'],
-    'authorization': req.headers.authorization ? 'Bearer ***' : 'none'
-  });
-  console.log('🧪 [TEST] ===== OneDrive Test Route Completed =====');
   
   res.json({ 
     message: 'OneDrive mount test successful', 
@@ -29,29 +17,9 @@ router.get('/test', async (req: Request, res: Response) => {
 // Generate PKCE challenge for OneDrive OAuth (public endpoint)
 router.post('/pkce', async (req: Request, res: Response) => {
   try {
-    console.log('🔑 [PKCE] ===== OneDrive PKCE Request Started =====');
-    console.log('🔑 [PKCE] Request method:', req.method);
-    console.log('🔑 [PKCE] Request path:', req.path);
-    console.log('🔑 [PKCE] Request url:', req.url);
-    console.log('🔑 [PKCE] Request headers:', {
-      'user-agent': req.headers['user-agent'],
-      'origin': req.headers.origin,
-      'referer': req.headers.referer,
-      'content-type': req.headers['content-type'],
-      'authorization': req.headers.authorization ? 'Bearer ***' : 'none'
-    });
-    console.log('🔑 [PKCE] Request body:', req.body);
-    console.log('🔑 [PKCE] Request query:', req.query);
-    console.log('🔑 [PKCE] Generating PKCE challenge...');
     
     const pkceChallenge = generatePKCEChallenge();
     
-    console.log('✅ [PKCE] Generated challenge successfully!');
-    console.log('✅ [PKCE] Code challenge (first 20 chars):', pkceChallenge.codeChallenge.substring(0, 20) + '...');
-    console.log('✅ [PKCE] Code verifier (first 20 chars):', pkceChallenge.codeVerifier.substring(0, 20) + '...');
-    console.log('✅ [PKCE] Code challenge method:', pkceChallenge.codeChallengeMethod);
-    console.log('✅ [PKCE] Full code challenge length:', pkceChallenge.codeChallenge.length);
-    console.log('✅ [PKCE] Full code verifier length:', pkceChallenge.codeVerifier.length);
     
     const response = {
       codeChallenge: pkceChallenge.codeChallenge,

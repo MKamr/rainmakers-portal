@@ -23,7 +23,6 @@ router.get('/profile', async (req: Request, res: Response) => {
       createdAt: user.createdAt
     });
   } catch (error) {
-    console.error('Get user profile error:', error);
     res.status(500).json({ error: 'Failed to fetch user profile' });
   }
 });
@@ -53,7 +52,6 @@ router.put('/profile', async (req: Request, res: Response) => {
       updatedAt: updatedUser.updatedAt
     });
   } catch (error) {
-    console.error('Update user profile error:', error);
     res.status(500).json({ error: 'Failed to update user profile' });
   }
 });

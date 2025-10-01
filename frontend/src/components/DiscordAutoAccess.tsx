@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Users, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, Users, AlertCircle, CheckCircle, Clock, Upload } from 'lucide-react';
 import api from '../services/api';
 
 interface DiscordAutoAccessUser {
@@ -18,9 +18,13 @@ const DiscordAutoAccess: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newNotes, setNewNotes] = useState('');
+  const [bulkUsernames, setBulkUsernames] = useState('');
+  const [bulkNotes, setBulkNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,6 +67,53 @@ const DiscordAutoAccess: React.FC = () => {
       setError(err.response?.data?.error || 'Failed to add user');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleBulkAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkUsernames.trim()) return;
+
+    try {
+      setBulkSubmitting(true);
+      setError(null);
+      
+      // Parse usernames from textarea (split by newlines, commas, or spaces)
+      const usernames = bulkUsernames
+        .split(/[\n,]+/)
+        .map(username => username.trim())
+        .filter(username => username.length > 0);
+
+      if (usernames.length === 0) {
+        setError('Please enter at least one valid username');
+        return;
+      }
+
+      const response = await api.post('/admin/discord-auto-access/bulk', {
+        usernames,
+        notes: bulkNotes.trim()
+      });
+      
+      const { summary } = response.data;
+      let message = `Bulk add completed: ${summary.successful} added successfully`;
+      
+      if (summary.duplicates > 0) {
+        message += `, ${summary.duplicates} duplicates skipped`;
+      }
+      if (summary.failed > 0) {
+        message += `, ${summary.failed} failed`;
+      }
+      
+      setSuccess(message);
+      setBulkUsernames('');
+      setBulkNotes('');
+      setShowBulkForm(false);
+      await fetchUsers();
+    } catch (err: any) {
+      console.error('Error bulk adding Discord auto-access users:', err);
+      setError(err.response?.data?.error || 'Failed to bulk add users');
+    } finally {
+      setBulkSubmitting(false);
     }
   };
 
@@ -118,13 +169,22 @@ const DiscordAutoAccess: React.FC = () => {
             Manage Discord usernames that automatically get portal access when they first log in
           </p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Username
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Username
+          </button>
+          <button
+            onClick={() => setShowBulkForm(!showBulkForm)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Add
+          </button>
+        </div>
       </div>
 
       {/* Success/Error Messages */}
@@ -210,6 +270,78 @@ const DiscordAutoAccess: React.FC = () => {
                   setShowAddForm(false);
                   setNewUsername('');
                   setNewNotes('');
+                }}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Bulk Add Form */}
+      {showBulkForm && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Upload className="mr-2 h-5 w-5 text-green-600" />
+            Bulk Add Discord Usernames
+          </h3>
+          <form onSubmit={handleBulkAdd} className="space-y-4">
+            <div>
+              <label htmlFor="bulkUsernames" className="block text-sm font-medium text-gray-700 mb-1">
+                Discord Usernames *
+              </label>
+              <textarea
+                id="bulkUsernames"
+                value={bulkUsernames}
+                onChange={(e) => setBulkUsernames(e.target.value)}
+                placeholder="Enter usernames separated by new lines or commas:&#10;john_doe&#10;jane_smith&#10;bob_wilson"
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Separate usernames with new lines or commas. Invalid usernames will be skipped.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="bulkNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="bulkNotes"
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)}
+                placeholder="Add notes for all users (optional)..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="submit"
+                disabled={bulkSubmitting || !bulkUsernames.trim()}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {bulkSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Bulk Add
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBulkForm(false);
+                  setBulkUsernames('');
+                  setBulkNotes('');
                 }}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
               >

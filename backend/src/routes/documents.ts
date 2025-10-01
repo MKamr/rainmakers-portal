@@ -38,28 +38,22 @@ const upload = multer({
 router.get('/deal/:dealId', async (req: Request, res: Response) => {
   try {
     const { dealId } = req.params;
-    console.log('📄 [DOCUMENTS] Getting documents for deal:', dealId);
-    console.log('📄 [DOCUMENTS] User ID:', req.user?.id);
 
     // Verify deal belongs to user
     const deal = await FirebaseService.getDealById(dealId);
     if (!deal) {
-      console.log('📄 [DOCUMENTS] Deal not found:', dealId);
       return res.status(404).json({ error: 'Deal not found' });
     }
     
     // Allow access if user owns the deal OR if user is admin
     if (deal.userId !== req.user!.id && !req.user!.isAdmin) {
-      console.log('📄 [DOCUMENTS] Deal does not belong to user and user is not admin. Deal userId:', deal.userId, 'Request userId:', req.user!.id, 'Is Admin:', req.user!.isAdmin);
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    console.log('📄 [DOCUMENTS] Deal found, getting documents from OneDrive...');
     
     try {
       // Get documents from OneDrive
       const documents = await OneDriveService.getDealFiles(dealId);
-      console.log('📄 [DOCUMENTS] Documents retrieved:', documents.length);
       
       // Set userId for each document
       const documentsWithUserId = documents.map(doc => ({
@@ -72,17 +66,13 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       // If folder doesn't exist (404), only create it for non-admin users
       if (oneDriveError.message?.includes('Failed to fetch files') || oneDriveError.response?.status === 404) {
         if (req.user!.isAdmin) {
-          console.log('📁 [DOCUMENTS] Admin user - folder not found, returning empty array instead of creating folder');
           res.json([]);
         } else {
-          console.log('📁 [DOCUMENTS] Deal folder not found, creating hierarchical folder structure...');
           try {
             await OneDriveService.createDealFolder(dealId, deal.propertyAddress);
-            console.log('✅ [DOCUMENTS] Deal folder created, retrying...');
             
             // Retry getting documents
             const documents = await OneDriveService.getDealFiles(dealId);
-            console.log('📄 [DOCUMENTS] Documents retrieved after folder creation:', documents.length);
             
             // Set userId for each document
             const documentsWithUserId = documents.map(doc => ({

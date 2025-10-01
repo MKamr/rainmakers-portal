@@ -45,26 +45,22 @@ function mapGHLStageToSystemStage(ghlStageName: string): string {
   const lowerStageName = ghlStageName.toLowerCase();
   for (const [ghlStage, systemStage] of Object.entries(stageMap)) {
     if (lowerStageName.includes(ghlStage.toLowerCase()) || ghlStage.toLowerCase().includes(lowerStageName)) {
-      console.log(`🔄 [STAGE MAPPING] Matched "${ghlStageName}" to "${systemStage}"`);
       return systemStage;
     }
   }
   
-  console.log(`⚠️ [STAGE MAPPING] No mapping found for stage: "${ghlStageName}", using as-is`);
   return ghlStageName;
 }
 
 // GHL Webhook endpoint for opportunity updates
 router.post('/ghl', async (req: Request, res: Response) => {
   try {
-    console.log('🔗 [GHL WEBHOOK] Received webhook:', JSON.stringify(req.body, null, 2));
     
     // Basic webhook validation (optional - can be enabled with GHL_WEBHOOK_SECRET)
     const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
     if (webhookSecret) {
       const providedSecret = req.headers['x-webhook-secret'] as string;
       if (providedSecret !== webhookSecret) {
-        console.log('❌ [GHL WEBHOOK] Invalid webhook secret');
         return res.status(401).json({ error: 'Unauthorized' });
       }
     }
@@ -73,21 +69,16 @@ router.post('/ghl', async (req: Request, res: Response) => {
     let opportunity = req.body.opportunity || req.body;
     
     if (!opportunity) {
-      console.log('❌ [GHL WEBHOOK] No opportunity data received');
       return res.status(400).json({ error: 'No opportunity data received' });
     }
     
     // Get all deals and find the matching one
     const deals = await FirebaseService.getAllDeals();
-    console.log('🔍 [GHL WEBHOOK] Looking for deal with opportunity name:', opportunity.opportunity_name);
-    console.log('🔍 [GHL WEBHOOK] Available dealIds in database:', deals.map(d => d.dealId).filter(Boolean));
     
     // Find deal by opportunity name (dealId in Firebase)
     const deal = deals.find(d => d.dealId === opportunity.opportunity_name);
     
     if (!deal) {
-      console.log('⚠️ [GHL WEBHOOK] No deal found with opportunity name:', opportunity.opportunity_name);
-      console.log('⚠️ [GHL WEBHOOK] Available deals:', deals.map(d => ({ id: d.id, dealId: d.dealId, title: d.title })));
       return res.json({ 
         success: true, 
         message: 'Webhook received but no matching deal found',

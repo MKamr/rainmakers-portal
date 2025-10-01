@@ -15,13 +15,10 @@ const router = express.Router();
 // GHL Opportunities Import Routes
 router.get('/ghl/opportunities', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [GHL IMPORT] Fetching opportunities...');
     const opportunities = await GHLService.listOpportunities();
     
-    console.log('✅ [GHL IMPORT] Opportunities fetched:', opportunities.opportunities?.length || 0);
     res.json(opportunities);
   } catch (error: any) {
-    console.error('❌ [GHL IMPORT] Error fetching opportunities:', error);
     res.status(500).json({ error: 'Failed to fetch opportunities' });
   }
 });
@@ -39,7 +36,6 @@ router.post('/ghl/import-opportunity', requireAdmin, [
 
     const { opportunityId, userId, opportunity } = req.body;
     
-    console.log('📥 [GHL IMPORT] Importing opportunity:', opportunityId, 'for user:', userId);
     
     // Verify user exists
     const user = await FirebaseService.getUserById(userId);
@@ -92,20 +88,9 @@ router.post('/ghl/import-opportunity', requireAdmin, [
     };
 
     // Log the deal data being created
-    console.log('📋 [GHL IMPORT] Deal data to be created:', {
-      userId: dealData.userId,
-      dealId: dealData.dealId,
-      propertyAddress: dealData.propertyAddress,
-      contactName: dealData.contactName,
-      dealType: dealData.dealType,
-      stage: dealData.stage,
-      loanRequest: dealData.loanRequest,
-      ghlOpportunityId: dealData.ghlOpportunityId
-    });
 
     const deal = await FirebaseService.createDeal(dealData);
     
-    console.log('✅ [GHL IMPORT] Deal created successfully:', deal.id);
     
     res.json({ 
       success: true, 
@@ -113,23 +98,19 @@ router.post('/ghl/import-opportunity', requireAdmin, [
       message: 'Opportunity imported successfully' 
     });
   } catch (error: any) {
-    console.error('❌ [GHL IMPORT] Error importing opportunity:', error);
     res.status(500).json({ error: 'Failed to import opportunity' });
   }
 });
 
 router.get('/ghl/pipelines', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [GHL PIPELINES] Fetching pipelines...');
     const headers = await GHLService.getHeaders();
     const response = await axios.get(`${GHLService.GHL_BASE_URL}/pipelines/`, { headers });
     
     const pipelines = response.data.pipelines || [];
-    console.log('✅ [GHL PIPELINES] Pipelines fetched:', pipelines.length);
     
     res.json({ pipelines });
   } catch (error: any) {
-    console.error('❌ [GHL PIPELINES] Error fetching pipelines:', error);
     res.status(500).json({ error: 'Failed to fetch pipelines' });
   }
 });
@@ -138,21 +119,17 @@ router.get('/ghl/pipeline/:pipelineId/opportunities', requireAdmin, async (req: 
   try {
     const { pipelineId } = req.params;
     const { stageId } = req.query;
-    console.log('🔍 [GHL PIPELINE] Fetching opportunities for pipeline:', pipelineId, 'stage:', stageId);
     
     const opportunities = await GHLService.getOpportunitiesByStage(pipelineId, stageId as string);
     
-    console.log('✅ [GHL PIPELINE] Opportunities fetched:', opportunities.length);
     res.json({ opportunities });
   } catch (error: any) {
-    console.error('❌ [GHL PIPELINE] Error fetching pipeline opportunities:', error);
     res.status(500).json({ error: 'Failed to fetch pipeline opportunities' });
   }
 });
 
 router.get('/users', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('👥 [ADMIN] Fetching all users...');
     const users = await FirebaseService.getAllUsers();
     
     // Return only necessary user info for the dropdown
@@ -164,10 +141,8 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
       isWhitelisted: user.isWhitelisted
     }));
     
-    console.log('✅ [ADMIN] Users fetched:', userList.length);
     res.json(userList);
   } catch (error: any) {
-    console.error('❌ [ADMIN] Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -175,7 +150,6 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
 // Test environment variables
 router.get('/env/test', async (req: Request, res: Response) => {
   try {
-    console.log('🔧 [ENV TEST] Testing environment variables...');
     
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
@@ -195,7 +169,6 @@ router.get('/env/test', async (req: Request, res: Response) => {
       SESSION_SECRET: !!process.env.SESSION_SECRET
     };
     
-    console.log('🔧 [ENV TEST] Environment variables:', envVars);
     
     res.json({
       success: true,
@@ -203,7 +176,6 @@ router.get('/env/test', async (req: Request, res: Response) => {
       environment: envVars
     });
   } catch (error) {
-    console.error('🔧 [ENV TEST] Environment test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Environment test failed',
@@ -215,7 +187,6 @@ router.get('/env/test', async (req: Request, res: Response) => {
 // Test Firebase connection
 router.get('/firebase/test', async (req: Request, res: Response) => {
   try {
-    console.log('🔥 [FIREBASE TEST] Testing Firebase connection...');
     
     // Import db here to avoid circular imports
     const { getFirestore } = require('firebase-admin/firestore');
@@ -223,50 +194,36 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
     
     // Test basic Firebase operations
     const testDoc = await db.collection('test').doc('connection-test').get();
-    console.log('🔥 [FIREBASE TEST] Document exists:', testDoc.exists);
     
     // Test writing to Firebase
     await db.collection('test').doc('connection-test').set({
       timestamp: new Date().toISOString(),
       test: true
     });
-    console.log('🔥 [FIREBASE TEST] Write test successful');
     
     // Test reading from Firebase
     const testRead = await db.collection('test').doc('connection-test').get();
-    console.log('🔥 [FIREBASE TEST] Read test successful:', testRead.exists);
     
     // Test users collection
     const usersSnapshot = await db.collection('users').limit(1).get();
-    console.log('🔥 [FIREBASE TEST] Users collection accessible:', usersSnapshot.docs.length >= 0);
     
     // Test deals collection
     const dealsSnapshot = await db.collection('deals').limit(1).get();
-    console.log('🔥 [FIREBASE TEST] Deals collection accessible:', dealsSnapshot.docs.length >= 0);
     
     // Test config collection
     const configSnapshot = await db.collection('config').limit(1).get();
-    console.log('🔥 [FIREBASE TEST] Config collection accessible:', configSnapshot.docs.length >= 0);
     
     // Test configurations collection (new structure)
     const configurationsSnapshot = await db.collection('configurations').limit(1).get();
-    console.log('🔥 [FIREBASE TEST] Configurations collection accessible:', configurationsSnapshot.docs.length >= 0);
     
     // Test GHL API key in config
     const ghlApiKeyDoc = await db.collection('config').doc('ghl_api_key').get();
-    console.log('🔥 [FIREBASE TEST] GHL API key exists in config:', ghlApiKeyDoc.exists);
     
     // Test GHL API key in configurations (new structure)
     const ghlApiKeyConfigDoc = await db.collection('configurations').doc('ghl_api_key').get();
-    console.log('🔥 [FIREBASE TEST] GHL API key exists in configurations:', ghlApiKeyConfigDoc.exists);
     
     if (ghlApiKeyConfigDoc.exists) {
       const ghlData = ghlApiKeyConfigDoc.data();
-      console.log('🔥 [FIREBASE TEST] GHL API key data:', {
-        hasValue: !!ghlData?.value,
-        description: ghlData?.description,
-        isEncrypted: ghlData?.isEncrypted
-      });
     }
     
     res.json({
@@ -282,7 +239,6 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
       ghlApiKeyInConfigurations: ghlApiKeyConfigDoc.exists
     });
   } catch (error) {
-    console.error('🔥 [FIREBASE TEST] Firebase test failed:', error);
     res.status(500).json({
       success: false,
       error: 'Firebase connection failed',
@@ -320,13 +276,10 @@ const upload = multer({
 // OneDrive status endpoint (accessible to all authenticated users)
 router.get('/onedrive/status', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 Checking OneDrive connection status...');
     
     const token = await FirebaseService.getLatestOneDriveToken();
-    console.log('🔑 OneDrive token exists:', !!token);
     
     if (!token) {
-      console.log('❌ No OneDrive token found');
       return res.json({ 
         connected: false,
         message: 'OneDrive not connected'
@@ -338,12 +291,8 @@ router.get('/onedrive/status', async (req: Request, res: Response) => {
     const expiresAt = token.expiresAt.toDate();
     const isExpired = now >= expiresAt;
     
-    console.log('⏰ Token expires at:', expiresAt.toISOString());
-    console.log('⏰ Current time:', now.toISOString());
-    console.log('⏰ Is expired:', isExpired);
 
     if (isExpired) {
-      console.log('⚠️ OneDrive token is expired');
       return res.json({ 
         connected: false,
         expired: true,
@@ -352,14 +301,12 @@ router.get('/onedrive/status', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('✅ OneDrive is connected and token is valid');
     return res.json({ 
       connected: true,
       expiresAt: expiresAt.toISOString(),
       message: 'OneDrive connected'
     });
   } catch (error) {
-    console.error('❌ OneDrive status check error:', error);
     return res.status(500).json({ 
       connected: false,
       error: 'Failed to check OneDrive status'
@@ -370,26 +317,17 @@ router.get('/onedrive/status', async (req: Request, res: Response) => {
 // OneDrive OAuth callback (public route - must be before admin middleware)
 router.get('/onedrive/callback', async (req: Request, res: Response) => {
   try {
-    console.log('🔄 [CALLBACK] ===== OneDrive OAuth Callback Started (Web App Flow) =====');
-    console.log('🔄 [CALLBACK] Request method:', req.method);
-    console.log('🔄 [CALLBACK] Request path:', req.path);
-    console.log('🔄 [CALLBACK] Request url:', req.url);
-    console.log('🔄 [CALLBACK] Query params:', req.query);
     
     const { code, error, state } = req.query;
 
     if (error) {
-      console.error('❌ [CALLBACK] OneDrive OAuth error:', error);
       return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=${encodeURIComponent(error as string)}`);
     }
 
     if (!code) {
-      console.error('❌ [CALLBACK] No authorization code received');
       return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=no_code`);
     }
 
-    console.log('✅ [CALLBACK] Authorization code received:', code.substring(0, 20) + '...');
-    console.log('🔄 [CALLBACK] Exchanging code for tokens (Web App Flow)...');
     
     // Exchange code for tokens using Web app flow (with client secret)
     const formData = new URLSearchParams();
@@ -400,14 +338,8 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
     formData.append('redirect_uri', process.env.MICROSOFT_REDIRECT_URI || '');
     formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
 
-    console.log('🔄 [CALLBACK] Environment check:', {
-      MICROSOFT_CLIENT_ID: !!process.env.MICROSOFT_CLIENT_ID,
-      MICROSOFT_CLIENT_SECRET: !!process.env.MICROSOFT_CLIENT_SECRET,
-      MICROSOFT_REDIRECT_URI: !!process.env.MICROSOFT_REDIRECT_URI
-    });
 
     if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET || !process.env.MICROSOFT_REDIRECT_URI) {
-      console.error('❌ [CALLBACK] Missing required environment variables');
       return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=missing_config`);
     }
 
@@ -419,7 +351,6 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
       });
 
       const { access_token, refresh_token, expires_in } = response.data;
-      console.log('✅ [CALLBACK] Tokens received from Microsoft');
 
       // Save token to Firebase
       await FirebaseService.saveOneDriveToken({
@@ -428,7 +359,6 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
         expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
         scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
       });
-      console.log('✅ [CALLBACK] Tokens saved to Firebase');
 
       // Get user info to confirm connection
       const userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
@@ -436,24 +366,15 @@ router.get('/onedrive/callback', async (req: Request, res: Response) => {
           'Authorization': `Bearer ${access_token}`
         }
       });
-      console.log('✅ [CALLBACK] User info retrieved:', {
-        email: userResponse.data.mail || userResponse.data.userPrincipalName,
-        name: userResponse.data.displayName
-      });
 
       // Redirect to frontend with success
       res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_success=true&user_email=${encodeURIComponent(userResponse.data.mail || userResponse.data.userPrincipalName)}`);
       
     } catch (tokenError: any) {
-      console.error('❌ [CALLBACK] Token exchange failed:', tokenError.response?.data || tokenError.message);
       return res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=token_exchange_failed`);
     }
     
-    console.log('✅ [CALLBACK] ===== OneDrive OAuth Callback Completed Successfully =====');
   } catch (error) {
-    console.error('❌ [CALLBACK] ===== OneDrive OAuth Callback Failed =====');
-    console.error('❌ [CALLBACK] Error:', error);
-    console.error('❌ [CALLBACK] ===== OneDrive OAuth Callback Failed =====');
     res.redirect(`${process.env.FRONTEND_URL}/admin?onedrive_error=callback_failed`);
   }
 });
@@ -573,6 +494,72 @@ router.post('/discord-auto-access', [
     console.error('❌ [DISCORD AUTO-ACCESS] Error adding auto-access user:', error);
     res.status(500).json({
       error: 'Failed to add Discord username to auto-access list',
+      message: error.message
+    });
+  }
+});
+
+// Bulk add Discord usernames to auto-access list
+router.post('/discord-auto-access/bulk', [
+  body('usernames').isArray({ min: 1 }).withMessage('Usernames must be a non-empty array'),
+  body('usernames.*').isString().notEmpty().withMessage('Each username must be a non-empty string'),
+  body('notes').optional().isString().withMessage('Notes must be a string'),
+], async (req: Request, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { usernames, notes } = req.body;
+    
+    const results = {
+      successful: [] as any[],
+      failed: [] as any[],
+      duplicates: [] as string[]
+    };
+
+    // Process each username
+    for (const username of usernames) {
+      try {
+        // Check if username already exists
+        const existingUser = await FirebaseService.getDiscordAutoAccessUserByUsername(username);
+        if (existingUser) {
+          results.duplicates.push(username);
+          continue;
+        }
+        
+        // Add to auto-access list
+        const autoAccessUser = await FirebaseService.addDiscordAutoAccessUser({
+          discordUsername: username,
+          notes: notes || '',
+          addedBy: req.user!.id,
+          addedByUsername: req.user!.username
+        });
+        
+        results.successful.push(autoAccessUser);
+      } catch (error: any) {
+        results.failed.push({
+          username,
+          error: error.message
+        });
+      }
+    }
+    
+    res.status(201).json({
+      message: 'Bulk add operation completed',
+      results,
+      summary: {
+        total: usernames.length,
+        successful: results.successful.length,
+        failed: results.failed.length,
+        duplicates: results.duplicates.length
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Failed to bulk add Discord usernames to auto-access list',
       message: error.message
     });
   }
