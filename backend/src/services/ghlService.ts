@@ -485,12 +485,12 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      const headers = await this.getHeaders();
+      const headers = await this.getV2Headers();
       
       console.log('🔍 [GHL LIST] Fetching opportunities from all pipelines...');
       
-      // First, get all pipelines
-      const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
+      // First, get all pipelines using v2 API
+      const pipelinesResponse = await axios.get(`${this.GHL_V2_BASE_URL}/pipelines/`, { headers });
       const pipelines = pipelinesResponse.data.pipelines || [];
       
       console.log(`📋 [GHL LIST] Found ${pipelines.length} pipelines`);
@@ -501,8 +501,8 @@ export class GHLService {
         try {
           console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name}`);
           
-          // Use the paginated method
-          const opportunities = await this.getOpportunitiesByPipeline(pipeline.id);
+          // Use the paginated method with v2 API
+          const opportunities = await this.getOpportunitiesByPipelineV2(pipeline.id);
           console.log(`📊 [GHL LIST] Found ${opportunities.length} opportunities in pipeline: ${pipeline.name}`);
           
           // Add pipeline info to each opportunity
@@ -586,6 +586,59 @@ export class GHLService {
       console.error(`❌ [GHL PIPELINE] Error fetching opportunities from pipeline ${pipelineId}:`, error);
       console.error(`❌ [GHL PIPELINE] Error response:`, error.response?.data);
       console.error(`❌ [GHL PIPELINE] Error status:`, error.response?.status);
+      throw error;
+    }
+  }
+
+  static async getOpportunitiesByPipelineV2(pipelineId: string): Promise<any[]> {
+    try {
+      const headers = await this.getV2Headers();
+      const allOpportunities: any[] = [];
+      let page = 1;
+      let hasMorePages = true;
+      
+      console.log(`🔍 [GHL PIPELINE V2] Fetching opportunities from pipeline ID: ${pipelineId}`);
+      
+      while (hasMorePages) {
+        console.log(`📄 [GHL PIPELINE V2] Fetching page ${page}...`);
+        
+        const response = await axios.get(
+          `${this.GHL_V2_BASE_URL}/pipelines/${pipelineId}/opportunities/`, 
+          { 
+            headers,
+            params: {
+              page: page,
+              limit: 100 // Maximum per page
+            }
+          }
+        );
+        
+        const opportunities = response.data.opportunities || [];
+        const meta = response.data.meta || {};
+        
+        console.log(`📊 [GHL PIPELINE V2] Page ${page}: Found ${opportunities.length} opportunities`);
+        console.log(`📊 [GHL PIPELINE V2] Meta:`, meta);
+        
+        allOpportunities.push(...opportunities);
+        
+        // Check if there are more pages
+        hasMorePages = meta.next_page_url ? true : false;
+        page++;
+        
+        // Safety check to prevent infinite loops
+        if (page > 50) {
+          console.warn(`⚠️ [GHL PIPELINE V2] Reached maximum page limit (50), stopping pagination`);
+          break;
+        }
+      }
+      
+      console.log(`✅ [GHL PIPELINE V2] Total opportunities fetched: ${allOpportunities.length} from ${page - 1} pages`);
+      
+      return allOpportunities;
+    } catch (error: any) {
+      console.error(`❌ [GHL PIPELINE V2] Error fetching opportunities from pipeline ${pipelineId}:`, error);
+      console.error(`❌ [GHL PIPELINE V2] Error response:`, error.response?.data);
+      console.error(`❌ [GHL PIPELINE V2] Error status:`, error.response?.status);
       throw error;
     }
   }
