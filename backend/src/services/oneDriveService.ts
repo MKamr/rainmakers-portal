@@ -15,6 +15,11 @@ export interface OneDriveFile {
 export class OneDriveService {
   private static readonly GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0';
 
+  // Helper method to sanitize path components by removing trailing spaces and invalid characters
+  private static sanitizePathComponent(component: string): string {
+    return component.trim().replace(/[<>:"|?*\x00-\x1c\x7f]/g, '');
+  }
+
   // Helper method to get the deal folder name
   private static async getDealFolderName(dealId: string): Promise<string> {
     try {
@@ -188,7 +193,7 @@ export class OneDriveService {
       }
       
       // Use property address as folder name, fallback to dealId if not provided
-      const folderName = propertyAddress || dealId;
+      const folderName = this.sanitizePathComponent(propertyAddress || dealId);
       
       const dealFolderPath = `${folderPath}/${folderName}`;
       
@@ -321,12 +326,13 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Get the dynamic folder name based on property address
-      const dealFolderName = await this.getDealFolderName(dealId);
+      // Get the dynamic folder name based on property address and sanitize it
+      const dealFolderName = this.sanitizePathComponent(await this.getDealFolderName(dealId));
+      const sanitizedFilename = this.sanitizePathComponent(filename);
       
       // Use the SharePoint shared folder structure
       const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
-      const filePath = `${folderPath}/${dealFolderName}/${filename}`;
+      const filePath = `${folderPath}/${dealFolderName}/${sanitizedFilename}`;
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
       
@@ -359,8 +365,11 @@ export class OneDriveService {
         ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
         : `${this.GRAPH_BASE_URL}/me/drive`;
       
+      // Add conflict behavior parameter to handle file overwrites properly
+      const uploadUrl = `${baseUrl}/root:/${encodeURIComponent(filePath)}:/content?@microsoft.graph.conflictBehavior=replace`;
+      
       const response = await axios.put(
-        `${baseUrl}/root:/${encodeURIComponent(filePath)}:/content`,
+        uploadUrl,
         fileBuffer,
         {
           headers: {
@@ -370,7 +379,7 @@ export class OneDriveService {
         }
       );
 
-      console.log('✅ [ONEDRIVE] File uploaded successfully:', filename);
+      console.log('✅ [ONEDRIVE] File uploaded successfully:', sanitizedFilename || filename);
       return {
         id: response.data.id,
         name: response.data.name,
@@ -390,8 +399,8 @@ export class OneDriveService {
     try {
       const accessToken = await this.getAccessToken();
       
-      // Get the dynamic folder name based on property address
-      const dealFolderName = await this.getDealFolderName(dealId);
+      // Get the dynamic folder name based on property address and sanitize it
+      const dealFolderName = this.sanitizePathComponent(await this.getDealFolderName(dealId));
       
       // Use the SharePoint shared folder structure
       const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
