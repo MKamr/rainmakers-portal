@@ -29,7 +29,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   ]
 
   // Default all sections to permanently expanded (open) state
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>>({
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'Underwriting': true,
     'Signed Proposal': true,
     'Proposal': true,
