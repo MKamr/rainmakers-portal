@@ -31,20 +31,26 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
     loanRequest?: string;
     anyAdditionalInformation?: string;
   }>({
-    defaultValues: {
-      clientFirstName: deal.contactName || '',
-      clientLastName: '',
-      clientPhone: deal.contactPhone || '',
-      clientEmail: deal.contactEmail || '',
-      dealType: deal.dealType || '',
-      propertyType: deal.propertyType || '',
-      propertyAddress: deal.propertyAddress || '',
-      propertyVintage: deal.propertyVintage || '',
-      sponsorNetWorth: deal.sponsorNetWorth || '',
-      sponsorLiquidity: deal.sponsorLiquidity || '',
-      loanRequest: deal.loanRequest || '',
-      anyAdditionalInformation: deal.additionalInformation || '',
-    }
+    defaultValues: (() => {
+      // Split the contact name properly
+      const contactName = deal.contactName?.trim() || '';
+      const nameParts = contactName.split(' ').filter(part => part.length > 0);
+      
+      return {
+        clientFirstName: nameParts[0] || '',
+        clientLastName: nameParts.slice(1).join(' ') || nameParts[0] || '',
+        clientPhone: deal.contactPhone || '',
+        clientEmail: deal.contactEmail || '',
+        dealType: deal.dealType || '',
+        propertyType: deal.propertyType || '',
+        propertyAddress: deal.propertyAddress || '',
+        propertyVintage: deal.propertyVintage || '',
+        sponsorNetWorth: deal.sponsorNetWorth || '',
+        sponsorLiquidity: deal.sponsorLiquidity || '',
+        loanRequest: deal.loanRequest || '',
+        anyAdditionalInformation: deal.additionalInformation || '',
+      };
+    })()
   })
 
   const updateDealMutation = useMutation(
