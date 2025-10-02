@@ -187,7 +187,7 @@ export class GHLService {
     }
   }
 
-  static async searchContactsByEmail(email: string): Promise<GHLContact[]> {
+  static async searchContactByEmail(email: string): Promise<GHLContact | null> {
     try {
       const headers = await this.getHeaders();
       const endpoint = `${this.GHL_BASE_URL}/contacts/`;
@@ -203,7 +203,7 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts;
+          return response.data.contacts[0]; // Return first match
         }
       } catch (method1Error) {
       }
@@ -216,7 +216,7 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts;
+          return response.data.contacts[0]; // Return first match
         }
       } catch (method2Error) {
       }
@@ -232,14 +232,90 @@ export class GHLService {
         const filteredContacts = allContacts.filter((contact: any) => 
           contact.email && contact.email.toLowerCase() === email.toLowerCase()
         );
-        return filteredContacts;
+        return filteredContacts.length > 0 ? filteredContacts[0] : null;
       } catch (method3Error) {
       }
       
-      return [];
+      return null;
     } catch (error) {
-      return [];
+      return null;
     }
+  }
+
+  static async searchContactByPhone(phone: string): Promise<GHLContact | null> {
+    try {
+      const headers = await this.getHeaders();
+      const endpoint = `${this.GHL_BASE_URL}/contacts/`;
+      
+      // Try different search approaches
+      let response;
+      
+      // Method 1: Try with phone as query parameter
+      try {
+        response = await axios.get(endpoint, {
+          headers,
+          params: { phone }
+        });
+        
+        if (response.data.contacts && response.data.contacts.length > 0) {
+          return response.data.contacts[0]; // Return first match
+        }
+      } catch (method1Error) {
+      }
+      
+      // Method 2: Try with search parameter
+      try {
+        response = await axios.get(endpoint, {
+          headers,
+          params: { search: phone }
+        });
+        
+        if (response.data.contacts && response.data.contacts.length > 0) {
+          return response.data.contacts[0]; // Return first match
+        }
+      } catch (method2Error) {
+      }
+      
+      // Method 3: Get all contacts and filter by phone
+      try {
+        response = await axios.get(endpoint, {
+          headers,
+          params: { limit: 100 } // Get first 100 contacts
+        });
+        
+        const allContacts = response.data.contacts || [];
+        const filteredContacts = allContacts.filter((contact: any) => 
+          contact.phone && contact.phone.replace(/[-() ]/g, '') === phone.replace(/[-() ]/g, '')
+        );
+        return filteredContacts.length > 0 ? filteredContacts[0] : null;
+      } catch (method3Error) {
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Helper method to find existing contact by email OR phone
+  static async findExistingContact(email?: string, phone?: string): Promise<GHLContact | null> {
+    // First try to find by email
+    if (email && email.trim()) {
+      const contactByEmail = await this.searchContactByEmail(email.trim());
+      if (contactByEmail) {
+        return contactByEmail;
+      }
+    }
+    
+    // If no email match, try phone
+    if (phone && phone.trim()) {
+      const contactByPhone = await this.searchContactByPhone(phone.trim());
+      if (contactByPhone) {
+        return contactByPhone;
+      }
+    }
+    
+    return null;
   }
 
   static async getOpportunitiesByContact(contactId: string, pipelineId: string): Promise<GHLDeal[]> {

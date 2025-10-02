@@ -404,36 +404,46 @@ router.post('/', [
           throw new Error('GHL token is invalid or has insufficient permissions');
         }
         
-        // First, create or find the contact
+        // First, try to find existing contact, then create if not found
         let ghlContact;
         
         try {
-          // TEMPORARY: Always create new contact to avoid search issues
-          const contactName = normalized.contactName || 'Unknown Contact';
-          const nameParts = contactName.split(' ');
-          const firstName = nameParts[0] || 'Unknown';
-          const lastName = nameParts.slice(1).join(' ') || 'Contact';
+          console.log('🔍 [GHL] Searching for existing contact with email:', normalized.contactEmail);
           
+          // Try to find existing contact first
+          const existingContact = await GHLService.findExistingContact(normalized.contactEmail, normalized.contactPhone);
           
-          // Load GHL field mapping and build contact custom fields from normalized
-          const fieldMappingForCreate = loadGHLFieldMapping();
-          const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
-          
-          const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
-            const fieldInfo = fieldMappingForCreate[fieldId];
-            return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
-          });
-          
-
-          ghlContact = await GHLService.createContact({
-            firstName,
-            lastName,
-            email: normalized.contactEmail,
-            phone: normalized.contactPhone,
-            locationId: ghlLocationId, // Add locationId as required by GHL
-            companyName: '',
-            customFields: contactCustomFieldsArrayForCreate
-          });
+          if (existingContact) {
+            console.log('✅ [GHL] Found existing contact:', existingContact.id, '-', existingContact.name);
+            ghlContact = existingContact;
+          } else {
+            console.log('📝 [GHL] No existing contact found, creating new contact');
+            
+            // Create new contact if none exists
+            const contactName = normalized.contactName || 'Unknown Contact';
+            const nameParts = contactName.split(' ');
+            const firstName = nameParts[0] || 'Unknown';
+            const lastName = nameParts.slice(1).join(' ') || 'Contact';
+            
+            // Load GHL field mapping and build contact custom fields from normalized
+            const fieldMappingForCreate = loadGHLFieldMapping();
+            const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
+            
+            const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
+              const fieldInfo = fieldMappingForCreate[fieldId];
+              return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
+            });
+            
+            ghlContact = await GHLService.createContact({
+              firstName,
+              lastName,
+              email: normalized.contactEmail,
+              phone: normalized.contactPhone,
+              locationId: ghlLocationId, // Add locationId as required by GHL
+              companyName: '',
+              customFields: contactCustomFieldsArrayForCreate
+            });
+          }
         } catch (contactError) {
           
           // Fallback: Try to create opportunity with minimal contact
