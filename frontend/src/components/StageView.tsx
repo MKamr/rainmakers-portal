@@ -139,12 +139,55 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
 
 
   const getTotalLoanAmount = (deals: Deal[]) => {
-    return deals.reduce((sum, deal) => sum + (deal.loanAmount || 0), 0)
+    return deals.reduce((sum, deal) => {
+      // Try loanAmount first (for backwards compatibility)
+      if (deal.loanAmount && typeof deal.loanAmount === 'number') {
+        return sum + deal.loanAmount
+      }
+      
+      // Then try loanRequest (current primary field)
+      if (deal.loanRequest) {
+        // Remove common characters and parse
+        const cleanedValue = deal.loanRequest.toString()
+          .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
+          .replace(/[Kk]/g, '000') // Convert K/k to 000
+          .replace(/[Mm]/g, '000000') // Convert M/m to 000000
+          .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
+          .trim()
+        
+        const parsed = parseFloat(cleanedValue)
+        return sum + (isNaN(parsed) ? 0 : parsed)
+      }
+      
+      // Fallback to 0
+      return sum + 0
+    }, 0)
   }
 
   const getPropertyTypes = (deals: Deal[]) => {
     const types = new Set(deals.map(deal => deal.propertyType).filter(Boolean))
     return Array.from(types)
+  }
+
+  // Helper function to format currency values, handling string inputs
+  const formatCurrencyFromString = (value: string | number | undefined): string => {
+    if (!value) return 'N/A'
+    
+    // If it's already a number, use it directly
+    if (typeof value === 'number') {
+      return formatCurrency(value)
+    }
+    
+    // If it's a string, parse it
+    const cleanedValue = value.toString()
+      .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
+      .replace(/[Kk]/g, '000') // Convert K/k to 000
+      .replace(/[Mm]/g, '000000') // Convert M/m to 000000
+      .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
+      .trim()
+    
+    const parsed = parseFloat(cleanedValue)
+    return isNaN(parsed) ? 'N/A' : formatCurrency(parsed)
   }
 
   if (deals.length === 0) {
@@ -359,22 +402,13 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                                 {deal.propertyType || deal.applicationPropertyType || 'N/A'}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.loanRequest || deal.applicationLoanRequest 
-                                  ? formatCurrency(Number(deal.loanRequest || deal.applicationLoanRequest))
-                                  : 'N/A'
-                                }
+                                {formatCurrencyFromString(deal.loanRequest || deal.applicationLoanRequest)}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.sponsorNetWorth || deal.applicationSponsorNetWorth 
-                                  ? formatCurrency(Number(deal.sponsorNetWorth || deal.applicationSponsorNetWorth))
-                                  : 'N/A'
-                                }
+                                {formatCurrencyFromString(deal.sponsorNetWorth || deal.applicationSponsorNetWorth)}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.sponsorLiquidity || deal.applicationSponsorLiquidity 
-                                  ? formatCurrency(Number(deal.sponsorLiquidity || deal.applicationSponsorLiquidity))
-                                  : 'N/A'
-                                }
+                                {formatCurrencyFromString(deal.sponsorLiquidity || deal.applicationSponsorLiquidity)}
                               </div>
                               <div className="w-64 px-2 py-2 text-xs text-white truncate">
                                 {deal.additionalInformation || deal.applicationAdditionalInformation || 'N/A'}
