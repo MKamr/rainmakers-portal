@@ -361,7 +361,11 @@ export function DealsPage() {
           ) : (
             /* Admin Stage View */
             <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
-              <StageView deals={deals || []} onCreateDeal={() => setShowCreateModal(true)} />
+              <StageView 
+                deals={deals || []} 
+                onCreateDeal={() => setShowCreateModal(true)} 
+                isLoading={isLoading}
+              />
             </div>
           )}
         </div>
@@ -479,7 +483,11 @@ export function DealsPage() {
       ) : (
         /* Deal Pipeline */
         <div className="matrix-content">
-          <StageView deals={deals || []} onCreateDeal={() => setShowCreateModal(true)} />
+          <StageView 
+            deals={deals || []} 
+            onCreateDeal={() => setShowCreateModal(true)} 
+            isLoading={isLoading}
+          />
         </div>
         )
       )}

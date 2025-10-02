@@ -5,6 +5,7 @@ import { useState } from 'react'
 interface StageViewProps {
   deals: Deal[]
   onCreateDeal?: () => void
+  isLoading?: boolean
 }
 
 interface StageGroup {
@@ -16,10 +17,7 @@ interface StageGroup {
   stage?: string // Keep original stage name for reference
 }
 
-export function StageView({ deals, onCreateDeal }: StageViewProps) {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
-  const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set())
-
+export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewProps) {
   // Define all possible stages in order with colors
   const stageConfig = [
     { name: 'Underwriting', color: 'bg-green-500', shortName: 'Underwriting' },
@@ -29,6 +27,17 @@ export function StageView({ deals, onCreateDeal }: StageViewProps) {
     { name: 'Needs Analysis', color: 'bg-teal-500', shortName: 'Needs Analysis' },
     { name: 'Qualification', color: 'bg-blue-400', shortName: 'Qualification' }
   ]
+
+  // Default all sections to permanently expanded (open) state
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>>({
+    'Underwriting': true,
+    'Signed Proposal': true,
+    'Proposal': true,
+    'Lender Submission': true,
+    'Needs Analysis': true,
+    'Qualification': true
+  })
+  const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set())
 
   // Function to normalize stage names
   const normalizeStageName = (stageName: string): string => {
@@ -119,9 +128,11 @@ export function StageView({ deals, onCreateDeal }: StageViewProps) {
   }
 
   const formatCurrency = (amount: number | undefined) => {
-    if (!amount) return '$0'
+    if (!amount || amount === 0) return '$0'
     if (amount >= 1000000) {
       return `$${(amount / 1000000).toFixed(1)}M`
+    } else if (amount >= 10000) {
+      return `$${(amount / 1000).toFixed(0)}K`
     }
     return `$${amount.toLocaleString()}`
   }
@@ -229,10 +240,20 @@ export function StageView({ deals, onCreateDeal }: StageViewProps) {
 
                     {/* Loan Amount Column */}
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-white">
-                        {formatCurrency(totalLoanAmount)}
+                      <div className="text-lg font-semibold text-white min-w-[100px]">
+                        {isLoading ? (
+                          <div className="animate-pulse bg-gray-600 rounded h-6 w-20 mx-auto"></div>
+                        ) : (
+                          formatCurrency(totalLoanAmount)
+                        )}
                       </div>
-                      <div className="text-xs text-gray-400">sum</div>
+                      <div className="text-xs text-gray-400">
+                        {isLoading ? (
+                          <div className="animate-pulse bg-gray-700 rounded h-3 w-8 mx-auto"></div>
+                        ) : (
+                          'sum'
+                        )}
+                      </div>
                     </div>
 
                     {/* Property Type Column */}

@@ -1066,7 +1066,7 @@ export function AdminPage() {
           ) : (
             /* Stage View */
             <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
-              <StageView deals={deals || []} />
+              <StageView deals={deals || []} isLoading={dealsLoading} />
             </div>
           )}
         </div>
