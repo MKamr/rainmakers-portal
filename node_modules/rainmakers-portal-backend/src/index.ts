@@ -30,6 +30,10 @@ const app = express();
 // Trust proxy for Railway deployment (needed for rate limiting and real IP detection)
 app.set('trust proxy', 1);
 
+// Body parsing middleware (must come before request logging)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
@@ -65,9 +69,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Cookie parsing middleware
 app.use(cookieParser());
 
 // Session middleware
