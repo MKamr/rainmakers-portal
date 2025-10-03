@@ -28,7 +28,7 @@ function EmailConfigurationTab() {
   const [isTesting, setIsTesting] = useState(false)
 
   // Load email configuration
-  const { data: configData, refetch } = useQuery('email-config', adminAPI.getEmailConfig, {
+  const { refetch } = useQuery('email-config', adminAPI.getEmailConfig, {
     onSuccess: (data) => {
       if (data) {
         setEmailConfig(data)
