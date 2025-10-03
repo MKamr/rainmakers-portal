@@ -238,6 +238,16 @@ export const adminAPI = {
   // Pipeline-specific methods
   getGHLPipelineOpportunities: (pipelineId: string): Promise<{ opportunities: any[] }> =>
     api.get(`/admin/ghl/pipeline/${pipelineId}/opportunities`).then(res => res.data),
+
+  // Email configuration methods
+  getEmailConfig: (): Promise<any> =>
+    api.get('/admin/email/config').then(res => res.data),
+
+  saveEmailConfig: (config: any): Promise<{ success: boolean; message: string }> =>
+    api.post('/admin/email/config', config).then(res => res.data),
+
+  testEmail: (data: { testEmail: string }): Promise<{ success: boolean; message: string }> =>
+    api.post('/admin/email/test', data).then(res => res.data),
 };
 
 export default api;

@@ -4,11 +4,286 @@ import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, GitCompare, Shield } from 'lucide-react'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, GitCompare, Shield, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 import GHLComparison from '../components/GHLComparison'
 import DiscordAutoAccess from '../components/DiscordAutoAccess'
+
+// Email Configuration Tab Component
+function EmailConfigurationTab() {
+  const [emailConfig, setEmailConfig] = useState({
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPassword: '',
+    fromEmail: '',
+    fromName: 'Rainmakers Portal',
+    notificationEmails: [] as string[],
+    enabled: true
+  })
+  const [newEmail, setNewEmail] = useState('')
+  const [testEmail, setTestEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
+
+  // Load email configuration
+  const { data: configData, refetch } = useQuery('email-config', adminAPI.getEmailConfig, {
+    onSuccess: (data) => {
+      if (data) {
+        setEmailConfig(data)
+      }
+    }
+  })
+
+  const saveConfigMutation = useMutation(adminAPI.saveEmailConfig, {
+    onSuccess: () => {
+      toast.success('Email configuration saved successfully!')
+      refetch()
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to save email configuration')
+    }
+  })
+
+  const testEmailMutation = useMutation(adminAPI.testEmail, {
+    onSuccess: () => {
+      toast.success('Test email sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to send test email')
+    }
+  })
+
+  const handleSave = async () => {
+    setIsLoading(true)
+    try {
+      await saveConfigMutation.mutateAsync(emailConfig)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      toast.error('Please enter a test email address')
+      return
+    }
+    
+    setIsTesting(true)
+    try {
+      await testEmailMutation.mutateAsync({ testEmail })
+    } finally {
+      setIsTesting(false)
+    }
+  }
+
+  const addNotificationEmail = () => {
+    if (newEmail && !emailConfig.notificationEmails.includes(newEmail)) {
+      setEmailConfig(prev => ({
+        ...prev,
+        notificationEmails: [...prev.notificationEmails, newEmail]
+      }))
+      setNewEmail('')
+    }
+  }
+
+  const removeNotificationEmail = (email: string) => {
+    setEmailConfig(prev => ({
+      ...prev,
+      notificationEmails: prev.notificationEmails.filter(e => e !== email)
+    }))
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-800 shadow rounded-lg border border-gray-700">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-white mb-4">
+            📧 Email Configuration
+          </h3>
+          <p className="text-sm text-gray-300 mb-6">
+            Configure email notifications for new deal creation. When a deal is created, 
+            emails will be sent to the configured notification addresses.
+          </p>
+
+          <div className="space-y-6">
+            {/* SMTP Configuration */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  SMTP Host
+                </label>
+                <input
+                  type="text"
+                  value={emailConfig.smtpHost}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+                  placeholder="smtp.gmail.com"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  SMTP Port
+                </label>
+                <input
+                  type="number"
+                  value={emailConfig.smtpPort}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPort: parseInt(e.target.value) }))}
+                  placeholder="587"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  SMTP Username
+                </label>
+                <input
+                  type="text"
+                  value={emailConfig.smtpUser}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpUser: e.target.value }))}
+                  placeholder="your-email@gmail.com"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  SMTP Password
+                </label>
+                <input
+                  type="password"
+                  value={emailConfig.smtpPassword}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPassword: e.target.value }))}
+                  placeholder="Your app password"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* From Configuration */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  From Email
+                </label>
+                <input
+                  type="email"
+                  value={emailConfig.fromEmail}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, fromEmail: e.target.value }))}
+                  placeholder="noreply@rainmakers.com"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  From Name
+                </label>
+                <input
+                  type="text"
+                  value={emailConfig.fromName}
+                  onChange={(e) => setEmailConfig(prev => ({ ...prev, fromName: e.target.value }))}
+                  placeholder="Rainmakers Portal"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Notification Emails */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Notification Emails
+              </label>
+              <p className="text-sm text-gray-400 mb-3">
+                Add email addresses that should receive notifications when new deals are created.
+              </p>
+              
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="admin@company.com"
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyPress={(e) => e.key === 'Enter' && addNotificationEmail()}
+                  />
+                  <button
+                    onClick={addNotificationEmail}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Add
+                  </button>
+                </div>
+                
+                {emailConfig.notificationEmails.length > 0 && (
+                  <div className="space-y-2">
+                    {emailConfig.notificationEmails.map((email, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-700 px-3 py-2 rounded-md">
+                        <span className="text-white">{email}</span>
+                        <button
+                          onClick={() => removeNotificationEmail(email)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Enable/Disable */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="emailEnabled"
+                checked={emailConfig.enabled}
+                onChange={(e) => setEmailConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+              />
+              <label htmlFor="emailEnabled" className="ml-2 text-sm text-gray-300">
+                Enable email notifications
+              </label>
+            </div>
+
+            {/* Test Email */}
+            <div className="border-t border-gray-600 pt-6">
+              <h4 className="text-md font-medium text-white mb-3">Test Email Configuration</h4>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="test@example.com"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleTestEmail}
+                  disabled={isTesting}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                >
+                  {isTesting ? 'Sending...' : 'Send Test'}
+                </button>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleSave}
+                disabled={isLoading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : 'Save Configuration'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // GHL Import Tab Component
 function GHLImportTab() {
@@ -590,6 +865,7 @@ export function AdminPage() {
     { id: 'ghl-import', name: 'GHL Import', icon: Import },
     { id: 'ghl-compare', name: 'GHL Compare', icon: GitCompare },
     { id: 'discord-auto-access', name: 'Discord Auto-Access', icon: Shield },
+    { id: 'email-config', name: 'Email Config', icon: Mail },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
 
@@ -1082,6 +1358,10 @@ export function AdminPage() {
 
       {activeTab === 'discord-auto-access' && (
         <DiscordAutoAccess />
+      )}
+
+      {activeTab === 'email-config' && (
+        <EmailConfigurationTab />
       )}
 
       {activeTab === 'settings' && (
