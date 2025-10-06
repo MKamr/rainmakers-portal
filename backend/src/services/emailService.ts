@@ -85,12 +85,14 @@ export class EmailService {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light only">
+        <meta name="supported-color-schemes" content="light">
         <title>New Deal Created - ${deal.dealId}</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #000; /* Force dark text for email clients/dark mode */
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
@@ -120,6 +122,7 @@ export class EmailService {
             }
             .content {
                 padding: 30px;
+                color: #000;
             }
             .deal-id {
                 background: #f8f9fa;
@@ -130,7 +133,7 @@ export class EmailService {
                 font-family: 'Courier New', monospace;
                 font-size: 18px;
                 font-weight: bold;
-                color: #495057;
+                color: #000;
             }
             .info-grid {
                 display: grid;
@@ -146,7 +149,7 @@ export class EmailService {
             }
             .info-card h3 {
                 margin: 0 0 10px 0;
-                color: #495057;
+                color: #000;
                 font-size: 14px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
@@ -155,7 +158,7 @@ export class EmailService {
                 margin: 0;
                 font-size: 16px;
                 font-weight: 500;
-                color: #212529;
+                color: #000;
             }
             .cta-button {
                 display: inline-block;
@@ -176,7 +179,7 @@ export class EmailService {
                 background: #f8f9fa;
                 padding: 20px;
                 text-align: center;
-                color: #6c757d;
+                color: #444;
                 font-size: 14px;
                 border-top: 1px solid #e9ecef;
             }
