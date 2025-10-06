@@ -203,7 +203,9 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts[0]; // Return first match
+          // Ensure exact match on email
+          const exact = (response.data.contacts as any[]).find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+          if (exact) return exact;
         }
       } catch (method1Error) {
       }
@@ -216,7 +218,8 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts[0]; // Return first match
+          const exact = (response.data.contacts as any[]).find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+          if (exact) return exact;
         }
       } catch (method2Error) {
       }
@@ -229,9 +232,7 @@ export class GHLService {
         });
         
         const allContacts = response.data.contacts || [];
-        const filteredContacts = allContacts.filter((contact: any) => 
-          contact.email && contact.email.toLowerCase() === email.toLowerCase()
-        );
+        const filteredContacts = allContacts.filter((contact: any) => contact.email && contact.email.toLowerCase() === email.toLowerCase());
         return filteredContacts.length > 0 ? filteredContacts[0] : null;
       } catch (method3Error) {
       }
@@ -249,6 +250,8 @@ export class GHLService {
       
       // Try different search approaches
       let response;
+      const normalize = (p: string) => p.replace(/[^0-9]/g, '');
+      const target = normalize(phone);
       
       // Method 1: Try with phone as query parameter
       try {
@@ -258,7 +261,10 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts[0]; // Return first match
+          const exact = (response.data.contacts as any[]).find((contact: any) => 
+            contact.phone && normalize(contact.phone) === target
+          );
+          if (exact) return exact;
         }
       } catch (method1Error) {
       }
@@ -271,7 +277,10 @@ export class GHLService {
         });
         
         if (response.data.contacts && response.data.contacts.length > 0) {
-          return response.data.contacts[0]; // Return first match
+          const exact = (response.data.contacts as any[]).find((contact: any) => 
+            contact.phone && normalize(contact.phone) === target
+          );
+          if (exact) return exact;
         }
       } catch (method2Error) {
       }
@@ -285,7 +294,7 @@ export class GHLService {
         
         const allContacts = response.data.contacts || [];
         const filteredContacts = allContacts.filter((contact: any) => 
-          contact.phone && contact.phone.replace(/[-() ]/g, '') === phone.replace(/[-() ]/g, '')
+          contact.phone && normalize(contact.phone) === target
         );
         return filteredContacts.length > 0 ? filteredContacts[0] : null;
       } catch (method3Error) {
