@@ -500,11 +500,23 @@ router.post('/', [
           });
 
           try {
+            // Primary attempt: key/field_value shape
             ghlDeal = await GHLService.updateDeal(existingId, {
               name: normalized.applicationPropertyAddress || dealId,
               pipelineStageId: ghlStageId,
               customFields: oppCustomFieldsArrayForUpdate
             });
+
+            // Safety: if API response has no custom fields, try alt shape {id, value}
+            if (!ghlDeal?.customFields || (Array.isArray(ghlDeal.customFields) && ghlDeal.customFields.length === 0)) {
+              const altFields = oppCustomFieldsArrayForUpdate.map((f: any) => ({ id: f.id, value: f.field_value }));
+              await GHLService.updateDeal(existingId, {
+                name: normalized.applicationPropertyAddress || dealId,
+                pipelineStageId: ghlStageId,
+                // @ts-ignore allow alt shape
+                customFields: altFields
+              } as any);
+            }
           } catch (updateExistingErr) {
             // Fallback to minimal update without custom fields if V2 fails
             ghlDeal = await GHLService.updateOpportunity(existingId, {
@@ -532,6 +544,17 @@ router.post('/', [
               source: normalized.source,
               customFields: oppCustomFieldsArrayForCreate
             });
+
+            // Safety: if platform ignores custom fields on create, try an immediate update with alt shape
+            if (ghlDeal && ghlDeal.id) {
+              const altFields = oppCustomFieldsArrayForCreate.map((f: any) => ({ id: f.id, value: f.field_value }));
+              try {
+                await GHLService.updateDeal(ghlDeal.id, {
+                  // @ts-ignore alt shape
+                  customFields: altFields
+                } as any);
+              } catch {}
+            }
           } catch (opportunityError) {
             console.error('❌ [GHL] Opportunity creation failed:', opportunityError);
             ghlDeal = null; // Set to null so we don't try to access its properties
