@@ -490,13 +490,29 @@ router.post('/', [
         
         let ghlDeal;
         if (existingOpportunities.length > 0) {
-          // Update existing opportunity
-          ghlDeal = await GHLService.updateOpportunity(existingOpportunities[0].id, {
-            title: `${dealId}`,
-            status: 'open',
-            stageId: ghlStageId,
-            customFields: []
+          // Update existing opportunity and push custom fields via V2
+          const existingId = existingOpportunities[0].id;
+          const fieldMappingForOpp = loadGHLFieldMapping();
+          const { opportunityCustomFields: oppFieldsForUpdate } = separateFieldsByModel(normalized, fieldMappingForOpp);
+          const oppCustomFieldsArrayForUpdate = Object.entries(oppFieldsForUpdate).map(([fieldId, value]) => {
+            const fieldInfo = fieldMappingForOpp[fieldId];
+            return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
           });
+
+          try {
+            ghlDeal = await GHLService.updateDeal(existingId, {
+              name: normalized.applicationPropertyAddress || dealId,
+              pipelineStageId: ghlStageId,
+              customFields: oppCustomFieldsArrayForUpdate
+            });
+          } catch (updateExistingErr) {
+            // Fallback to minimal update without custom fields if V2 fails
+            ghlDeal = await GHLService.updateOpportunity(existingId, {
+              name: normalized.applicationPropertyAddress || dealId,
+              status: 'open',
+              stageId: ghlStageId
+            });
+          }
         } else {
           // Create new opportunity
           try {
