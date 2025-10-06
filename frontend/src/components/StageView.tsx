@@ -139,14 +139,28 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
 
   const formatSubmittedDate = (value: any): string => {
     if (!value) return 'N/A'
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
     try {
-      const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
-      // Firebase Timestamp
-      if (typeof value === 'object' && typeof value.toDate === 'function') {
-        return fmt(value.toDate())
+      // Firestore Timestamp (admin SDK) object with toDate()
+      if (typeof value === 'object' && value && typeof (value as any).toDate === 'function') {
+        return fmt((value as any).toDate())
       }
-      // ISO/String/number
-      const date = new Date(value)
+      // Firestore serialized timestamp shape { seconds, nanoseconds } or with underscores
+      if (typeof value === 'object' && value) {
+        const seconds = (value as any).seconds ?? (value as any)._seconds
+        const nanos = (value as any).nanoseconds ?? (value as any)._nanoseconds
+        if (typeof seconds === 'number') {
+          const ms = seconds * 1000 + (typeof nanos === 'number' ? Math.floor(nanos / 1e6) : 0)
+          return fmt(new Date(ms))
+        }
+      }
+      // Number epoch
+      if (typeof value === 'number') {
+        const num = value > 1e12 ? value : value * 1000
+        return fmt(new Date(num))
+      }
+      // ISO/String
+      const date = new Date(String(value))
       if (!isNaN(date.getTime())) return fmt(date)
       return 'N/A'
     } catch {
@@ -419,7 +433,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                                 {normalizeStageName(deal.stage || group.stage || 'N/A')}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {formatSubmittedDate(deal.createdAt)}
+                                {formatSubmittedDate(deal.createdAt || deal.applicationDate || deal.stageLastUpdated)}
                               </div>
                               <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.opportunitySource || deal.contactSource || 'N/A'}
