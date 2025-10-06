@@ -514,38 +514,24 @@ router.post('/', [
             });
           }
         } else {
-          // Create new opportunity
+          // Create new opportunity (send custom fields in the CREATE call itself)
           try {
-          ghlDeal = await GHLService.createDeal({
-            name: normalized.applicationPropertyAddress || dealId,
-            pipelineId: ghlPipelineId,
-            stageId: ghlStageId,
-            locationId: ghlLocationId,
-            contactId: ghlContact.id,
-            source: normalized.source, // Add Discord username as source
-            customFields: []
-          });
-            
-            // After creation/update, push source and opportunity custom fields
             const fieldMappingForOpp = loadGHLFieldMapping();
             const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
-            
             const oppCustomFieldsArrayForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
               const fieldInfo = fieldMappingForOpp[fieldId];
               return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
             });
-            
-            
-            if (ghlDeal && ghlDeal.id) {
-              try {
-                await GHLService.updateDeal(ghlDeal.id, {
-                  name: normalized.applicationPropertyAddress || dealId,
-                  customFields: oppCustomFieldsArrayForCreate
-                });
-              } catch (postCreateUpdateErr) {
-              }
-            } else {
-            }
+
+            ghlDeal = await GHLService.createDeal({
+              name: normalized.applicationPropertyAddress || dealId,
+              pipelineId: ghlPipelineId,
+              stageId: ghlStageId,
+              locationId: ghlLocationId,
+              contactId: ghlContact.id,
+              source: normalized.source,
+              customFields: oppCustomFieldsArrayForCreate
+            });
           } catch (opportunityError) {
             console.error('❌ [GHL] Opportunity creation failed:', opportunityError);
             ghlDeal = null; // Set to null so we don't try to access its properties
