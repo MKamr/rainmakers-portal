@@ -137,6 +137,22 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     return `$${amount.toLocaleString()}`
   }
 
+  const formatSubmittedDate = (value: any): string => {
+    if (!value) return 'N/A'
+    try {
+      // Firebase Timestamp
+      if (typeof value === 'object' && typeof value.toDate === 'function') {
+        return value.toDate().toLocaleDateString()
+      }
+      // ISO/String
+      const date = new Date(value)
+      if (!isNaN(date.getTime())) return date.toLocaleDateString()
+      return 'N/A'
+    } catch {
+      return 'N/A'
+    }
+  }
+
 
   const getTotalLoanAmount = (deals: Deal[]) => {
     return deals.reduce((sum, deal) => {
@@ -331,24 +347,33 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                               <CheckSquare className="h-3 w-3 text-gray-300" />
                             </div>
                             
-                            {/* Spreadsheet Headers */}
+                            {/* Spreadsheet Headers (Reordered) */}
+                            <div className="w-64 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Property Address
+                            </div>
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Deal Stage
+                            </div>
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Submitted Date
+                            </div>
                             <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
-                              me
+                              Source
+                            </div>
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Loan Amount
+                            </div>
+                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Property Type
+                            </div>
+                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Deal Type
                             </div>
                             <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Client Phone
                             </div>
                             <div className="w-48 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Client Email
-                            </div>
-                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
-                              Deal Type
-                            </div>
-                            <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
-                              Property Type
-                            </div>
-                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
-                              Loan Request
                             </div>
                             <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Sponsor Net Worth
@@ -385,24 +410,33 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                                 </button>
                               </div>
 
-                              {/* Spreadsheet Data */}
+                              {/* Spreadsheet Data (Reordered to match headers) */}
+                              <div className="w-64 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.propertyAddress || deal.applicationPropertyAddress || 'N/A'}
+                              </div>
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {normalizeStageName(deal.stage || group.stage || 'N/A')}
+                              </div>
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {formatSubmittedDate(deal.createdAt)}
+                              </div>
                               <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {/* Empty for "me" column */}
+                                {deal.opportunitySource || deal.contactSource || 'N/A'}
+                              </div>
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {formatCurrencyFromString(deal.loanRequest || deal.applicationLoanRequest)}
+                              </div>
+                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.propertyType || deal.applicationPropertyType || 'N/A'}
+                              </div>
+                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.dealType || deal.applicationDealType || 'N/A'}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.contactPhone || 'N/A'}
                               </div>
                               <div className="w-48 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.contactEmail || 'N/A'}
-                              </div>
-                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.dealType || deal.applicationDealType || 'N/A'}
-                              </div>
-                              <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.propertyType || deal.applicationPropertyType || 'N/A'}
-                              </div>
-                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {formatCurrencyFromString(deal.loanRequest || deal.applicationLoanRequest)}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {formatCurrencyFromString(deal.sponsorNetWorth || deal.applicationSponsorNetWorth)}
