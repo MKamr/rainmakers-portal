@@ -869,22 +869,41 @@ export class GHLService {
     assignedTo?: string;
     customFields?: Array<{
       id: string;
-      key: string;
-      field_value: any;
+      key?: string;
+      field_value?: any;
+      value?: any;
     }>;
   }): Promise<any> {
     try {
       const headers = await this.getV2Headers();
       
       console.log('🔄 [GHL UPDATE] Updating opportunity:', dealId);
-      console.log('🔄 [GHL UPDATE] Update data:', JSON.stringify(dealData, null, 2));
+      console.log('🔄 [GHL UPDATE] Update data (raw):', JSON.stringify(dealData, null, 2));
       
-      // Use V2 API for opportunities (matching the working Python script)
+      // Build V2-compliant payload
+      const payload: any = {};
+      if (dealData.name !== undefined) payload.name = dealData.name;
+      if (dealData.status !== undefined) payload.status = dealData.status;
+      if (dealData.pipelineId !== undefined) payload.pipelineId = dealData.pipelineId;
+      if (dealData.pipelineStageId !== undefined) payload.pipelineStageId = dealData.pipelineStageId;
+      if (dealData.monetaryValue !== undefined) payload.monetaryValue = dealData.monetaryValue;
+      if (dealData.assignedTo !== undefined) payload.assignedTo = dealData.assignedTo;
+      if (dealData.customFields && Array.isArray(dealData.customFields)) {
+        // Keep the same shape as create (id, key, field_value)
+        payload.customFields = dealData.customFields.map((cf: any) => ({
+          id: cf.id,
+          key: cf.key,
+          field_value: cf.field_value !== undefined ? cf.field_value : cf.value
+        }));
+      }
+      console.log('🔄 [GHL UPDATE] Update data (payload):', JSON.stringify(payload, null, 2));
+      
+      // Use V2 API for opportunities
       const endpoint = `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`;
       console.log('🔄 [GHL UPDATE] Using V2 API endpoint:', endpoint);
       
       // Use V2 API with PUT method (matching working Python script)
-      const response = await axios.put(endpoint, dealData, { headers });
+      const response = await axios.put(endpoint, payload, { headers });
       
       console.log('✅ [GHL UPDATE] Successfully updated opportunity');
       console.log('✅ [GHL UPDATE] Response status:', response.status);
