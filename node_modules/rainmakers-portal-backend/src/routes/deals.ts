@@ -553,6 +553,17 @@ router.post('/', [
 
     // Send email notification for new deal
     try {
+      // Ensure email service initialized (handles serverless cold starts)
+      try {
+        const ready = await EmailService.testEmailConnection();
+        if (!ready) {
+          const storedConfig = await FirebaseService.getEmailConfig();
+          if (storedConfig && storedConfig.enabled) {
+            await EmailService.initialize(storedConfig);
+          }
+        }
+      } catch {}
+
       await EmailService.sendDealNotificationEmail(deal);
     } catch (emailError) {
       // Don't fail the deal creation if email fails
