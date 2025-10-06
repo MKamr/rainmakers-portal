@@ -140,13 +140,14 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   const formatSubmittedDate = (value: any): string => {
     if (!value) return 'N/A'
     try {
+      const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
       // Firebase Timestamp
       if (typeof value === 'object' && typeof value.toDate === 'function') {
-        return value.toDate().toLocaleDateString()
+        return fmt(value.toDate())
       }
-      // ISO/String
+      // ISO/String/number
       const date = new Date(value)
-      if (!isNaN(date.getTime())) return date.toLocaleDateString()
+      if (!isNaN(date.getTime())) return fmt(date)
       return 'N/A'
     } catch {
       return 'N/A'
