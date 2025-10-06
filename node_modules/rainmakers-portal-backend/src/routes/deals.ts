@@ -407,6 +407,11 @@ router.post('/', [
         
         // First, try to find existing contact, then create if not found
         let ghlContact;
+        // Hoist contact name parts so they're available for all branches (including fallbacks)
+        const contactNameForCreate = normalized.contactName || 'Unknown Contact';
+        const contactNameParts = contactNameForCreate.split(' ');
+        const firstName = contactNameParts[0] || 'Unknown';
+        const lastName = contactNameParts.slice(1).join(' ') || 'Contact';
         
         try {
           console.log('🔍 [GHL] Searching for existing contact with email:', normalized.contactEmail);
@@ -421,10 +426,6 @@ router.post('/', [
             console.log('📝 [GHL] No existing contact found, creating new contact');
             
             // Create new contact if none exists
-            const contactName = normalized.contactName || 'Unknown Contact';
-            const nameParts = contactName.split(' ');
-            const firstName = nameParts[0] || 'Unknown';
-            const lastName = nameParts.slice(1).join(' ') || 'Contact';
             
             // Load GHL field mapping and build contact custom fields from normalized
             const fieldMappingForCreate = loadGHLFieldMapping();
@@ -474,6 +475,7 @@ router.post('/', [
             });
             return; // Exit early since we handled it
           } catch (fallbackError) {
+            console.error('❌ [GHL] Fallback minimal opportunity creation failed:', fallbackError);
             throw contactError; // Throw original error
           }
         }
@@ -529,6 +531,7 @@ router.post('/', [
             } else {
             }
           } catch (opportunityError) {
+            console.error('❌ [GHL] Opportunity creation failed:', opportunityError);
             ghlDeal = null; // Set to null so we don't try to access its properties
           }
         }
