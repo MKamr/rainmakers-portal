@@ -1536,12 +1536,22 @@ router.post('/email/test', requireAdmin, [
 
     const { testEmail } = req.body;
     
-    // Test email connection
+    // Ensure email service is initialized from stored config
+    try {
+      const storedConfig = await FirebaseService.getEmailConfig();
+      if (!storedConfig || storedConfig.enabled === false) {
+        return res.status(400).json({ error: 'Email service not configured' });
+      }
+      await EmailService.initialize(storedConfig);
+    } catch (initError) {
+      console.error('❌ [ADMIN] Email init for test failed:', initError);
+      return res.status(400).json({ error: 'Failed to initialize email service. Check SMTP settings.' });
+    }
+
+    // Test email connection after init
     const connectionTest = await EmailService.testEmailConnection();
     if (!connectionTest) {
-      return res.status(400).json({ 
-        error: 'Email service not configured or connection failed' 
-      });
+      return res.status(400).json({ error: 'Email connection test failed' });
     }
     
     // Send test email
