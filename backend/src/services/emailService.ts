@@ -105,19 +105,22 @@ export class EmailService {
                 overflow: hidden;
             }
             .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                background: #e8f0ff; /* light background that survives email clients */
+                color: #000; /* dark text to avoid white-on-white */
                 padding: 30px;
                 text-align: center;
+                border-bottom: 1px solid #d1d9ea;
             }
             .header h1 {
                 margin: 0;
                 font-size: 28px;
                 font-weight: 600;
+                color: #0b1957; /* dark navy for title */
             }
             .header p {
                 margin: 10px 0 0 0;
-                opacity: 0.9;
+                opacity: 1;
+                color: #223;
                 font-size: 16px;
             }
             .content {
