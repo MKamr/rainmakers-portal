@@ -1500,12 +1500,12 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
         }
       }
       
-      // Create comparison object
+      // Create comparison object with all portal form fields
       const comparison = {
         ourDeal: {
           id: ourDeal.id,
           dealId: ourDeal.dealId,
-          propertyName: ourDeal.propertyName,
+          title: ourDeal.title,
           propertyAddress: ourDeal.propertyAddress,
           propertyType: ourDeal.propertyType,
           stage: ourDeal.stage,
@@ -1519,6 +1519,11 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
           sponsorLiquidity: ourDeal.sponsorLiquidity,
           loanRequest: ourDeal.loanRequest,
           additionalInformation: ourDeal.additionalInformation,
+          // Additional portal fields
+          ghlOpportunityId: ourDeal.ghlOpportunityId,
+          ghlContactId: ourDeal.ghlContactId,
+          opportunitySource: ourDeal.opportunitySource,
+          notes: ourDeal.notes,
           createdAt: ourDeal.createdAt,
           updatedAt: ourDeal.updatedAt
         },
@@ -1543,10 +1548,19 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
         const differences = [];
         
         // Compare basic fields
-        if (ourDeal.propertyName !== ghlOpportunity.name) {
+        if (ourDeal.title !== ghlOpportunity.name) {
           differences.push({
-            field: 'propertyName',
-            ourValue: ourDeal.propertyName,
+            field: 'title',
+            ourValue: ourDeal.title,
+            ghlValue: ghlOpportunity.name,
+            type: 'basic'
+          });
+        }
+        
+        if (ourDeal.propertyAddress !== ghlOpportunity.name) {
+          differences.push({
+            field: 'propertyAddress',
+            ourValue: ourDeal.propertyAddress,
             ghlValue: ghlOpportunity.name,
             type: 'basic'
           });
@@ -1568,7 +1582,12 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
             { ourField: 'sponsorNetWorth', ghlField: 'opportunity.sponsor_net_worth' },
             { ourField: 'sponsorLiquidity', ghlField: 'opportunity.sponsor_liquidity' },
             { ourField: 'loanRequest', ghlField: 'opportunity.loan_request' },
-            { ourField: 'additionalInformation', ghlField: 'opportunity.additional_information' }
+            { ourField: 'additionalInformation', ghlField: 'opportunity.additional_information' },
+            // Additional portal fields
+            { ourField: 'contactName', ghlField: 'contact.contact_name' },
+            { ourField: 'contactEmail', ghlField: 'contact.contact_email' },
+            { ourField: 'contactPhone', ghlField: 'contact.contact_phone' },
+            { ourField: 'opportunitySource', ghlField: 'opportunity.opportunity_source' }
           ];
           
           fieldsToCompare.forEach(({ ourField, ghlField }) => {

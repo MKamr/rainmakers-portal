@@ -5,7 +5,7 @@ interface ComparisonData {
   ourDeal: {
     id: string;
     dealId: string;
-    propertyName: string;
+    title: string;
     propertyAddress: string;
     propertyType: string;
     stage: string;
@@ -20,6 +20,9 @@ interface ComparisonData {
     loanRequest: string;
     additionalInformation: string;
     ghlOpportunityId?: string;
+    ghlContactId?: string;
+    opportunitySource?: string;
+    notes?: string;
     createdAt: any;
     updatedAt: any;
   };
@@ -293,7 +296,7 @@ const GHLComparison: React.FC = () => {
                       {comparison.ourDeal.dealId}
                     </h3>
                     <div className="text-sm text-gray-600">
-                      <span>{comparison.ourDeal.propertyName}</span>
+                      <span>{comparison.ourDeal.title || comparison.ourDeal.propertyAddress}</span>
                       {comparison.ourDeal.ghlOpportunityId && (
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
                           GHL: {comparison.ourDeal.ghlOpportunityId}
@@ -320,7 +323,7 @@ const GHLComparison: React.FC = () => {
                 <div className="bg-white p-4 rounded-lg border">
                   <h4 className="font-semibold text-gray-900 mb-3">Our System</h4>
                   <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Property Name:</span> {formatValue(comparison.ourDeal.propertyName)}</div>
+                    <div><span className="font-medium">Title:</span> {formatValue(comparison.ourDeal.title)}</div>
                     <div><span className="font-medium">Property Address:</span> {formatValue(comparison.ourDeal.propertyAddress)}</div>
                     <div><span className="font-medium">Property Type:</span> {formatValue(comparison.ourDeal.propertyType)}</div>
                     <div><span className="font-medium">Deal Type:</span> {formatValue(comparison.ourDeal.dealType)}</div>
@@ -332,6 +335,10 @@ const GHLComparison: React.FC = () => {
                     <div><span className="font-medium">Contact:</span> {formatValue(comparison.ourDeal.contactName)}</div>
                     <div><span className="font-medium">Email:</span> {formatValue(comparison.ourDeal.contactEmail)}</div>
                     <div><span className="font-medium">Phone:</span> {formatValue(comparison.ourDeal.contactPhone)}</div>
+                    <div><span className="font-medium">Source:</span> {formatValue(comparison.ourDeal.opportunitySource)}</div>
+                    <div><span className="font-medium">Notes:</span> {formatValue(comparison.ourDeal.notes)}</div>
+                    <div><span className="font-medium">Stage:</span> {formatValue(comparison.ourDeal.stage)}</div>
+                    <div><span className="font-medium">Status:</span> {formatValue(comparison.ourDeal.status)}</div>
                   </div>
                 </div>
 
@@ -340,15 +347,19 @@ const GHLComparison: React.FC = () => {
                   <h4 className="font-semibold text-gray-900 mb-3">GoHighLevel</h4>
                   {comparison.ghlOpportunity ? (
                     <div className="space-y-2 text-sm">
-                      <div><span className="font-medium">Property Name:</span> {formatValue(comparison.ghlOpportunity.name)}</div>
-                      <div><span className="font-medium">Property Address:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'propertyAddress'))}</div>
-                      <div><span className="font-medium">Property Type:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'propertyType'))}</div>
-                      <div><span className="font-medium">Deal Type:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'dealType'))}</div>
-                      <div><span className="font-medium">Property Vintage:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'propertyVintage'))}</div>
-                      <div><span className="font-medium">Sponsor Net Worth:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'sponsorNetWorth'))}</div>
-                      <div><span className="font-medium">Sponsor Liquidity:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'sponsorLiquidity'))}</div>
-                      <div><span className="font-medium">Loan Request:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'loanRequest'))}</div>
-                      <div><span className="font-medium">Additional Info:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'additionalInformation'))}</div>
+                      <div><span className="font-medium">Title:</span> {formatValue(comparison.ghlOpportunity.name)}</div>
+                      <div><span className="font-medium">Property Address:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.property_address'))}</div>
+                      <div><span className="font-medium">Property Type:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.property_type'))}</div>
+                      <div><span className="font-medium">Deal Type:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.deal_type'))}</div>
+                      <div><span className="font-medium">Property Vintage:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.property_vintage'))}</div>
+                      <div><span className="font-medium">Sponsor Net Worth:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.sponsor_net_worth'))}</div>
+                      <div><span className="font-medium">Sponsor Liquidity:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.sponsor_liquidity'))}</div>
+                      <div><span className="font-medium">Loan Request:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.loan_request'))}</div>
+                      <div><span className="font-medium">Additional Info:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.additional_information'))}</div>
+                      <div><span className="font-medium">Contact Name:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'contact.contact_name'))}</div>
+                      <div><span className="font-medium">Contact Email:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'contact.contact_email'))}</div>
+                      <div><span className="font-medium">Contact Phone:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'contact.contact_phone'))}</div>
+                      <div><span className="font-medium">Source:</span> {formatValue(getGHLCustomFieldValue(comparison.ghlOpportunity, 'opportunity.opportunity_source'))}</div>
                       <div><span className="font-medium">Status:</span> {formatValue(comparison.ghlOpportunity.status)}</div>
                       <div><span className="font-medium">Monetary Value:</span> {formatValue(comparison.ghlOpportunity.monetaryValue)}</div>
                     </div>
