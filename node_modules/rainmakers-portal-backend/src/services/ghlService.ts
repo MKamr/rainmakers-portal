@@ -502,8 +502,8 @@ export class GHLService {
     try {
       
       // First, get all pipelines
-      const headers = await this.getHeaders();
-      const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
+      const headers = await this.getV2Headers();
+      const pipelinesResponse = await axios.get(`${this.GHL_V2_BASE_URL}/pipelines/`, { headers });
       const pipelines = pipelinesResponse.data.pipelines || [];
       
       
@@ -512,8 +512,8 @@ export class GHLService {
       for (const pipeline of pipelines) {
         try {
           
-          // Use the working pipeline-specific method
-          const opportunities = await this.getOpportunitiesByPipeline(pipeline.id);
+          // Use the V2 pipeline-specific method to get custom fields
+          const opportunities = await this.getOpportunitiesByPipelineV2(pipeline.id);
           
           // Add pipeline info to each opportunity
           const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
