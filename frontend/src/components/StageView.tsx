@@ -14,7 +14,7 @@ interface StageGroup {
   shortName: string
   deals: Deal[]
   count: number
-  stage?: string // Keep original stage name for reference
+  stage?: string // Keep original stage name for referenc
 }
 
 export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewProps) {
