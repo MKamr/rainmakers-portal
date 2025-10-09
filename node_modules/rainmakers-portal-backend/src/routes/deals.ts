@@ -426,25 +426,25 @@ router.post('/', [
             console.log('📝 [GHL] No existing contact found, creating new contact');
             
             // Create new contact if none exists
-            
-            // Load GHL field mapping and build contact custom fields from normalized
-            const fieldMappingForCreate = loadGHLFieldMapping();
-            const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
-            
-            const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
-              const fieldInfo = fieldMappingForCreate[fieldId];
-              return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
-            });
-            
-            ghlContact = await GHLService.createContact({
-              firstName,
-              lastName,
-              email: normalized.contactEmail,
-              phone: normalized.contactPhone,
-              locationId: ghlLocationId, // Add locationId as required by GHL
-              companyName: '',
-              customFields: contactCustomFieldsArrayForCreate
-            });
+          
+          // Load GHL field mapping and build contact custom fields from normalized
+          const fieldMappingForCreate = loadGHLFieldMapping();
+          const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
+          
+          const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
+            const fieldInfo = fieldMappingForCreate[fieldId];
+            return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
+          });
+
+          ghlContact = await GHLService.createContact({
+            firstName,
+            lastName,
+            email: normalized.contactEmail,
+            phone: normalized.contactPhone,
+            locationId: ghlLocationId, // Add locationId as required by GHL
+            companyName: '',
+            customFields: contactCustomFieldsArrayForCreate
+          });
           }
         } catch (contactError) {
           
@@ -502,7 +502,7 @@ router.post('/', [
           try {
             // Primary attempt: key/field_value shape
             ghlDeal = await GHLService.updateDeal(existingId, {
-              name: normalized.applicationPropertyAddress || dealId,
+            name: normalized.applicationPropertyAddress || dealId,
               pipelineStageId: ghlStageId,
               customFields: oppCustomFieldsArrayForUpdate
             });
@@ -534,7 +534,7 @@ router.post('/', [
               const fieldInfo = fieldMappingForOpp[fieldId];
               return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
             });
-
+            
             ghlDeal = await GHLService.createDeal({
               name: normalized.applicationPropertyAddress || dealId,
               pipelineId: ghlPipelineId,

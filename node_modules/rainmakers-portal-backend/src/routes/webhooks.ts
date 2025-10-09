@@ -14,8 +14,6 @@ router.get('/', (req: Request, res: Response) => {
       'GET /api/webhooks/test',
       'POST /api/webhooks/test', 
       'POST /api/webhooks/ghl',
-      'POST /api/webhooks/ghl-opportunity-field-change',
-      'POST /api/webhooks/test-field-change',
       'GET /api/webhooks/diagnose'
     ]
   });
@@ -80,7 +78,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Find deal by opportunity name (property address) or dealId
     const deal = deals.find(d => 
       d.propertyAddress === opportunity.opportunity_name || 
-      d.propertyName === opportunity.opportunity_name ||
+      d.title === opportunity.opportunity_name ||
       d.dealId === opportunity.opportunity_name
     );
     
@@ -185,7 +183,7 @@ router.post('/test', async (req: Request, res: Response) => {
     // Find deal by opportunity name (property address) or dealId
     const deal = deals.find(d => 
       d.propertyAddress === opportunity.opportunity_name || 
-      d.propertyName === opportunity.opportunity_name ||
+      d.title === opportunity.opportunity_name ||
       d.dealId === opportunity.opportunity_name
     );
     
@@ -303,250 +301,6 @@ router.get('/diagnose', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('❌ [DIAGNOSE] Error getting deals:', error);
     res.status(500).json({ error: 'Failed to get deals for diagnosis' });
-  }
-});
-
-// GHL Opportunity Field Change Webhook - Syncs specific field changes
-router.post('/ghl-opportunity-field-change', async (req: Request, res: Response) => {
-  try {
-    console.log('🔄 [FIELD WEBHOOK] Received opportunity field change webhook:', JSON.stringify(req.body, null, 2));
-    
-    // Basic webhook validation (optional - can be enabled with GHL_WEBHOOK_SECRET)
-    const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const providedSecret = req.headers['x-webhook-secret'] as string;
-      if (providedSecret !== webhookSecret) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    }
-    
-    // Get the opportunity data from the webhook
-    let opportunity = req.body.opportunity || req.body;
-    
-    if (!opportunity) {
-      console.log('❌ [FIELD WEBHOOK] No opportunity data received');
-      return res.status(400).json({ error: 'No opportunity data received' });
-    }
-    
-    console.log('🔍 [FIELD WEBHOOK] Processing opportunity:', opportunity.id, 'Name:', opportunity.name);
-    
-    // Get all deals and find the matching one
-    const deals = await FirebaseService.getAllDeals();
-    
-    // Find deal by GHL opportunity ID (most reliable) or by opportunity name
-    let deal = deals.find(d => d.ghlOpportunityId === opportunity.id);
-    
-    if (!deal) {
-      // Fallback: try to find by opportunity name (property address)
-      deal = deals.find(d => 
-        d.propertyAddress === opportunity.name || 
-        d.propertyName === opportunity.name ||
-        d.dealId === opportunity.name
-      );
-    }
-    
-    if (!deal) {
-      console.log('⚠️ [FIELD WEBHOOK] No deal found for opportunity:', opportunity.id, 'Name:', opportunity.name);
-      console.log('⚠️ [FIELD WEBHOOK] Available deals with GHL IDs:', deals.filter(d => d.ghlOpportunityId).map(d => ({ 
-        id: d.id, 
-        dealId: d.dealId, 
-        ghlOpportunityId: d.ghlOpportunityId,
-        propertyAddress: d.propertyAddress 
-      })));
-      
-      return res.json({ 
-        success: true, 
-        message: 'Webhook received but no matching deal found',
-        opportunityId: opportunity.id,
-        opportunityName: opportunity.name,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    console.log('✅ [FIELD WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
-    
-    // Prepare updates from GHL opportunity
-    const updates: any = {};
-    let fieldsUpdated = 0;
-    
-    // Update GHL opportunity ID if not already set
-    if (!deal.ghlOpportunityId && opportunity.id) {
-      updates.ghlOpportunityId = opportunity.id;
-      fieldsUpdated++;
-    }
-    
-    // Handle basic opportunity fields
-    if (opportunity.name && opportunity.name !== deal.propertyName) {
-      updates.propertyName = opportunity.name;
-      fieldsUpdated++;
-    }
-    
-    if (opportunity.status && opportunity.status !== deal.status) {
-      updates.status = opportunity.status;
-      fieldsUpdated++;
-    }
-    
-    if (opportunity.monetaryValue && opportunity.monetaryValue !== deal.opportunityValue) {
-      updates.opportunityValue = opportunity.monetaryValue;
-      fieldsUpdated++;
-    }
-    
-    if (opportunity.assignedTo && opportunity.assignedTo !== deal.owner) {
-      updates.owner = opportunity.assignedTo;
-      fieldsUpdated++;
-    }
-    
-    if (opportunity.source && opportunity.source !== deal.opportunitySource) {
-      updates.opportunitySource = opportunity.source;
-      fieldsUpdated++;
-    }
-    
-    // Handle stage changes
-    if (opportunity.pipelineStageId && opportunity.pipelineId) {
-      try {
-        console.log('🔄 [FIELD WEBHOOK] Processing stage change for opportunity:', opportunity.id);
-        console.log('🔄 [FIELD WEBHOOK] Pipeline ID:', opportunity.pipelineId, 'Stage ID:', opportunity.pipelineStageId);
-        
-        const currentStage = deal.stage;
-        const stageName = await GHLService.getStageNameById(opportunity.pipelineId, opportunity.pipelineStageId);
-        
-        if (stageName) {
-          const normalizedStage = mapGHLStageToSystemStage(stageName);
-          
-          if (currentStage !== normalizedStage) {
-            updates.stage = normalizedStage;
-            updates.stageLastUpdated = new Date().toISOString();
-            fieldsUpdated++;
-            console.log('🎯 [FIELD WEBHOOK] Stage changed from:', currentStage, 'to:', normalizedStage);
-          }
-        }
-      } catch (error) {
-        console.error('❌ [FIELD WEBHOOK] Error fetching stage name:', error);
-      }
-    }
-    
-    // Handle custom fields - map GHL custom fields to our deal fields
-    if (opportunity.customFields && Array.isArray(opportunity.customFields)) {
-      console.log('🔍 [FIELD WEBHOOK] Processing custom fields:', opportunity.customFields.length);
-      
-      // Convert custom fields array to object for easier lookup
-      const customFieldsObj = opportunity.customFields.reduce((acc: any, field: any) => {
-        if (field.key && field.field_value !== undefined) {
-          acc[field.key] = field.field_value;
-        }
-        return acc;
-      }, {});
-      
-      // Map GHL custom fields to our deal fields
-      const fieldMappings = {
-        // Opportunity-level fields
-        'opportunity.deal_type': 'dealType',
-        'opportunity.property_type': 'propertyType',
-        'opportunity.property_address': 'propertyAddress',
-        'opportunity.property_vintage': 'propertyVintage',
-        'opportunity.sponsor_net_worth': 'sponsorNetWorth',
-        'opportunity.sponsor_liquidity': 'sponsorLiquidity',
-        'opportunity.loan_request': 'loanRequest',
-        'opportunity.additional_information': 'additionalInformation',
-        'opportunity.loan_amount': 'loanAmount',
-        'opportunity.purchase_price': 'purchasePrice',
-        'opportunity.property_name': 'propertyName',
-        'opportunity.number_of_units': 'numberOfUnits',
-        'opportunity.occupancy': 'occupancy',
-        'opportunity.appraised_value': 'appraisedValue',
-        'opportunity.ltv': 'ltv',
-        'opportunity.dscr': 'dscr',
-        'opportunity.term': 'term',
-        'opportunity.index': 'index',
-        'opportunity.spread_percentage': 'spreadPercentage',
-        'opportunity.rate_percentage': 'ratePercentage',
-        'opportunity.amortization': 'amortization',
-        'opportunity.close_date': 'closeDate',
-        'opportunity.lost_reason': 'lostReason',
-        
-        // Contact-level fields (if they come through opportunity webhook)
-        'contact.application_deal_type': 'applicationDealType',
-        'contact.application_property_type': 'applicationPropertyType',
-        'contact.application_property_address': 'applicationPropertyAddress',
-        'contact.application_property_vintage': 'applicationPropertyVintage',
-        'contact.application_sponsor_net_worth': 'applicationSponsorNetWorth',
-        'contact.application_sponsor_liquidity': 'applicationSponsorLiquidity',
-        'contact.application_loan_request': 'applicationLoanRequest',
-        'contact.application_additional_information': 'applicationAdditionalInformation',
-        'contact.discord_username': 'discordUsername',
-        'contact.contact_name': 'contactName',
-        'contact.contact_email': 'contactEmail',
-        'contact.contact_phone': 'contactPhone'
-      };
-      
-      // Process each field mapping
-      Object.entries(fieldMappings).forEach(([ghlFieldKey, ourFieldKey]) => {
-        if (customFieldsObj[ghlFieldKey] !== undefined && customFieldsObj[ghlFieldKey] !== deal[ourFieldKey]) {
-          updates[ourFieldKey] = customFieldsObj[ghlFieldKey];
-          fieldsUpdated++;
-          console.log(`🔄 [FIELD WEBHOOK] Field updated: ${ghlFieldKey} -> ${ourFieldKey}:`, customFieldsObj[ghlFieldKey]);
-        }
-      });
-      
-      // Handle any unmapped fields that might be important
-      Object.entries(customFieldsObj).forEach(([fieldKey, fieldValue]) => {
-        if (!fieldMappings[fieldKey] && fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
-          console.log(`ℹ️ [FIELD WEBHOOK] Unmapped field detected: ${fieldKey} = ${fieldValue}`);
-        }
-      });
-    }
-    
-    // Update the deal in Firebase if there are changes
-    if (Object.keys(updates).length > 0) {
-      console.log('🔄 [FIELD WEBHOOK] Updating deal with changes:', JSON.stringify(updates, null, 2));
-      await FirebaseService.updateDeal(deal.id, updates);
-      console.log('✅ [FIELD WEBHOOK] Deal updated successfully with', fieldsUpdated, 'field changes');
-      
-      res.json({ 
-        success: true, 
-        message: 'Deal updated successfully',
-        dealId: deal.id,
-        fieldsUpdated: fieldsUpdated,
-        updates: updates,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.log('ℹ️ [FIELD WEBHOOK] No relevant changes to sync');
-      res.json({ 
-        success: true, 
-        message: 'No changes needed',
-        dealId: deal.id,
-        fieldsUpdated: 0,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ [FIELD WEBHOOK] Error processing field change webhook:', error);
-    res.status(500).json({ 
-      error: 'Failed to process field change webhook',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Test endpoint for field change webhook
-router.post('/test-field-change', async (req: Request, res: Response) => {
-  try {
-    console.log('🧪 [TEST FIELD WEBHOOK] Received test field change webhook:', JSON.stringify(req.body, null, 2));
-    
-    // Simulate the field change webhook processing
-    const result = await router.handle(req, res);
-    
-    return result;
-  } catch (error) {
-    console.error('❌ [TEST FIELD WEBHOOK] Error processing test:', error);
-    res.status(500).json({ 
-      error: 'Failed to process test field change webhook',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
   }
 });
 
