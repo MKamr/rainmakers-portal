@@ -75,8 +75,12 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Get all deals and find the matching one
     const deals = await FirebaseService.getAllDeals();
     
-    // Find deal by opportunity name (dealId in Firebase)
-    const deal = deals.find(d => d.dealId === opportunity.opportunity_name);
+    // Find deal by opportunity name (property address) or dealId
+    const deal = deals.find(d => 
+      d.propertyAddress === opportunity.opportunity_name || 
+      d.propertyName === opportunity.opportunity_name ||
+      d.dealId === opportunity.opportunity_name
+    );
     
     if (!deal) {
       return res.json({ 
@@ -176,8 +180,12 @@ router.post('/test', async (req: Request, res: Response) => {
     console.log('🔍 [TEST WEBHOOK] Looking for deal with opportunity name:', opportunity.opportunity_name);
     console.log('🔍 [TEST WEBHOOK] Available dealIds in database:', deals.map(d => d.dealId).filter(Boolean));
     
-    // Find deal by opportunity name (dealId in Firebase)
-    const deal = deals.find(d => d.dealId === opportunity.opportunity_name);
+    // Find deal by opportunity name (property address) or dealId
+    const deal = deals.find(d => 
+      d.propertyAddress === opportunity.opportunity_name || 
+      d.propertyName === opportunity.opportunity_name ||
+      d.dealId === opportunity.opportunity_name
+    );
     
     if (!deal) {
       console.log('⚠️ [TEST WEBHOOK] No deal found with opportunity name:', opportunity.opportunity_name);
