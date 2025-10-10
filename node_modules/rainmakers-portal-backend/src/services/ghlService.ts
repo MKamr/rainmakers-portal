@@ -696,6 +696,7 @@ export class GHLService {
       let hasMorePages = true;
       
       console.log(`🔍 [GHL PIPELINE V2] Fetching opportunities from pipeline ID: ${pipelineId}`);
+      console.log(`🔍 [GHL PIPELINE V2] Using endpoint: ${this.GHL_V2_BASE_URL}/pipelines/${pipelineId}/opportunities/`);
       
       while (hasMorePages) {
         console.log(`📄 [GHL PIPELINE V2] Fetching page ${page}...`);
@@ -710,6 +711,13 @@ export class GHLService {
             }
           }
         );
+        
+        console.log(`📊 [GHL PIPELINE V2] Response status: ${response.status}`);
+        console.log(`📊 [GHL PIPELINE V2] Response data structure:`, {
+          hasOpportunities: !!response.data.opportunities,
+          opportunitiesCount: response.data.opportunities?.length || 0,
+          dataKeys: Object.keys(response.data)
+        });
         
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
@@ -979,6 +987,14 @@ export class GHLService {
         );
         
         console.log('✅ [GHL GET] V2 API success - fetched opportunity with custom fields');
+        console.log('✅ [GHL GET] V2 Response status:', v2Response.status);
+        console.log('✅ [GHL GET] V2 Response data keys:', Object.keys(v2Response.data));
+        console.log('✅ [GHL GET] V2 Response structure:', {
+          hasOpportunity: !!v2Response.data.opportunity,
+          hasCustomFields: !!v2Response.data.customFields,
+          customFieldsCount: v2Response.data.customFields?.length || 0,
+          directCustomFieldsCount: v2Response.data.opportunity?.customFields?.length || 0
+        });
         console.log('✅ [GHL GET] V2 Response:', JSON.stringify(v2Response.data, null, 2));
         
         return v2Response.data.opportunity || v2Response.data;

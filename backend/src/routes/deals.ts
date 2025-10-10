@@ -1469,8 +1469,14 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
     console.log(`📊 [DEAL COMPARE] Found ${ourDeals.length} deals in our system`);
     
     // Get all opportunities from GHL
+    console.log('🔍 [DEAL COMPARE] Calling GHLService.listOpportunities()...');
     const ghlOpportunities = await GHLService.listOpportunities();
     console.log(`📊 [DEAL COMPARE] Found ${ghlOpportunities.opportunities?.length || 0} opportunities in GHL`);
+    console.log('🔍 [DEAL COMPARE] GHL opportunities response structure:', {
+      hasOpportunities: !!ghlOpportunities.opportunities,
+      opportunitiesCount: ghlOpportunities.opportunities?.length || 0,
+      responseKeys: Object.keys(ghlOpportunities)
+    });
     
     // Log sample opportunity data for debugging
     if (ghlOpportunities.opportunities && ghlOpportunities.opportunities.length > 0) {
