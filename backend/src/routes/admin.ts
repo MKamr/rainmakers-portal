@@ -103,10 +103,94 @@ router.post('/ghl/import-opportunity', requireAdmin, [
   }
 });
 
+// Get raw GHL opportunities data for debugging
+router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [ADMIN] Fetching raw GHL opportunities data...');
+    
+    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+    if (!ghlApiKey) {
+      return res.status(400).json({ error: 'GHL API key not configured' });
+    }
+    
+    // Get all opportunities from GHL
+    const ghlOpportunities = await GHLService.listOpportunities();
+    
+    console.log(`📊 [ADMIN] Found ${ghlOpportunities.opportunities?.length || 0} opportunities in GHL`);
+    
+    // Return raw data with metadata
+    res.json({
+      success: true,
+      totalOpportunities: ghlOpportunities.opportunities?.length || 0,
+      fetchedAt: new Date().toISOString(),
+      opportunities: ghlOpportunities.opportunities || [],
+      metadata: {
+        apiKeyConfigured: !!ghlApiKey,
+        apiKeyPreview: ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none',
+        baseUrl: process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1'
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [ADMIN] Raw GHL opportunities error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch raw GHL opportunities',
+      details: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// Get raw portal deals data for debugging
+router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [ADMIN] Fetching raw portal deals data...');
+    
+    // Get all deals from our system
+    const ourDeals = await FirebaseService.getAllDeals();
+    
+    console.log(`📊 [ADMIN] Found ${ourDeals.length} deals in our system`);
+    
+    // Return raw data with metadata
+    res.json({
+      success: true,
+      totalDeals: ourDeals.length,
+      fetchedAt: new Date().toISOString(),
+      deals: ourDeals,
+      metadata: {
+        dealsWithGhlId: ourDeals.filter(deal => deal.ghlOpportunityId).length,
+        dealsWithGhlContactId: ourDeals.filter(deal => deal.ghlContactId).length,
+        dealsBySource: ourDeals.reduce((acc: any, deal: any) => {
+          const source = deal.source || 'unknown';
+          acc[source] = (acc[source] || 0) + 1;
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [ADMIN] Raw portal deals error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch raw portal deals',
+      details: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 router.get('/ghl/pipelines', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const headers = await GHLService.getHeaders();
-    const response = await axios.get(`${GHLService.GHL_BASE_URL}/pipelines/`, { headers });
+    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+    if (!ghlApiKey) {
+      return res.status(400).json({ error: 'GHL API key not configured' });
+    }
+    
+    const headers = {
+      'Authorization': `Bearer ${ghlApiKey}`,
+      'Content-Type': 'application/json',
+      'Version': '2021-07-28'
+    };
+    
+    const ghlBaseUrl = process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1';
+    const response = await axios.get(`${ghlBaseUrl}/pipelines/`, { headers });
     
     const pipelines = response.data.pipelines || [];
     
@@ -870,16 +954,16 @@ router.post('/onedrive/upload', upload.single('file'), [
     // Sync to GHL if configured
     try {
       const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
-      if (ghlApiKey && deal.contactId) {
+      if (ghlApiKey && deal.ghlContactId) {
         // Upload document to GHL contact
         await GHLService.uploadDocumentToContact(
-          deal.contactId,
+          deal.ghlContactId,
           req.file.originalname,
           req.file.buffer,
           req.file.mimetype,
           ghlApiKey
         );
-        console.log('Document synced to GHL contact:', deal.contactId);
+        console.log('Document synced to GHL contact:', deal.ghlContactId);
       }
     } catch (error) {
       console.warn('Failed to sync document to GHL:', error);
@@ -1270,10 +1354,10 @@ router.post('/ghl/config', [
     } = req.body;
 
     // Save configurations
-    await FirebaseService.setConfiguration('ghl_api_key', apiKey, 'GoHighLevel API Key', true);
+    await FirebaseService.setConfiguration('ghl_api_key', apiKey, 'GoHighLevel API Key');
     
     if (v2Token) {
-      await FirebaseService.setConfiguration('ghl_v2_token', v2Token, 'GHL v2 Private Integration Token', true);
+      await FirebaseService.setConfiguration('ghl_v2_token', v2Token, 'GHL v2 Private Integration Token');
     }
     
     if (pipelineId) {

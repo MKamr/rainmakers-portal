@@ -4,11 +4,12 @@ import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, GitCompare, Shield, Mail } from 'lucide-react'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, GitCompare, Shield, Mail, Database } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 import GHLComparison from '../components/GHLComparison'
 import DiscordAutoAccess from '../components/DiscordAutoAccess'
+import RawDataViewer from '../components/RawDataViewer'
 
 // Email Configuration Tab Component
 function EmailConfigurationTab() {
@@ -864,6 +865,7 @@ export function AdminPage() {
     { id: 'deals', name: 'Deals', icon: FileText },
     { id: 'ghl-import', name: 'GHL Import', icon: Import },
     { id: 'ghl-compare', name: 'GHL Compare', icon: GitCompare },
+    { id: 'raw-data', name: 'Raw Data', icon: Database },
     { id: 'discord-auto-access', name: 'Discord Auto-Access', icon: Shield },
     { id: 'email-config', name: 'Email Config', icon: Mail },
     { id: 'settings', name: 'Settings', icon: Settings },
@@ -1354,6 +1356,10 @@ export function AdminPage() {
 
       {activeTab === 'ghl-compare' && (
         <GHLComparison />
+      )}
+
+      {activeTab === 'raw-data' && (
+        <RawDataViewer />
       )}
 
       {activeTab === 'discord-auto-access' && (
