@@ -222,17 +222,65 @@ const RawDataViewer: React.FC = () => {
       setSyncing(true);
       setError(null);
       
-      const response = await api.post('/deals/sync/ghl', {
-        dealIds: [dealId]
-      });
+      // Find the deal and its corresponding GHL opportunity
+      const deal = portalData?.deals.find(d => d.id === dealId);
+      const comparison = comparisonResults.find(c => c.portalDeal.id === dealId);
       
-      const result = response.data.results[0];
-      if (result.success) {
+      if (!deal || !comparison || !comparison.ghlOpportunity) {
+        setError('Deal or GHL opportunity not found for sync');
+        return;
+      }
+      
+      // Update the deal with GHL data
+      const updateData: any = {};
+      
+      // Update basic fields
+      if (comparison.ghlOpportunity.name && comparison.ghlOpportunity.name !== deal.propertyName) {
+        updateData.propertyName = comparison.ghlOpportunity.name;
+      }
+      
+      // Update custom fields from GHL opportunity
+      if (comparison.ghlOpportunity.customFields && Array.isArray(comparison.ghlOpportunity.customFields)) {
+        const ghlCustomFields = comparison.ghlOpportunity.customFields.reduce((acc: any, field: any) => {
+          const value = field.field_value || field.fieldValue;
+          acc[field.key] = value;
+          return acc;
+        }, {});
+        
+        // Map GHL custom fields to our deal fields
+        const fieldMapping: Record<string, string> = {
+          'opportunity.deal_type': 'dealType',
+          'opportunity.property_type': 'propertyType',
+          'opportunity.property_address': 'propertyAddress',
+          'opportunity.property_vintage': 'propertyVintage',
+          'opportunity.sponsor_net_worth': 'sponsorNetWorth',
+          'opportunity.sponsor_liquidity': 'sponsorLiquidity',
+          'opportunity.loan_request': 'loanRequest',
+          'opportunity.additional_information': 'additionalInformation',
+          'contact.contact_name': 'contactName',
+          'contact.contact_email': 'contactEmail',
+          'contact.contact_phone': 'contactPhone',
+          'opportunity.opportunity_source': 'opportunitySource',
+          'opportunity.notes': 'notes'
+        };
+        
+        Object.entries(fieldMapping).forEach(([ghlField, ourField]) => {
+          if (ghlCustomFields[ghlField] !== undefined && ghlCustomFields[ghlField] !== deal[ourField]) {
+            updateData[ourField] = ghlCustomFields[ghlField];
+          }
+        });
+      }
+      
+      // Update the deal if there are changes
+      if (Object.keys(updateData).length > 0) {
+        updateData.updatedAt = new Date();
+        await api.put(`/deals/${dealId}`, updateData);
+        
         // Refresh data after successful sync
         await fetchAllData();
         setError(null);
       } else {
-        setError(`Sync failed for deal ${dealId}: ${result.error}`);
+        setError('No changes needed - deal is already in sync');
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to sync deal');
@@ -277,16 +325,75 @@ const RawDataViewer: React.FC = () => {
         });
         
         try {
-          const response = await api.post('/deals/sync/ghl', {
-            dealIds: [dealId]
-          });
+          // Find the deal and its corresponding GHL opportunity
+          const deal = portalData?.deals.find(d => d.id === dealId);
+          const comparison = comparisonResults.find(c => c.portalDeal.id === dealId);
           
-          const result = response.data.results[0];
-          results.push({
-            dealId,
-            success: result.success,
-            error: result.error
-          });
+          if (!deal || !comparison || !comparison.ghlOpportunity) {
+            results.push({
+              dealId,
+              success: false,
+              error: 'Deal or GHL opportunity not found'
+            });
+            continue;
+          }
+          
+          // Update the deal with GHL data
+          const updateData: any = {};
+          
+          // Update basic fields
+          if (comparison.ghlOpportunity.name && comparison.ghlOpportunity.name !== deal.propertyName) {
+            updateData.propertyName = comparison.ghlOpportunity.name;
+          }
+          
+          // Update custom fields from GHL opportunity
+          if (comparison.ghlOpportunity.customFields && Array.isArray(comparison.ghlOpportunity.customFields)) {
+            const ghlCustomFields = comparison.ghlOpportunity.customFields.reduce((acc: any, field: any) => {
+              const value = field.field_value || field.fieldValue;
+              acc[field.key] = value;
+              return acc;
+            }, {});
+            
+            // Map GHL custom fields to our deal fields
+            const fieldMapping: Record<string, string> = {
+              'opportunity.deal_type': 'dealType',
+              'opportunity.property_type': 'propertyType',
+              'opportunity.property_address': 'propertyAddress',
+              'opportunity.property_vintage': 'propertyVintage',
+              'opportunity.sponsor_net_worth': 'sponsorNetWorth',
+              'opportunity.sponsor_liquidity': 'sponsorLiquidity',
+              'opportunity.loan_request': 'loanRequest',
+              'opportunity.additional_information': 'additionalInformation',
+              'contact.contact_name': 'contactName',
+              'contact.contact_email': 'contactEmail',
+              'contact.contact_phone': 'contactPhone',
+              'opportunity.opportunity_source': 'opportunitySource',
+              'opportunity.notes': 'notes'
+            };
+            
+            Object.entries(fieldMapping).forEach(([ghlField, ourField]) => {
+              if (ghlCustomFields[ghlField] !== undefined && ghlCustomFields[ghlField] !== deal[ourField]) {
+                updateData[ourField] = ghlCustomFields[ghlField];
+              }
+            });
+          }
+          
+          // Update the deal if there are changes
+          if (Object.keys(updateData).length > 0) {
+            updateData.updatedAt = new Date();
+            await api.put(`/deals/${dealId}`, updateData);
+            results.push({
+              dealId,
+              success: true,
+              error: undefined
+            });
+          } else {
+            results.push({
+              dealId,
+              success: true,
+              error: 'No changes needed'
+            });
+          }
         } catch (err: any) {
           results.push({
             dealId,
