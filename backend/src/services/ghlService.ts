@@ -962,23 +962,49 @@ export class GHLService {
 
   static async getOpportunity(dealId: string): Promise<GHLDeal | null> {
     try {
-      const headers = await this.getHeaders();
-      
       console.log('🔍 [GHL GET] Fetching opportunity:', dealId);
-      console.log('🔍 [GHL GET] Using endpoint:', `${this.GHL_BASE_URL}/opportunities/${dealId}`);
       
-      // Use V1 API for consistency
-      const response = await axios.get(
-        `${this.GHL_BASE_URL}/opportunities/${dealId}`,
-        { headers }
-      );
-      
-      console.log('✅ [GHL GET] Successfully fetched opportunity');
-      console.log('✅ [GHL GET] Response:', JSON.stringify(response.data, null, 2));
-      
-      return response.data.opportunity || response.data;
+      // Try V2 API first (as shown in the image)
+      try {
+        console.log('🔍 [GHL GET] Trying V2 API...');
+        const v2Headers = await this.getV2Headers();
+        
+        console.log('🔍 [GHL GET] Using V2 endpoint:', `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`);
+        
+        const v2Response = await axios.get(
+          `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`,
+          { headers: v2Headers }
+        );
+        
+        console.log('✅ [GHL GET] V2 API success - fetched opportunity with custom fields');
+        console.log('✅ [GHL GET] V2 Response:', JSON.stringify(v2Response.data, null, 2));
+        
+        return v2Response.data.opportunity || v2Response.data;
+      } catch (v2Error: any) {
+        console.log('⚠️ [GHL GET] V2 API failed, trying V1 API:', v2Error.message);
+        
+        // Fallback to V1 API
+        try {
+          const v1Headers = await this.getHeaders();
+          
+          console.log('🔍 [GHL GET] Using V1 endpoint:', `${this.GHL_BASE_URL}/opportunities/${dealId}`);
+          
+          const v1Response = await axios.get(
+            `${this.GHL_BASE_URL}/opportunities/${dealId}`,
+            { headers: v1Headers }
+          );
+          
+          console.log('✅ [GHL GET] V1 API success - fetched opportunity');
+          console.log('✅ [GHL GET] V1 Response:', JSON.stringify(v1Response.data, null, 2));
+          
+          return v1Response.data.opportunity || v1Response.data;
+        } catch (v1Error: any) {
+          console.log('❌ [GHL GET] V1 API also failed:', v1Error.message);
+          throw v1Error;
+        }
+      }
     } catch (error: any) {
-      console.error('❌ [GHL GET] Error fetching opportunity:', error);
+      console.error('❌ [GHL GET] All API methods failed:', error);
       console.error('❌ [GHL GET] Error response:', error.response?.data);
       
       if (error.response?.status === 404) {

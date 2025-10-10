@@ -178,6 +178,46 @@ router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+// Test fetching a specific opportunity with custom fields
+router.get('/ghl/opportunity/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('🔍 [ADMIN] Testing opportunity fetch for ID:', id);
+    
+    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+    if (!ghlApiKey) {
+      return res.status(400).json({ error: 'GHL API key not configured' });
+    }
+    
+    // Fetch the specific opportunity
+    const opportunity = await GHLService.getOpportunity(id);
+    
+    if (!opportunity) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+    
+    console.log('✅ [ADMIN] Successfully fetched opportunity:', opportunity.id);
+    
+    res.json({
+      success: true,
+      opportunity,
+      metadata: {
+        opportunityId: id,
+        apiKeyPreview: ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none',
+        customFieldsCount: opportunity.customFields?.length || 0,
+        fetchedAt: new Date().toISOString()
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [ADMIN] Opportunity fetch error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch opportunity',
+      details: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 interface TestResult {
   api: string;
   endpoint: string;

@@ -33,6 +33,7 @@ const RawDataViewer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ghl' | 'portal'>('ghl');
+  const [testOpportunityId, setTestOpportunityId] = useState('');
 
   const fetchGHLData = async () => {
     try {
@@ -86,6 +87,41 @@ const RawDataViewer: React.FC = () => {
       alert(message);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to test GHL connection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testSpecificOpportunity = async () => {
+    if (!testOpportunityId.trim()) {
+      alert('Please enter an opportunity ID');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/admin/ghl/opportunity/${testOpportunityId}`);
+      console.log('Specific Opportunity Test Results:', response.data);
+      
+      const result = response.data;
+      let message = `Opportunity Test Results:\n\n`;
+      message += `Opportunity ID: ${result.metadata.opportunityId}\n`;
+      message += `API Key: ${result.metadata.apiKeyPreview}\n`;
+      message += `Custom Fields Count: ${result.metadata.customFieldsCount}\n\n`;
+      
+      if (result.opportunity.customFields && result.opportunity.customFields.length > 0) {
+        message += `Custom Fields:\n`;
+        result.opportunity.customFields.forEach((field: any, index: number) => {
+          message += `${index + 1}. ${field.key}: ${field.field_value}\n`;
+        });
+      } else {
+        message += `No custom fields found.\n`;
+      }
+      
+      alert(message);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch specific opportunity');
     } finally {
       setLoading(false);
     }
@@ -228,6 +264,27 @@ const RawDataViewer: React.FC = () => {
             className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
           >
             Test GHL Connection
+          </button>
+        </div>
+      </div>
+
+      {/* Test Specific Opportunity */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+        <h3 className="font-semibold text-gray-800 mb-3">Test Specific Opportunity</h3>
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={testOpportunityId}
+            onChange={(e) => setTestOpportunityId(e.target.value)}
+            placeholder="Enter opportunity ID (e.g., bCzX0fA5MCXSEIxTII6j)"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={testSpecificOpportunity}
+            disabled={loading || !testOpportunityId.trim()}
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+          >
+            Test Opportunity
           </button>
         </div>
       </div>
