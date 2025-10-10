@@ -77,21 +77,17 @@ export class GHLService {
   }
 
   private static async getV2Headers() {
-    // Try to get v2 private integration token first
-    let token = await FirebaseService.getConfiguration('ghl_v2_token');
+    // V2 API requires a private integration token, not the V1 API key
+    const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
     
-    // Fallback to v1 API key if v2 token not available
-    if (!token) {
-      token = await FirebaseService.getConfiguration('ghl_api_key');
+    if (!v2Token) {
+      throw new Error('GHL v2 private integration token not configured. V2 API requires a different token than V1 API.');
     }
     
-    if (!token) {
-      throw new Error('GHL v2 token or API key not configured');
-    }
-    
+    console.log('🔑 [GHL V2] Using V2 private integration token');
     
     return {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${v2Token}`,
       'Version': '2021-07-28', // Required for v2 API
       'Content-Type': 'application/json',
       'Accept': 'application/json'
@@ -507,22 +503,30 @@ export class GHLService {
       const targetPipelineId = '97i1G88fYPwGw5Hyiv0Y';
       console.log(`🎯 [GHL LIST] Target pipeline ID: ${targetPipelineId}`);
       
-      // Try V2 API first
+      // Try V2 API first (only if V2 token is available)
       try {
-        console.log('🔍 [GHL LIST] Trying V2 API for specific pipeline...');
-        const v2Opportunities = await this.getOpportunitiesByPipelineV2(targetPipelineId);
-        console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
+        console.log('🔍 [GHL LIST] Checking for V2 token...');
+        const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         
-        // Get pipeline info to add to opportunities
-        const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
-        
-        const opportunitiesWithPipeline = v2Opportunities.map((opp: any) => ({
-          ...opp,
-          pipelineName: pipelineInfo?.name || 'Unknown Pipeline',
-          pipelineId: targetPipelineId
-        }));
-        
-        return { opportunities: opportunitiesWithPipeline };
+        if (v2Token) {
+          console.log('🔍 [GHL LIST] V2 token found, trying V2 API for specific pipeline...');
+          const v2Opportunities = await this.getOpportunitiesByPipelineV2(targetPipelineId);
+          console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
+          
+          // Get pipeline info to add to opportunities
+          const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
+          
+          const opportunitiesWithPipeline = v2Opportunities.map((opp: any) => ({
+            ...opp,
+            pipelineName: pipelineInfo?.name || 'Unknown Pipeline',
+            pipelineId: targetPipelineId
+          }));
+          
+          return { opportunities: opportunitiesWithPipeline };
+        } else {
+          console.log('⚠️ [GHL LIST] No V2 token configured, skipping V2 API');
+          throw new Error('V2 token not configured');
+        }
       } catch (v2Error: any) {
         console.log('⚠️ [GHL LIST] V2 API failed, trying V1 API:', v2Error.message);
         
@@ -974,30 +978,38 @@ export class GHLService {
     try {
       console.log('🔍 [GHL GET] Fetching opportunity:', dealId);
       
-      // Try V2 API first (as shown in the image)
+      // Try V2 API first (only if V2 token is available)
       try {
-        console.log('🔍 [GHL GET] Trying V2 API...');
-        const v2Headers = await this.getV2Headers();
+        console.log('🔍 [GHL GET] Checking for V2 token...');
+        const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         
-        console.log('🔍 [GHL GET] Using V2 endpoint:', `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`);
-        
-        const v2Response = await axios.get(
-          `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`,
-          { headers: v2Headers }
-        );
-        
-        console.log('✅ [GHL GET] V2 API success - fetched opportunity with custom fields');
-        console.log('✅ [GHL GET] V2 Response status:', v2Response.status);
-        console.log('✅ [GHL GET] V2 Response data keys:', Object.keys(v2Response.data));
-        console.log('✅ [GHL GET] V2 Response structure:', {
-          hasOpportunity: !!v2Response.data.opportunity,
-          hasCustomFields: !!v2Response.data.customFields,
-          customFieldsCount: v2Response.data.customFields?.length || 0,
-          directCustomFieldsCount: v2Response.data.opportunity?.customFields?.length || 0
-        });
-        console.log('✅ [GHL GET] V2 Response:', JSON.stringify(v2Response.data, null, 2));
-        
-        return v2Response.data.opportunity || v2Response.data;
+        if (v2Token) {
+          console.log('🔍 [GHL GET] V2 token found, trying V2 API...');
+          const v2Headers = await this.getV2Headers();
+          
+          console.log('🔍 [GHL GET] Using V2 endpoint:', `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`);
+          
+          const v2Response = await axios.get(
+            `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`,
+            { headers: v2Headers }
+          );
+          
+          console.log('✅ [GHL GET] V2 API success - fetched opportunity with custom fields');
+          console.log('✅ [GHL GET] V2 Response status:', v2Response.status);
+          console.log('✅ [GHL GET] V2 Response data keys:', Object.keys(v2Response.data));
+          console.log('✅ [GHL GET] V2 Response structure:', {
+            hasOpportunity: !!v2Response.data.opportunity,
+            hasCustomFields: !!v2Response.data.customFields,
+            customFieldsCount: v2Response.data.customFields?.length || 0,
+            directCustomFieldsCount: v2Response.data.opportunity?.customFields?.length || 0
+          });
+          console.log('✅ [GHL GET] V2 Response:', JSON.stringify(v2Response.data, null, 2));
+          
+          return v2Response.data.opportunity || v2Response.data;
+        } else {
+          console.log('⚠️ [GHL GET] No V2 token configured, skipping V2 API');
+          throw new Error('V2 token not configured');
+        }
       } catch (v2Error: any) {
         console.log('⚠️ [GHL GET] V2 API failed, trying V1 API:', v2Error.message);
         
