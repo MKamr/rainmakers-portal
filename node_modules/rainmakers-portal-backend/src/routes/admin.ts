@@ -176,6 +176,123 @@ router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+interface TestResult {
+  api: string;
+  endpoint: string;
+  status: string;
+  message: string;
+  pipelinesFound?: number;
+  opportunitiesFound?: number;
+  error?: string;
+  statusCode?: number;
+}
+
+// Test GHL API connection with detailed debugging
+router.get('/ghl/test-connection', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 [ADMIN] Testing GHL API connection...');
+    
+    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+    const ghlV2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+    
+    if (!ghlApiKey) {
+      return res.status(400).json({ error: 'GHL API key not configured' });
+    }
+    
+    const results = {
+      apiKeyConfigured: !!ghlApiKey,
+      v2TokenConfigured: !!ghlV2Token,
+      apiKeyPreview: ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none',
+      v2TokenPreview: ghlV2Token ? `${ghlV2Token.substring(0, 10)}...` : 'none',
+      baseUrl: process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1',
+      v2BaseUrl: 'https://services.leadconnectorhq.com',
+      tests: [] as TestResult[]
+    };
+    
+    // Test V1 API
+    try {
+      console.log('🔍 [ADMIN] Testing V1 API...');
+      const headers = {
+        'Authorization': `Bearer ${ghlApiKey}`,
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28'
+      };
+      
+      const v1Response = await axios.get(`${results.baseUrl}/pipelines/`, { headers });
+      results.tests.push({
+        api: 'V1',
+        endpoint: `${results.baseUrl}/pipelines/`,
+        status: 'success',
+        pipelinesFound: v1Response.data.pipelines?.length || 0,
+        message: `Found ${v1Response.data.pipelines?.length || 0} pipelines`
+      });
+    } catch (v1Error: any) {
+      results.tests.push({
+        api: 'V1',
+        endpoint: `${results.baseUrl}/pipelines/`,
+        status: 'error',
+        error: v1Error.message,
+        statusCode: v1Error.response?.status,
+        message: `V1 API failed: ${v1Error.response?.status} - ${v1Error.message}`
+      });
+    }
+    
+    // Test V2 API
+    if (ghlV2Token) {
+      try {
+        console.log('🔍 [ADMIN] Testing V2 API...');
+        const v2Headers = {
+          'Authorization': `Bearer ${ghlV2Token}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+        
+        const v2Response = await axios.get(`${results.v2BaseUrl}/opportunities/`, { 
+          headers: v2Headers,
+          params: { limit: 1 }
+        });
+        results.tests.push({
+          api: 'V2',
+          endpoint: `${results.v2BaseUrl}/opportunities/`,
+          status: 'success',
+          opportunitiesFound: v2Response.data.opportunities?.length || 0,
+          message: `Found ${v2Response.data.opportunities?.length || 0} opportunities`
+        });
+      } catch (v2Error: any) {
+        results.tests.push({
+          api: 'V2',
+          endpoint: `${results.v2BaseUrl}/opportunities/`,
+          status: 'error',
+          error: v2Error.message,
+          statusCode: v2Error.response?.status,
+          message: `V2 API failed: ${v2Error.response?.status} - ${v2Error.message}`
+        });
+      }
+    } else {
+      results.tests.push({
+        api: 'V2',
+        endpoint: `${results.v2BaseUrl}/opportunities/`,
+        status: 'skipped',
+        message: 'V2 token not configured'
+      });
+    }
+    
+    console.log('✅ [ADMIN] GHL connection test completed');
+    res.json({
+      success: true,
+      message: 'GHL API connection test completed',
+      ...results
+    });
+  } catch (error: any) {
+    console.error('❌ [ADMIN] GHL connection test error:', error);
+    res.status(500).json({ 
+      error: 'Failed to test GHL connection',
+      details: error.message
+    });
+  }
+});
+
 router.get('/ghl/pipelines', requireAdmin, async (req: Request, res: Response) => {
   try {
     const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');

@@ -500,41 +500,65 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
+      console.log('🔍 [GHL LIST] Starting to list opportunities...');
       
-      // First, get all pipelines
-      const headers = await this.getV2Headers();
-      const pipelinesResponse = await axios.get(`${this.GHL_V2_BASE_URL}/pipelines/`, { headers });
-      const pipelines = pipelinesResponse.data.pipelines || [];
-      
-      
-      // Fetch opportunities from each pipeline
-      const allOpportunities = [];
-      for (const pipeline of pipelines) {
+      // Try V2 API first
+      try {
+        console.log('🔍 [GHL LIST] Trying V2 API...');
+        const v2Opportunities = await this.getAllOpportunitiesV2();
+        console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities`);
+        return { opportunities: v2Opportunities };
+      } catch (v2Error: any) {
+        console.log('⚠️ [GHL LIST] V2 API failed, trying V1 API:', v2Error.message);
+        
+        // Fallback to V1 API
         try {
+          console.log('🔍 [GHL LIST] Trying V1 API...');
+          const headers = await this.getHeaders();
           
-          // Use the V2 pipeline-specific method to get custom fields
-          const opportunities = await this.getOpportunitiesByPipelineV2(pipeline.id);
+          // Get all pipelines first
+          const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
+          const pipelines = pipelinesResponse.data.pipelines || [];
+          console.log(`📊 [GHL LIST] Found ${pipelines.length} pipelines via V1 API`);
           
-          // Add pipeline info to each opportunity
-          const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
-            ...opp,
-            pipelineName: pipeline.name,
-            pipelineId: pipeline.id
-          }));
+          // Fetch opportunities from each pipeline
+          const allOpportunities = [];
+          for (const pipeline of pipelines) {
+            try {
+              console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name} (${pipeline.id})`);
+              const opportunities = await this.getOpportunitiesByPipeline(pipeline.id);
+              
+              // Add pipeline info to each opportunity
+              const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
+                ...opp,
+                pipelineName: pipeline.name,
+                pipelineId: pipeline.id
+              }));
+              
+              allOpportunities.push(...opportunitiesWithPipeline);
+              console.log(`✅ [GHL LIST] Added ${opportunities.length} opportunities from pipeline ${pipeline.name}`);
+            } catch (pipelineError: any) {
+              console.log(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
+              // Continue with other pipelines
+            }
+          }
           
-          allOpportunities.push(...opportunitiesWithPipeline);
-        } catch (pipelineError: any) {
-          // Continue with other pipelines
+          console.log(`✅ [GHL LIST] V1 API success: Found ${allOpportunities.length} total opportunities`);
+          return { opportunities: allOpportunities };
+        } catch (v1Error: any) {
+          console.log('❌ [GHL LIST] V1 API also failed:', v1Error.message);
+          throw v1Error;
         }
       }
-      
-      return { opportunities: allOpportunities };
     } catch (error: any) {
+      console.error('❌ [GHL LIST] All API methods failed:', error);
       
       if (error.response?.status === 401) {
         throw new Error('GHL API authentication failed. Please check your API credentials.');
       } else if (error.response?.status === 403) {
         throw new Error('GHL API access forbidden. Please check your API permissions.');
+      } else if (error.response?.status === 404) {
+        throw new Error('GHL API endpoint not found. Please check your API configuration.');
       }
       throw error;
     }

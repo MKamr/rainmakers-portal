@@ -62,6 +62,33 @@ const RawDataViewer: React.FC = () => {
     await Promise.all([fetchGHLData(), fetchPortalData()]);
   };
 
+  const testGHLConnection = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/admin/ghl/test-connection');
+      console.log('GHL Connection Test Results:', response.data);
+      
+      // Show results in a modal or alert
+      const results = response.data;
+      let message = `GHL Connection Test Results:\n\n`;
+      message += `API Key: ${results.apiKeyPreview}\n`;
+      message += `V2 Token: ${results.v2TokenPreview}\n\n`;
+      
+      results.tests.forEach((test: any) => {
+        message += `${test.api} API (${test.endpoint}):\n`;
+        message += `Status: ${test.status}\n`;
+        message += `Message: ${test.message}\n\n`;
+      });
+      
+      alert(message);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to test GHL connection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -192,6 +219,13 @@ const RawDataViewer: React.FC = () => {
             className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
           >
             Refresh All
+          </button>
+          <button
+            onClick={testGHLConnection}
+            disabled={loading}
+            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
+          >
+            Test GHL Connection
           </button>
         </div>
       </div>
