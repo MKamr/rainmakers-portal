@@ -47,6 +47,9 @@ const RawDataViewer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ghl' | 'portal' | 'comparison'>('ghl');
   const [testOpportunityId, setTestOpportunityId] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{current: number, total: number, currentDeal: string}>({current: 0, total: 0, currentDeal: ''});
+  const [syncResults, setSyncResults] = useState<Array<{dealId: string, success: boolean, error?: string}>>([]);
 
   const fetchGHLData = async () => {
     try {
@@ -212,6 +215,110 @@ const RawDataViewer: React.FC = () => {
 
     setComparisonResults(results);
     setActiveTab('comparison');
+  };
+
+  const syncSingleDeal = async (dealId: string) => {
+    try {
+      setSyncing(true);
+      setError(null);
+      
+      const response = await api.post('/deals/sync/ghl', {
+        dealIds: [dealId]
+      });
+      
+      const result = response.data.results[0];
+      if (result.success) {
+        // Refresh data after successful sync
+        await fetchAllData();
+        setError(null);
+      } else {
+        setError(`Sync failed for deal ${dealId}: ${result.error}`);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to sync deal');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const syncAllDeals = async () => {
+    if (!comparisonResults.length) {
+      setError('No comparison results to sync');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      setError(null);
+      setSyncResults([]);
+      
+      const dealsToSync = comparisonResults
+        .filter(result => result.ghlOpportunity && result.differences.length > 0)
+        .map(result => result.portalDeal.id);
+      
+      if (dealsToSync.length === 0) {
+        setError('No deals with differences found to sync');
+        setSyncing(false);
+        return;
+      }
+
+      setSyncProgress({current: 0, total: dealsToSync.length, currentDeal: ''});
+      
+      const results: Array<{dealId: string, success: boolean, error?: string}> = [];
+      
+      for (let i = 0; i < dealsToSync.length; i++) {
+        const dealId = dealsToSync[i];
+        const deal = portalData?.deals.find(d => d.id === dealId);
+        
+        setSyncProgress({
+          current: i + 1,
+          total: dealsToSync.length,
+          currentDeal: deal?.dealId || dealId
+        });
+        
+        try {
+          const response = await api.post('/deals/sync/ghl', {
+            dealIds: [dealId]
+          });
+          
+          const result = response.data.results[0];
+          results.push({
+            dealId,
+            success: result.success,
+            error: result.error
+          });
+        } catch (err: any) {
+          results.push({
+            dealId,
+            success: false,
+            error: err.response?.data?.error || 'Sync failed'
+          });
+        }
+        
+        // Small delay to prevent overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      setSyncResults(results);
+      
+      // Refresh data after sync
+      await fetchAllData();
+      
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      
+      if (failCount === 0) {
+        setError(null);
+      } else {
+        setError(`Sync completed: ${successCount} successful, ${failCount} failed`);
+      }
+      
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to sync deals');
+    } finally {
+      setSyncing(false);
+      setSyncProgress({current: 0, total: 0, currentDeal: ''});
+    }
   };
 
   const testGHLConnection = async () => {
@@ -595,7 +702,82 @@ const RawDataViewer: React.FC = () => {
             <div className="mt-2">
               <strong>Total Differences:</strong> {comparisonResults.reduce((sum, r) => sum + r.differences.length, 0)}
             </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={syncAllDeals}
+                disabled={syncing || comparisonResults.filter(r => r.ghlOpportunity && r.differences.length > 0).length === 0}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {syncing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <span>🔄</span>
+                    Sync All Deals ({comparisonResults.filter(r => r.ghlOpportunity && r.differences.length > 0).length})
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Sync Progress */}
+          {syncing && syncProgress.total > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-blue-800 mb-2">Sync Progress</h3>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex justify-between text-sm text-blue-700 mb-1">
+                    <span>Progress: {syncProgress.current} of {syncProgress.total}</span>
+                    <span>{Math.round((syncProgress.current / syncProgress.total) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="text-sm text-blue-700">
+                  {syncProgress.currentDeal && `Syncing: ${syncProgress.currentDeal}`}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sync Results */}
+          {syncResults.length > 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-2">Sync Results</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
+                <div>
+                  <strong>Total:</strong> {syncResults.length}
+                </div>
+                <div>
+                  <strong>Successful:</strong> <span className="text-green-600">{syncResults.filter(r => r.success).length}</span>
+                </div>
+                <div>
+                  <strong>Failed:</strong> <span className="text-red-600">{syncResults.filter(r => !r.success).length}</span>
+                </div>
+              </div>
+              {syncResults.some(r => !r.success) && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm text-red-600 hover:text-red-800">
+                    View Failed Syncs ({syncResults.filter(r => !r.success).length})
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {syncResults.filter(r => !r.success).map((result, index) => (
+                      <div key={index} className="text-xs text-red-700 bg-red-50 p-2 rounded">
+                        <strong>{result.dealId}:</strong> {result.error}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
 
           {comparisonResults.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -607,7 +789,7 @@ const RawDataViewer: React.FC = () => {
                 <div key={index} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-semibold text-lg">Comparison #{index + 1}</h4>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <span className={`px-2 py-1 rounded text-xs ${
                         result.matchType === 'id_match' ? 'bg-green-100 text-green-800' :
                         result.matchType === 'contact_match' ? 'bg-yellow-100 text-yellow-800' :
@@ -624,6 +806,25 @@ const RawDataViewer: React.FC = () => {
                       }`}>
                         {result.differences.length} differences
                       </span>
+                      {result.ghlOpportunity && result.differences.length > 0 && (
+                        <button
+                          onClick={() => syncSingleDeal(result.portalDeal.id)}
+                          disabled={syncing}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {syncing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                              Syncing
+                            </>
+                          ) : (
+                            <>
+                              <span>🔄</span>
+                              Sync Deal
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
