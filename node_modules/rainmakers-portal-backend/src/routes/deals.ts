@@ -1644,7 +1644,13 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
         if (ghlOpportunity.customFields && ghlOpportunity.customFields.length > 0) {
           console.log(`📋 [DEAL COMPARE] GHL custom fields for ${ourDeal.dealId}:`);
           ghlOpportunity.customFields.forEach((field, index) => {
-            console.log(`  ${index + 1}. ${field.key}: "${field.field_value}" (ID: ${field.id})`);
+            const value = field.field_value || field.fieldValue;
+            console.log(`  ${index + 1}. ${field.key}: "${value}" (ID: ${field.id})`);
+            console.log(`  📋 [DEAL COMPARE] Field structure:`, {
+              hasFieldValue: !!field.fieldValue,
+              hasField_value: !!field.field_value,
+              actualValue: value
+            });
           });
         }
         
@@ -1674,7 +1680,9 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
           console.log(`🔍 [DEAL COMPARE] Comparing ${ghlOpportunity.customFields.length} custom fields for ${ourDeal.dealId}`);
           
           const ghlCustomFields = ghlOpportunity.customFields.reduce((acc, field) => {
-            acc[field.key] = field.field_value;
+            // Handle both field_value and fieldValue formats
+            const value = field.field_value || field.fieldValue;
+            acc[field.key] = value;
             return acc;
           }, {});
           
@@ -1721,20 +1729,22 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
           const ourFieldKeys = fieldsToCompare.map(f => f.ourField);
           const ghlOnlyFields = ghlOpportunity.customFields.filter(field => {
             const mappedField = fieldsToCompare.find(f => f.ghlField === field.key);
-            return !mappedField && field.field_value && String(field.field_value).trim() !== '';
+            const value = field.field_value || field.fieldValue;
+            return !mappedField && value && String(value).trim() !== '';
           });
           
           if (ghlOnlyFields.length > 0) {
             console.log(`🔍 [DEAL COMPARE] Found ${ghlOnlyFields.length} GHL-only custom fields:`);
             ghlOnlyFields.forEach(field => {
+              const value = field.field_value || field.fieldValue;
               differences.push({
                 field: `ghl_only_${field.key}`,
                 ourValue: '(not in portal)',
-                ghlValue: field.field_value,
+                ghlValue: value,
                 ghlFieldKey: field.key,
                 type: 'ghl_only'
               });
-              console.log(`  - ${field.key}: "${field.field_value}"`);
+              console.log(`  - ${field.key}: "${value}"`);
             });
           }
           

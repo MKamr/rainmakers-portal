@@ -32,7 +32,8 @@ export interface GHLContact {
   customFields: Array<{
     id: string;
     key: string;
-    field_value: any;
+    field_value?: any;  // V1 API format
+    fieldValue?: any;    // V2 API format
   }>;
   source?: string;
   assignedTo?: string;
@@ -52,7 +53,8 @@ export interface GHLDeal {
   customFields: Array<{
     id: string;
     key: string;
-    field_value: any;
+    field_value?: any;  // V1 API format
+    fieldValue?: any;    // V2 API format
   }>;
   createdAt: string;
   updatedAt: string;
