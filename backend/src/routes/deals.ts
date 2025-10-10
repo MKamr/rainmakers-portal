@@ -1510,44 +1510,51 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
         contactEmail: ourDeal.contactEmail
       });
       
-      // Find matching GHL opportunity by ghlOpportunityId (most reliable)
-      let ghlOpportunity = null;
-      
-      if (ghlOpportunities.opportunities && ourDeal.ghlOpportunityId) {
-        console.log(`🔍 [DEAL COMPARE] Looking for GHL opportunity with ID: ${ourDeal.ghlOpportunityId}`);
+        // Find matching GHL opportunity by ghlOpportunityId (most reliable)
+        let ghlOpportunity = null;
         
-        // First try to find by ghlOpportunityId (most reliable)
-        ghlOpportunity = ghlOpportunities.opportunities.find(opp => 
-          opp.id === ourDeal.ghlOpportunityId
-        );
-        
-        if (ghlOpportunity) {
-          console.log(`✅ [DEAL COMPARE] Found GHL opportunity by ID: ${ghlOpportunity.id}`);
-          console.log(`📋 [DEAL COMPARE] GHL opportunity name: ${ghlOpportunity.name}`);
-          console.log(`📋 [DEAL COMPARE] GHL opportunity custom fields:`, ghlOpportunity.customFields?.length || 0);
-        } else {
-          console.log(`⚠️ [DEAL COMPARE] No GHL opportunity found with ID: ${ourDeal.ghlOpportunityId}`);
+        if (ourDeal.ghlOpportunityId) {
+          console.log(`🔍 [DEAL COMPARE] Looking for GHL opportunity with ID: ${ourDeal.ghlOpportunityId}`);
           
-          // If not found by ghlOpportunityId, try to find by dealId in custom fields as fallback
-          console.log(`🔍 [DEAL COMPARE] Trying fallback search by dealId: ${ourDeal.dealId}`);
-          ghlOpportunity = ghlOpportunities.opportunities.find(opp => {
-            if (opp.customFields && Array.isArray(opp.customFields)) {
-              return opp.customFields.some(field => 
-                field.key === 'dealId' && field.field_value === ourDeal.dealId
-              );
-            }
-            return false;
-          });
+          // First try to find in the list from listOpportunities
+          if (ghlOpportunities.opportunities) {
+            ghlOpportunity = ghlOpportunities.opportunities.find(opp => 
+              opp.id === ourDeal.ghlOpportunityId
+            );
+          }
           
           if (ghlOpportunity) {
-            console.log(`✅ [DEAL COMPARE] Found GHL opportunity by dealId fallback: ${ghlOpportunity.id}`);
+            console.log(`✅ [DEAL COMPARE] Found GHL opportunity by ID: ${ghlOpportunity.id}`);
+            console.log(`📋 [DEAL COMPARE] GHL opportunity name: ${ghlOpportunity.name}`);
+            console.log(`📋 [DEAL COMPARE] GHL opportunity custom fields:`, ghlOpportunity.customFields?.length || 0);
           } else {
-            console.log(`❌ [DEAL COMPARE] No GHL opportunity found with dealId: ${ourDeal.dealId}`);
+            console.log(`⚠️ [DEAL COMPARE] Opportunity not found in list, fetching detailed data for ID: ${ourDeal.ghlOpportunityId}`);
+            
+            // Fetch detailed opportunity data with custom fields
+            try {
+              ghlOpportunity = await GHLService.getOpportunity(ourDeal.ghlOpportunityId);
+              
+              if (ghlOpportunity) {
+                console.log(`✅ [DEAL COMPARE] Successfully fetched detailed GHL opportunity: ${ghlOpportunity.id}`);
+                console.log(`📋 [DEAL COMPARE] GHL opportunity name: ${ghlOpportunity.name}`);
+                console.log(`📋 [DEAL COMPARE] GHL opportunity custom fields:`, ghlOpportunity.customFields?.length || 0);
+                
+                if (ghlOpportunity.customFields && ghlOpportunity.customFields.length > 0) {
+                  console.log(`📋 [DEAL COMPARE] Detailed custom fields:`);
+                  ghlOpportunity.customFields.forEach((field, index) => {
+                    console.log(`  ${index + 1}. ${field.key}: "${field.field_value}" (ID: ${field.id})`);
+                  });
+                }
+              } else {
+                console.log(`❌ [DEAL COMPARE] Failed to fetch GHL opportunity with ID: ${ourDeal.ghlOpportunityId}`);
+              }
+            } catch (fetchError: any) {
+              console.log(`❌ [DEAL COMPARE] Error fetching GHL opportunity ${ourDeal.ghlOpportunityId}:`, fetchError.message);
+            }
           }
+        } else {
+          console.log(`⚠️ [DEAL COMPARE] Deal ${ourDeal.dealId} has no ghlOpportunityId`);
         }
-      } else {
-        console.log(`⚠️ [DEAL COMPARE] Deal ${ourDeal.dealId} has no ghlOpportunityId`);
-      }
       
       // Create comparison object with all portal form fields
       const comparison = {
@@ -1636,6 +1643,8 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
         
         // Compare custom fields
         if (ghlOpportunity.customFields && Array.isArray(ghlOpportunity.customFields)) {
+          console.log(`🔍 [DEAL COMPARE] Comparing ${ghlOpportunity.customFields.length} custom fields for ${ourDeal.dealId}`);
+          
           const ghlCustomFields = ghlOpportunity.customFields.reduce((acc, field) => {
             acc[field.key] = field.field_value;
             return acc;
@@ -1655,22 +1664,72 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
             { ourField: 'contactName', ghlField: 'contact.contact_name' },
             { ourField: 'contactEmail', ghlField: 'contact.contact_email' },
             { ourField: 'contactPhone', ghlField: 'contact.contact_phone' },
-            { ourField: 'opportunitySource', ghlField: 'opportunity.opportunity_source' }
+            { ourField: 'opportunitySource', ghlField: 'opportunity.opportunity_source' },
+            { ourField: 'notes', ghlField: 'opportunity.notes' }
           ];
           
+          // Compare mapped fields
           fieldsToCompare.forEach(({ ourField, ghlField }) => {
             const ourValue = ourDeal[ourField];
             const ghlValue = ghlCustomFields[ghlField];
             
-            if (ourValue !== ghlValue) {
+            // Normalize values for comparison (handle null, undefined, empty strings)
+            const normalizedOurValue = ourValue ? String(ourValue).trim() : '';
+            const normalizedGhlValue = ghlValue ? String(ghlValue).trim() : '';
+            
+            if (normalizedOurValue !== normalizedGhlValue) {
               differences.push({
                 field: ourField,
-                ourValue,
-                ghlValue,
+                ourValue: normalizedOurValue || '(empty)',
+                ghlValue: normalizedGhlValue || '(empty)',
+                ghlFieldKey: ghlField,
                 type: 'custom'
               });
+              console.log(`🔍 [DEAL COMPARE] Difference found - ${ourField}: "${normalizedOurValue}" vs "${normalizedGhlValue}"`);
             }
           });
+          
+          // Check for GHL custom fields that don't exist in our portal
+          const ourFieldKeys = fieldsToCompare.map(f => f.ourField);
+          const ghlOnlyFields = ghlOpportunity.customFields.filter(field => {
+            const mappedField = fieldsToCompare.find(f => f.ghlField === field.key);
+            return !mappedField && field.field_value && String(field.field_value).trim() !== '';
+          });
+          
+          if (ghlOnlyFields.length > 0) {
+            console.log(`🔍 [DEAL COMPARE] Found ${ghlOnlyFields.length} GHL-only custom fields:`);
+            ghlOnlyFields.forEach(field => {
+              differences.push({
+                field: `ghl_only_${field.key}`,
+                ourValue: '(not in portal)',
+                ghlValue: field.field_value,
+                ghlFieldKey: field.key,
+                type: 'ghl_only'
+              });
+              console.log(`  - ${field.key}: "${field.field_value}"`);
+            });
+          }
+          
+          // Check for portal fields that don't exist in GHL
+          const missingInGhl = fieldsToCompare.filter(({ ourField, ghlField }) => {
+            const ourValue = ourDeal[ourField];
+            const ghlValue = ghlCustomFields[ghlField];
+            return ourValue && String(ourValue).trim() !== '' && (!ghlValue || String(ghlValue).trim() === '');
+          });
+          
+          if (missingInGhl.length > 0) {
+            console.log(`🔍 [DEAL COMPARE] Found ${missingInGhl.length} portal fields missing in GHL:`);
+            missingInGhl.forEach(({ ourField, ghlField }) => {
+              differences.push({
+                field: ourField,
+                ourValue: ourDeal[ourField],
+                ghlValue: '(not in GHL)',
+                ghlFieldKey: ghlField,
+                type: 'portal_only'
+              });
+              console.log(`  - ${ourField}: "${ourDeal[ourField]}"`);
+            });
+          }
         }
         
         comparison.differences = differences;
@@ -1697,10 +1756,38 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
     
     console.log(`✅ [DEAL COMPARE] Comparison completed. ${comparisons.length} deals compared`);
     
+    // Calculate detailed statistics
+    const dealsWithDifferences = comparisons.filter(c => c.hasDifferences);
+    const totalDifferences = comparisons.reduce((sum, c) => sum + c.differences.length, 0);
+    const differencesByType = comparisons.reduce((acc, c) => {
+      c.differences.forEach(diff => {
+        acc[diff.type] = (acc[diff.type] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const dealsWithGhlId = comparisons.filter(c => c.ourDeal.ghlOpportunityId).length;
+    const dealsWithoutGhlId = comparisons.length - dealsWithGhlId;
+    const dealsWithGhlOpportunity = comparisons.filter(c => c.ghlOpportunity).length;
+    
+    console.log(`📊 [DEAL COMPARE] Summary Statistics:`);
+    console.log(`  - Total deals: ${comparisons.length}`);
+    console.log(`  - Deals with GHL ID: ${dealsWithGhlId}`);
+    console.log(`  - Deals without GHL ID: ${dealsWithoutGhlId}`);
+    console.log(`  - Deals with GHL opportunity found: ${dealsWithGhlOpportunity}`);
+    console.log(`  - Deals with differences: ${dealsWithDifferences.length}`);
+    console.log(`  - Total differences: ${totalDifferences}`);
+    console.log(`  - Differences by type:`, differencesByType);
+    
     res.json({
       message: 'Deal comparison completed successfully',
       totalDeals: comparisons.length,
-      dealsWithDifferences: comparisons.filter(c => c.hasDifferences).length,
+      dealsWithDifferences: dealsWithDifferences.length,
+      totalDifferences,
+      differencesByType,
+      dealsWithGhlId,
+      dealsWithoutGhlId,
+      dealsWithGhlOpportunity,
       comparisons,
       timestamp: new Date().toISOString()
     });

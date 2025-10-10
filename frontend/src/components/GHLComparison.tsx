@@ -46,7 +46,8 @@ interface ComparisonData {
     field: string;
     ourValue: any;
     ghlValue: any;
-    type: 'basic' | 'custom' | 'missing';
+    ghlFieldKey?: string;
+    type: 'basic' | 'custom' | 'missing' | 'ghl_only' | 'portal_only';
   }>;
   hasDifferences: boolean;
 }
@@ -55,6 +56,11 @@ interface ComparisonResponse {
   message: string;
   totalDeals: number;
   dealsWithDifferences: number;
+  totalDifferences: number;
+  differencesByType: Record<string, number>;
+  dealsWithGhlId: number;
+  dealsWithoutGhlId: number;
+  dealsWithGhlOpportunity: number;
   comparisons: ComparisonData[];
   timestamp: string;
 }
@@ -81,6 +87,7 @@ const GHLComparison: React.FC = () => {
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
   const [syncResults, setSyncResults] = useState<SyncResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [comparisonStats, setComparisonStats] = useState<ComparisonResponse | null>(null);
 
   const fetchComparisons = async () => {
     setLoading(true);
@@ -89,6 +96,8 @@ const GHLComparison: React.FC = () => {
       const response = await api.get('/deals/compare/ghl');
       const data: ComparisonResponse = response.data;
       setComparisons(data.comparisons);
+      setComparisonStats(data);
+      console.log('Comparison stats:', data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch comparisons');
     } finally {
@@ -227,6 +236,46 @@ const GHLComparison: React.FC = () => {
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      {comparisonStats && (
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">Total Deals</h3>
+            <p className="text-2xl font-bold text-blue-900">{comparisonStats.totalDeals}</p>
+            <p className="text-sm text-blue-700">
+              {comparisonStats.dealsWithGhlId} with GHL ID, {comparisonStats.dealsWithoutGhlId} without
+            </p>
+          </div>
+          
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="font-semibold text-green-800 mb-2">GHL Matches</h3>
+            <p className="text-2xl font-bold text-green-900">{comparisonStats.dealsWithGhlOpportunity}</p>
+            <p className="text-sm text-green-700">
+              {comparisonStats.totalDeals - comparisonStats.dealsWithGhlOpportunity} not found in GHL
+            </p>
+          </div>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="font-semibold text-yellow-800 mb-2">Deals with Differences</h3>
+            <p className="text-2xl font-bold text-yellow-900">{comparisonStats.dealsWithDifferences}</p>
+            <p className="text-sm text-yellow-700">
+              {comparisonStats.totalDeals - comparisonStats.dealsWithDifferences} in sync
+            </p>
+          </div>
+          
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="font-semibold text-red-800 mb-2">Total Differences</h3>
+            <p className="text-2xl font-bold text-red-900">{comparisonStats.totalDifferences}</p>
+            <p className="text-sm text-red-700">
+              {Object.entries(comparisonStats.differencesByType).map(([type, count]) => (
+                <span key={type} className="mr-2">
+                  {type}: {count}
+                </span>
+              ))}
+            </p>
+          </div>
         </div>
       )}
 
