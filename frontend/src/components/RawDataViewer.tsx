@@ -10,6 +10,8 @@ interface RawGHLData {
     apiKeyConfigured: boolean;
     apiKeyPreview: string;
     baseUrl: string;
+    targetPipelineId: string;
+    customFieldsIncluded: boolean;
   };
 }
 
