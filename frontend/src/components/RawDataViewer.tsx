@@ -70,9 +70,6 @@ const RawDataViewer: React.FC = () => {
     return JSON.stringify(obj, null, 2);
   };
 
-  const getFieldValue = (obj: any, path: string) => {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-  };
 
   const renderGHLOpportunity = (opportunity: any, index: number) => (
     <div key={opportunity.id || index} className="border border-gray-200 rounded-lg p-4 mb-4">
