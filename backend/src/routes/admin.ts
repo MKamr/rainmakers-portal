@@ -127,7 +127,9 @@ router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Res
       metadata: {
         apiKeyConfigured: !!ghlApiKey,
         apiKeyPreview: ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none',
-        baseUrl: process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1'
+        baseUrl: process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1',
+        targetPipelineId: '97i1G88fYPwGw5Hyiv0Y',
+        customFieldsIncluded: true
       }
     });
   } catch (error: any) {

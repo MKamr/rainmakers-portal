@@ -500,51 +500,46 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      console.log('🔍 [GHL LIST] Starting to list opportunities...');
+      console.log('🔍 [GHL LIST] Starting to list opportunities from specific pipeline...');
+      
+      const targetPipelineId = '97i1G88fYPwGw5Hyiv0Y';
+      console.log(`🎯 [GHL LIST] Target pipeline ID: ${targetPipelineId}`);
       
       // Try V2 API first
       try {
-        console.log('🔍 [GHL LIST] Trying V2 API...');
-        const v2Opportunities = await this.getAllOpportunitiesV2();
-        console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities`);
-        return { opportunities: v2Opportunities };
+        console.log('🔍 [GHL LIST] Trying V2 API for specific pipeline...');
+        const v2Opportunities = await this.getOpportunitiesByPipelineV2(targetPipelineId);
+        console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
+        
+        // Get pipeline info to add to opportunities
+        const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
+        
+        const opportunitiesWithPipeline = v2Opportunities.map((opp: any) => ({
+          ...opp,
+          pipelineName: pipelineInfo?.name || 'Unknown Pipeline',
+          pipelineId: targetPipelineId
+        }));
+        
+        return { opportunities: opportunitiesWithPipeline };
       } catch (v2Error: any) {
         console.log('⚠️ [GHL LIST] V2 API failed, trying V1 API:', v2Error.message);
         
         // Fallback to V1 API
         try {
-          console.log('🔍 [GHL LIST] Trying V1 API...');
-          const headers = await this.getHeaders();
+          console.log('🔍 [GHL LIST] Trying V1 API for specific pipeline...');
+          const opportunities = await this.getOpportunitiesByPipeline(targetPipelineId);
           
-          // Get all pipelines first
-          const pipelinesResponse = await axios.get(`${this.GHL_BASE_URL}/pipelines/`, { headers });
-          const pipelines = pipelinesResponse.data.pipelines || [];
-          console.log(`📊 [GHL LIST] Found ${pipelines.length} pipelines via V1 API`);
+          // Get pipeline info to add to opportunities
+          const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
           
-          // Fetch opportunities from each pipeline
-          const allOpportunities = [];
-          for (const pipeline of pipelines) {
-            try {
-              console.log(`🔍 [GHL LIST] Fetching opportunities from pipeline: ${pipeline.name} (${pipeline.id})`);
-              const opportunities = await this.getOpportunitiesByPipeline(pipeline.id);
-              
-              // Add pipeline info to each opportunity
-              const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
-                ...opp,
-                pipelineName: pipeline.name,
-                pipelineId: pipeline.id
-              }));
-              
-              allOpportunities.push(...opportunitiesWithPipeline);
-              console.log(`✅ [GHL LIST] Added ${opportunities.length} opportunities from pipeline ${pipeline.name}`);
-            } catch (pipelineError: any) {
-              console.log(`⚠️ [GHL LIST] Failed to fetch opportunities from pipeline ${pipeline.name}:`, pipelineError.message);
-              // Continue with other pipelines
-            }
-          }
+          const opportunitiesWithPipeline = opportunities.map((opp: any) => ({
+            ...opp,
+            pipelineName: pipelineInfo?.name || 'Unknown Pipeline',
+            pipelineId: targetPipelineId
+          }));
           
-          console.log(`✅ [GHL LIST] V1 API success: Found ${allOpportunities.length} total opportunities`);
-          return { opportunities: allOpportunities };
+          console.log(`✅ [GHL LIST] V1 API success: Found ${opportunities.length} opportunities from pipeline ${targetPipelineId}`);
+          return { opportunities: opportunitiesWithPipeline };
         } catch (v1Error: any) {
           console.log('❌ [GHL LIST] V1 API also failed:', v1Error.message);
           throw v1Error;
@@ -637,7 +632,37 @@ export class GHLService {
         console.log(`📊 [GHL PIPELINE] Page ${page}: Found ${opportunities.length} opportunities`);
         console.log(`📊 [GHL PIPELINE] Meta:`, meta);
         
-        allOpportunities.push(...opportunities);
+        // Enhance opportunities with custom fields
+        const enhancedOpportunities = await Promise.all(
+          opportunities.map(async (opportunity: any) => {
+            try {
+              // Fetch detailed opportunity data including custom fields
+              const detailedOpp = await this.getOpportunity(opportunity.id);
+              if (detailedOpp) {
+                return {
+                  ...opportunity,
+                  customFields: detailedOpp.customFields || opportunity.customFields || [],
+                  // Ensure we have all the basic fields
+                  id: detailedOpp.id || opportunity.id,
+                  name: detailedOpp.name || opportunity.name,
+                  status: detailedOpp.status || opportunity.status,
+                  pipelineId: detailedOpp.pipelineId || opportunity.pipelineId,
+                  stageId: detailedOpp.stageId || opportunity.stageId,
+                  contactId: detailedOpp.contactId || opportunity.contactId,
+                  monetaryValue: detailedOpp.monetaryValue || opportunity.monetaryValue,
+                  createdAt: detailedOpp.createdAt || opportunity.createdAt,
+                  updatedAt: detailedOpp.updatedAt || opportunity.updatedAt
+                };
+              }
+              return opportunity;
+            } catch (detailError: any) {
+              console.log(`⚠️ [GHL PIPELINE] Failed to get details for opportunity ${opportunity.id}:`, detailError.message);
+              return opportunity;
+            }
+          })
+        );
+        
+        allOpportunities.push(...enhancedOpportunities);
         
         // Check if there are more pages
         hasMorePages = meta.next_page_url ? true : false;
@@ -690,7 +715,37 @@ export class GHLService {
         console.log(`📊 [GHL PIPELINE V2] Page ${page}: Found ${opportunities.length} opportunities`);
         console.log(`📊 [GHL PIPELINE V2] Meta:`, meta);
         
-        allOpportunities.push(...opportunities);
+        // Enhance opportunities with custom fields
+        const enhancedOpportunities = await Promise.all(
+          opportunities.map(async (opportunity: any) => {
+            try {
+              // Fetch detailed opportunity data including custom fields
+              const detailedOpp = await this.getOpportunity(opportunity.id);
+              if (detailedOpp) {
+                return {
+                  ...opportunity,
+                  customFields: detailedOpp.customFields || opportunity.customFields || [],
+                  // Ensure we have all the basic fields
+                  id: detailedOpp.id || opportunity.id,
+                  name: detailedOpp.name || opportunity.name,
+                  status: detailedOpp.status || opportunity.status,
+                  pipelineId: detailedOpp.pipelineId || opportunity.pipelineId,
+                  stageId: detailedOpp.stageId || opportunity.stageId,
+                  contactId: detailedOpp.contactId || opportunity.contactId,
+                  monetaryValue: detailedOpp.monetaryValue || opportunity.monetaryValue,
+                  createdAt: detailedOpp.createdAt || opportunity.createdAt,
+                  updatedAt: detailedOpp.updatedAt || opportunity.updatedAt
+                };
+              }
+              return opportunity;
+            } catch (detailError: any) {
+              console.log(`⚠️ [GHL PIPELINE V2] Failed to get details for opportunity ${opportunity.id}:`, detailError.message);
+              return opportunity;
+            }
+          })
+        );
+        
+        allOpportunities.push(...enhancedOpportunities);
         
         // Check if there are more pages
         hasMorePages = meta.next_page_url ? true : false;
@@ -787,6 +842,56 @@ export class GHLService {
       return pipeline ? pipeline.id : null;
     } catch (error: any) {
       console.error('Error fetching GHL pipelines:', error);
+      return null;
+    }
+  }
+
+  static async getPipelineInfo(pipelineId: string): Promise<any | null> {
+    try {
+      console.log(`🔍 [GHL PIPELINE] Fetching pipeline info for ID: ${pipelineId}`);
+      
+      // Try V1 API first
+      try {
+        const headers = await this.getHeaders();
+        const response = await axios.get(
+          `${this.GHL_BASE_URL}/pipelines/`,
+          { headers }
+        );
+        
+        const pipelines = response.data.pipelines || [];
+        const pipeline = pipelines.find((p: any) => p.id === pipelineId);
+        
+        if (pipeline) {
+          console.log(`✅ [GHL PIPELINE] Found pipeline via V1 API: ${pipeline.name}`);
+          return pipeline;
+        }
+      } catch (v1Error: any) {
+        console.log('⚠️ [GHL PIPELINE] V1 API failed, trying V2 API:', v1Error.message);
+      }
+      
+      // Try V2 API
+      try {
+        const headers = await this.getV2Headers();
+        const response = await axios.get(
+          `${this.GHL_V2_BASE_URL}/pipelines/`,
+          { headers }
+        );
+        
+        const pipelines = response.data.pipelines || [];
+        const pipeline = pipelines.find((p: any) => p.id === pipelineId);
+        
+        if (pipeline) {
+          console.log(`✅ [GHL PIPELINE] Found pipeline via V2 API: ${pipeline.name}`);
+          return pipeline;
+        }
+      } catch (v2Error: any) {
+        console.log('⚠️ [GHL PIPELINE] V2 API also failed:', v2Error.message);
+      }
+      
+      console.log(`❌ [GHL PIPELINE] Pipeline not found: ${pipelineId}`);
+      return null;
+    } catch (error: any) {
+      console.error('❌ [GHL PIPELINE] Error fetching pipeline info:', error);
       return null;
     }
   }

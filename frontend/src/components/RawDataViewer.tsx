@@ -278,6 +278,12 @@ const RawDataViewer: React.FC = () => {
                 <strong>Total Opportunities:</strong> {ghlData.totalOpportunities}
               </div>
               <div>
+                <strong>Pipeline ID:</strong> {ghlData.metadata.targetPipelineId}
+              </div>
+              <div>
+                <strong>Custom Fields:</strong> {ghlData.metadata.customFieldsIncluded ? 'Included' : 'Not Included'}
+              </div>
+              <div>
                 <strong>API Key:</strong> {ghlData.metadata.apiKeyPreview}
               </div>
               <div>
