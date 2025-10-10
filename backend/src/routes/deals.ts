@@ -535,6 +535,17 @@ router.post('/', [
               return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
             });
             
+            console.log(`🔍 [DEAL CREATE] Creating GHL opportunity for deal: ${dealId}`);
+            console.log(`🔍 [DEAL CREATE] GHL opportunity data:`, {
+              name: normalized.applicationPropertyAddress || dealId,
+              pipelineId: ghlPipelineId,
+              stageId: ghlStageId,
+              locationId: ghlLocationId,
+              contactId: ghlContact.id,
+              source: normalized.source,
+              customFieldsCount: oppCustomFieldsArrayForCreate.length
+            });
+            
             ghlDeal = await GHLService.createDeal({
               name: normalized.applicationPropertyAddress || dealId,
               pipelineId: ghlPipelineId,
@@ -543,6 +554,13 @@ router.post('/', [
               contactId: ghlContact.id,
               source: normalized.source,
               customFields: oppCustomFieldsArrayForCreate
+            });
+            
+            console.log(`🔍 [DEAL CREATE] GHL opportunity creation result:`, {
+              success: !!ghlDeal,
+              opportunityId: ghlDeal?.id,
+              name: ghlDeal?.name,
+              status: ghlDeal?.status
             });
 
             // Safety: if platform ignores custom fields on create, try an immediate update with alt shape
@@ -563,20 +581,29 @@ router.post('/', [
 
         // Update deal with GHL info
         const dealUpdateData: any = {
-          contactId: ghlContact.id // Always save the contact ID
+          ghlContactId: ghlContact.id // Always save the contact ID
         };
         
         if (ghlDeal && ghlDeal.id) {
           dealUpdateData.ghlOpportunityId = ghlDeal.id;
           dealUpdateData.pipelineId = ghlDeal.pipelineId;
           dealUpdateData.stageId = ghlDeal.stageId;
+          
+          console.log(`✅ [DEAL CREATE] Successfully created GHL opportunity: ${ghlDeal.id}`);
+          console.log(`✅ [DEAL CREATE] Updating portal deal ${deal.id} with GHL opportunity ID: ${ghlDeal.id}`);
+        } else {
+          console.log(`⚠️ [DEAL CREATE] GHL opportunity creation failed or returned no ID`);
         }
         
+        console.log(`🔍 [DEAL CREATE] Deal update data:`, dealUpdateData);
         await FirebaseService.updateDeal(deal.id, dealUpdateData);
+        console.log(`✅ [DEAL CREATE] Successfully updated portal deal ${deal.id} with GHL data`);
       } else {
       }
     } catch (error) {
       // Don't fail the deal creation if GHL sync fails
+      console.error(`❌ [DEAL CREATE] GHL sync failed for deal ${dealId}:`, error);
+      console.error(`❌ [DEAL CREATE] Deal creation will continue without GHL integration`);
     }
 
     // Send email notification for new deal
