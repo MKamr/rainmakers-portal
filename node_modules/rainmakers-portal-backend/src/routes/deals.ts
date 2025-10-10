@@ -1552,8 +1552,36 @@ router.get('/compare/ghl', async (req: Request, res: Response) => {
               console.log(`❌ [DEAL COMPARE] Error fetching GHL opportunity ${ourDeal.ghlOpportunityId}:`, fetchError.message);
             }
           }
+        } else if (ourDeal.ghlContactId) {
+          console.log(`🔍 [DEAL COMPARE] No ghlOpportunityId, searching by contact ID: ${ourDeal.ghlContactId}`);
+          
+          try {
+            // Search for opportunities by contact ID in the target pipeline
+            const contactOpportunities = await GHLService.getOpportunitiesByContact(
+              ourDeal.ghlContactId, 
+              '97i1G88fYPwGw5Hyiv0Y' // Target pipeline ID
+            );
+            
+            if (contactOpportunities && contactOpportunities.length > 0) {
+              // Find the most recent or most relevant opportunity
+              ghlOpportunity = contactOpportunities[0]; // Take the first one for now
+              console.log(`✅ [DEAL COMPARE] Found GHL opportunity by contact ID: ${ghlOpportunity.id}`);
+              
+              // Update our deal with the found opportunity ID for future reference
+              try {
+                await FirebaseService.updateDeal(ourDeal.id, { ghlOpportunityId: ghlOpportunity.id });
+                console.log(`✅ [DEAL COMPARE] Updated deal ${ourDeal.dealId} with ghlOpportunityId: ${ghlOpportunity.id}`);
+              } catch (updateError) {
+                console.log(`⚠️ [DEAL COMPARE] Failed to update deal with opportunity ID: ${updateError}`);
+              }
+            } else {
+              console.log(`⚠️ [DEAL COMPARE] No opportunities found for contact ID: ${ourDeal.ghlContactId}`);
+            }
+          } catch (error) {
+            console.log(`❌ [DEAL COMPARE] Failed to search opportunities by contact ID: ${error}`);
+          }
         } else {
-          console.log(`⚠️ [DEAL COMPARE] Deal ${ourDeal.dealId} has no ghlOpportunityId`);
+          console.log(`⚠️ [DEAL COMPARE] Deal ${ourDeal.dealId} has no ghlOpportunityId or ghlContactId`);
         }
       
       // Create comparison object with all portal form fields
@@ -1848,6 +1876,33 @@ router.post('/sync/ghl', async (req: Request, res: Response) => {
               }
               return false;
             });
+          }
+        }
+        
+        // If still not found and we have a contact ID, search by contact ID
+        if (!ghlOpportunity && ourDeal.ghlContactId) {
+          console.log(`🔄 [DEAL SYNC] No opportunity found by ID, searching by contact ID: ${ourDeal.ghlContactId}`);
+          
+          try {
+            const contactOpportunities = await GHLService.getOpportunitiesByContact(
+              ourDeal.ghlContactId, 
+              '97i1G88fYPwGw5Hyiv0Y' // Target pipeline ID
+            );
+            
+            if (contactOpportunities && contactOpportunities.length > 0) {
+              ghlOpportunity = contactOpportunities[0]; // Take the first one
+              console.log(`✅ [DEAL SYNC] Found GHL opportunity by contact ID: ${ghlOpportunity.id}`);
+              
+              // Update our deal with the found opportunity ID for future reference
+              try {
+                await FirebaseService.updateDeal(ourDeal.id, { ghlOpportunityId: ghlOpportunity.id });
+                console.log(`✅ [DEAL SYNC] Updated deal ${ourDeal.dealId} with ghlOpportunityId: ${ghlOpportunity.id}`);
+              } catch (updateError) {
+                console.log(`⚠️ [DEAL SYNC] Failed to update deal with opportunity ID: ${updateError}`);
+              }
+            }
+          } catch (error) {
+            console.log(`❌ [DEAL SYNC] Failed to search opportunities by contact ID: ${error}`);
           }
         }
         
