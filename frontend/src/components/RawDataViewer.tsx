@@ -27,12 +27,25 @@ interface RawPortalData {
   };
 }
 
+interface ComparisonResult {
+  portalDeal: any;
+  ghlOpportunity: any | null;
+  differences: Array<{
+    field: string;
+    portalValue: any;
+    ghlValue: any;
+    type: 'basic' | 'custom' | 'missing' | 'ghl_only';
+  }>;
+  matchType: 'id_match' | 'contact_match' | 'no_match';
+}
+
 const RawDataViewer: React.FC = () => {
   const [ghlData, setGhlData] = useState<RawGHLData | null>(null);
   const [portalData, setPortalData] = useState<RawPortalData | null>(null);
+  const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'ghl' | 'portal'>('ghl');
+  const [activeTab, setActiveTab] = useState<'ghl' | 'portal' | 'comparison'>('ghl');
   const [testOpportunityId, setTestOpportunityId] = useState('');
 
   const fetchGHLData = async () => {
@@ -63,6 +76,142 @@ const RawDataViewer: React.FC = () => {
 
   const fetchAllData = async () => {
     await Promise.all([fetchGHLData(), fetchPortalData()]);
+  };
+
+  const compareData = () => {
+    if (!ghlData || !portalData) {
+      setError('Please fetch both GHL and Portal data first');
+      return;
+    }
+
+    const results: ComparisonResult[] = [];
+
+    // Compare each portal deal with GHL opportunities
+    portalData.deals.forEach(portalDeal => {
+      let matchedOpportunity = null;
+      let matchType: 'id_match' | 'contact_match' | 'no_match' = 'no_match';
+
+      // First try to match by GHL opportunity ID
+      if (portalDeal.ghlOpportunityId) {
+        matchedOpportunity = ghlData.opportunities.find(opp => 
+          opp.id === portalDeal.ghlOpportunityId
+        );
+        if (matchedOpportunity) {
+          matchType = 'id_match';
+        }
+      }
+
+      // If no ID match, try to match by contact ID
+      if (!matchedOpportunity && portalDeal.ghlContactId) {
+        matchedOpportunity = ghlData.opportunities.find(opp => 
+          opp.contactId === portalDeal.ghlContactId
+        );
+        if (matchedOpportunity) {
+          matchType = 'contact_match';
+        }
+      }
+
+      // Compare fields
+      const differences: Array<{
+        field: string;
+        portalValue: any;
+        ghlValue: any;
+        type: 'basic' | 'custom' | 'missing' | 'ghl_only';
+      }> = [];
+
+      if (matchedOpportunity) {
+        // Basic field comparisons
+        const basicFields = [
+          { portal: 'title', ghl: 'name' },
+          { portal: 'propertyAddress', ghl: 'name' },
+          { portal: 'status', ghl: 'status' },
+          { portal: 'contactName', ghl: 'contact?.name' },
+          { portal: 'contactEmail', ghl: 'contact?.email' },
+          { portal: 'contactPhone', ghl: 'contact?.phone' }
+        ];
+
+        basicFields.forEach(({ portal, ghl }) => {
+          const portalValue = portalDeal[portal];
+          const ghlValue = ghl.split('.').reduce((obj, key) => obj?.[key], matchedOpportunity);
+          
+          if (String(portalValue || '').trim() !== String(ghlValue || '').trim()) {
+            differences.push({
+              field: portal,
+              portalValue: portalValue || '(empty)',
+              ghlValue: ghlValue || '(empty)',
+              type: 'basic'
+            });
+          }
+        });
+
+        // Custom field comparisons
+        if (matchedOpportunity.customFields) {
+          const ghlCustomFields = matchedOpportunity.customFields.reduce((acc: any, field: any) => {
+            acc[field.key] = field.field_value || field.fieldValue;
+            return acc;
+          }, {});
+
+          // Map portal fields to GHL custom fields
+          const customFieldMappings = [
+            { portal: 'dealType', ghl: 'opportunity.deal_type' },
+            { portal: 'propertyType', ghl: 'opportunity.property_type' },
+            { portal: 'propertyVintage', ghl: 'opportunity.property_vintage' },
+            { portal: 'sponsorNetWorth', ghl: 'opportunity.sponsor_net_worth' },
+            { portal: 'sponsorLiquidity', ghl: 'opportunity.sponsor_liquidity' },
+            { portal: 'loanRequest', ghl: 'opportunity.loan_request' },
+            { portal: 'additionalInformation', ghl: 'opportunity.additional_information' },
+            { portal: 'notes', ghl: 'opportunity.notes' }
+          ];
+
+          customFieldMappings.forEach(({ portal, ghl }) => {
+            const portalValue = portalDeal[portal];
+            const ghlValue = ghlCustomFields[ghl];
+            
+            if (String(portalValue || '').trim() !== String(ghlValue || '').trim()) {
+              differences.push({
+                field: portal,
+                portalValue: portalValue || '(empty)',
+                ghlValue: ghlValue || '(empty)',
+                type: 'custom'
+              });
+            }
+          });
+
+          // Check for GHL-only custom fields
+          Object.entries(ghlCustomFields).forEach(([key, value]) => {
+            if (value && String(value).trim() !== '') {
+              const mappedField = customFieldMappings.find(m => m.ghl === key);
+              if (!mappedField) {
+                differences.push({
+                  field: `ghl_only_${key}`,
+                  portalValue: '(not in portal)',
+                  ghlValue: value,
+                  type: 'ghl_only'
+                });
+              }
+            }
+          });
+        }
+      } else {
+        // No match found
+        differences.push({
+          field: 'match_status',
+          portalValue: 'Portal deal exists',
+          ghlValue: 'No matching GHL opportunity found',
+          type: 'missing'
+        });
+      }
+
+      results.push({
+        portalDeal,
+        ghlOpportunity: matchedOpportunity,
+        differences,
+        matchType
+      });
+    });
+
+    setComparisonResults(results);
+    setActiveTab('comparison');
   };
 
   const testGHLConnection = async () => {
@@ -265,6 +414,13 @@ const RawDataViewer: React.FC = () => {
           >
             Test GHL Connection
           </button>
+          <button
+            onClick={compareData}
+            disabled={loading || !ghlData || !portalData}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+          >
+            Compare Data
+          </button>
         </div>
       </div>
 
@@ -317,6 +473,16 @@ const RawDataViewer: React.FC = () => {
             }`}
           >
             Portal Deals ({portalData?.totalDeals || 0})
+          </button>
+          <button
+            onClick={() => setActiveTab('comparison')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'comparison'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Comparison ({comparisonResults.length})
           </button>
         </nav>
       </div>
@@ -403,6 +569,145 @@ const RawDataViewer: React.FC = () => {
           ) : (
             <div>
               {portalData.deals.map((deal, index) => renderPortalDeal(deal, index))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!loading && activeTab === 'comparison' && (
+        <div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-red-800 mb-2">Comparison Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <strong>Total Comparisons:</strong> {comparisonResults.length}
+              </div>
+              <div>
+                <strong>ID Matches:</strong> {comparisonResults.filter(r => r.matchType === 'id_match').length}
+              </div>
+              <div>
+                <strong>Contact Matches:</strong> {comparisonResults.filter(r => r.matchType === 'contact_match').length}
+              </div>
+              <div>
+                <strong>No Matches:</strong> {comparisonResults.filter(r => r.matchType === 'no_match').length}
+              </div>
+            </div>
+            <div className="mt-2">
+              <strong>Total Differences:</strong> {comparisonResults.reduce((sum, r) => sum + r.differences.length, 0)}
+            </div>
+          </div>
+
+          {comparisonResults.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No comparison results. Click "Compare Data" to start comparison.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {comparisonResults.map((result, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="font-semibold text-lg">Comparison #{index + 1}</h4>
+                    <div className="flex gap-2">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        result.matchType === 'id_match' ? 'bg-green-100 text-green-800' :
+                        result.matchType === 'contact_match' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {result.matchType === 'id_match' ? 'ID Match' :
+                         result.matchType === 'contact_match' ? 'Contact Match' :
+                         'No Match'}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        result.differences.length === 0 ? 'bg-green-100 text-green-800' :
+                        result.differences.length <= 3 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {result.differences.length} differences
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                    {/* Portal Deal */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h5 className="font-medium text-blue-800 mb-3">Portal Deal</h5>
+                      <div className="space-y-1 text-sm">
+                        <div><strong>ID:</strong> {result.portalDeal.id}</div>
+                        <div><strong>Deal ID:</strong> {result.portalDeal.dealId || 'N/A'}</div>
+                        <div><strong>Title:</strong> {result.portalDeal.title || 'N/A'}</div>
+                        <div><strong>Property Address:</strong> {result.portalDeal.propertyAddress || 'N/A'}</div>
+                        <div><strong>Contact Name:</strong> {result.portalDeal.contactName || 'N/A'}</div>
+                        <div><strong>Contact Email:</strong> {result.portalDeal.contactEmail || 'N/A'}</div>
+                        <div><strong>GHL Opportunity ID:</strong> {result.portalDeal.ghlOpportunityId || 'N/A'}</div>
+                        <div><strong>GHL Contact ID:</strong> {result.portalDeal.ghlContactId || 'N/A'}</div>
+                      </div>
+                    </div>
+
+                    {/* GHL Opportunity */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h5 className="font-medium text-green-800 mb-3">GHL Opportunity</h5>
+                      {result.ghlOpportunity ? (
+                        <div className="space-y-1 text-sm">
+                          <div><strong>ID:</strong> {result.ghlOpportunity.id}</div>
+                          <div><strong>Name:</strong> {result.ghlOpportunity.name || 'N/A'}</div>
+                          <div><strong>Status:</strong> {result.ghlOpportunity.status || 'N/A'}</div>
+                          <div><strong>Contact Name:</strong> {result.ghlOpportunity.contact?.name || 'N/A'}</div>
+                          <div><strong>Contact Email:</strong> {result.ghlOpportunity.contact?.email || 'N/A'}</div>
+                          <div><strong>Contact ID:</strong> {result.ghlOpportunity.contactId || 'N/A'}</div>
+                          <div><strong>Custom Fields:</strong> {result.ghlOpportunity.customFields?.length || 0}</div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">No matching GHL opportunity found</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Differences */}
+                  {result.differences.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h5 className="font-medium text-yellow-800 mb-3">Differences ({result.differences.length})</h5>
+                      <div className="space-y-2">
+                        {result.differences.map((diff, diffIndex) => (
+                          <div key={diffIndex} className="bg-white border border-yellow-200 rounded p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="font-medium text-sm">{diff.field}</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                diff.type === 'basic' ? 'bg-blue-100 text-blue-800' :
+                                diff.type === 'custom' ? 'bg-purple-100 text-purple-800' :
+                                diff.type === 'ghl_only' ? 'bg-green-100 text-green-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {diff.type}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <strong className="text-blue-600">Portal:</strong>
+                                <div className="mt-1 p-2 bg-blue-50 rounded text-xs">
+                                  {String(diff.portalValue)}
+                                </div>
+                              </div>
+                              <div>
+                                <strong className="text-green-600">GHL:</strong>
+                                <div className="mt-1 p-2 bg-green-50 rounded text-xs">
+                                  {String(diff.ghlValue)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No differences */}
+                  {result.differences.length === 0 && result.ghlOpportunity && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="text-green-800 font-medium">✅ No differences found - Data is in sync!</div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
