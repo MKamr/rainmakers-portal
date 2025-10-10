@@ -509,9 +509,15 @@ export class GHLService {
         const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         
         if (v2Token) {
-          console.log('🔍 [GHL LIST] V2 token found, trying V2 API for specific pipeline...');
-          const v2Opportunities = await this.getOpportunitiesByPipelineV2(targetPipelineId);
-          console.log(`✅ [GHL LIST] V2 API success: Found ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
+          console.log('🔍 [GHL LIST] V2 token found, trying V2 API for all opportunities...');
+          const allV2Opportunities = await this.getAllOpportunitiesV2();
+          console.log(`✅ [GHL LIST] V2 API success: Found ${allV2Opportunities.length} total opportunities`);
+          
+          // Filter opportunities by target pipeline
+          const v2Opportunities = allV2Opportunities.filter((opp: any) => 
+            opp.pipelineId === targetPipelineId
+          );
+          console.log(`✅ [GHL LIST] Filtered to ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
           
           // Get pipeline info to add to opportunities
           const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
@@ -572,8 +578,11 @@ export class GHLService {
       let page = 1;
       let hasMorePages = true;
       
+      console.log(`🔍 [GHL ALL V2] Fetching all opportunities using V2 API...`);
+      console.log(`🔍 [GHL ALL V2] Using endpoint: ${this.GHL_V2_BASE_URL}/opportunities/`);
       
       while (hasMorePages) {
+        console.log(`📄 [GHL ALL V2] Fetching page ${page}...`);
         
         const response = await axios.get(
           `${this.GHL_V2_BASE_URL}/opportunities/`, 
@@ -585,6 +594,13 @@ export class GHLService {
             }
           }
         );
+        
+        console.log(`📊 [GHL ALL V2] Response status: ${response.status}`);
+        console.log(`📊 [GHL ALL V2] Response data structure:`, {
+          hasOpportunities: !!response.data.opportunities,
+          opportunitiesCount: response.data.opportunities?.length || 0,
+          dataKeys: Object.keys(response.data)
+        });
         
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
