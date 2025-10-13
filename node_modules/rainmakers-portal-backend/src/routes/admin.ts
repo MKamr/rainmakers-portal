@@ -1699,13 +1699,12 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
     };
   
   // Do not write file in read-only environments; just log the JSON
-  console.log('🧾 [ADMIN] GHL custom fields JSON (truncated view below):');
+  console.log('🧾 [ADMIN] GHL custom fields JSON (full output):');
   console.log('[SUMMARY]', JSON.stringify(customFieldsData.summary));
   console.log('[CONTACT_FIELDS_COUNT]', customFieldsData.contactFields.length);
   console.log('[OPPORTUNITY_FIELDS_COUNT]', customFieldsData.opportunityFields.length);
-  // For debugging: print first few of each list to avoid massive logs
-  console.log('[CONTACT_FIELDS_SAMPLE]', JSON.stringify(customFieldsData.contactFields.slice(0, 5), null, 2));
-  console.log('[OPPORTUNITY_FIELDS_SAMPLE]', JSON.stringify(customFieldsData.opportunityFields.slice(0, 5), null, 2));
+  console.log('[CONTACT_FIELDS_FULL]', JSON.stringify(customFieldsData.contactFields, null, 2));
+  console.log('[OPPORTUNITY_FIELDS_FULL]', JSON.stringify(customFieldsData.opportunityFields, null, 2));
   
   res.json({
       success: true,
