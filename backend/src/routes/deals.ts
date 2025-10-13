@@ -51,14 +51,31 @@ const loadGHLFieldMapping = async () => {
       // If the file's fields belong to a different location, bypass file and fetch live
       const fileLocationId = ghlFields?.locationId || ghlFields?.summary?.locationId;
       if (configuredLocationId && fileLocationId && configuredLocationId !== fileLocationId) {
-        // Fetch live from GHL for current location
         const contactResp = await GHLService.getContactCustomFields();
         const oppResp = await GHLService.getOpportunityCustomFields();
         return buildMapping(contactResp.customFields || [], oppResp.customFields || []);
       }
 
-      // Otherwise use file content
-      return buildMapping(ghlFields?.contactFields || [], ghlFields?.opportunityFields || []);
+      // Support alternate schema where all fields are under `customFields`
+      let contactFieldsFromFile: any[] = ghlFields?.contactFields || [];
+      let opportunityFieldsFromFile: any[] = ghlFields?.opportunityFields || [];
+      if ((!Array.isArray(contactFieldsFromFile) || contactFieldsFromFile.length === 0) &&
+          (!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0) &&
+          Array.isArray(ghlFields?.customFields)) {
+        const all = ghlFields.customFields as any[];
+        contactFieldsFromFile = all.filter(f => typeof f?.fieldKey === 'string' && f.fieldKey.startsWith('contact.'));
+        opportunityFieldsFromFile = all.filter(f => typeof f?.fieldKey === 'string' && f.fieldKey.startsWith('opportunity.'));
+      }
+
+      // If still empty, fetch live as fallback
+      if ((!Array.isArray(contactFieldsFromFile) || contactFieldsFromFile.length === 0) &&
+          (!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0)) {
+        const contactResp = await GHLService.getContactCustomFields();
+        const oppResp = await GHLService.getOpportunityCustomFields();
+        return buildMapping(contactResp.customFields || [], oppResp.customFields || []);
+      }
+
+      return buildMapping(contactFieldsFromFile, opportunityFieldsFromFile);
     } catch (fileErr) {
       // File missing/unreadable → fetch live
       const contactResp = await GHLService.getContactCustomFields();
