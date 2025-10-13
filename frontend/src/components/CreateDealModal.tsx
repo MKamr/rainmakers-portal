@@ -47,6 +47,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
 
   const onSubmit = async (data: any) => {
     console.log('🚀 Starting deal creation with data:', data)
+    console.log('🔍 Investment Type value:', data.investmentType)
     setIsSubmitting(true)
     try {
       const deal = await createDealMutation.mutateAsync({

@@ -70,6 +70,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
 
   const onSubmit = async (data: any) => {
     console.log('🚀 Starting deal update with data:', data)
+    console.log('🔍 Investment Type value:', data.investmentType)
     setIsSubmitting(true)
     try {
       await updateDealMutation.mutateAsync({
@@ -81,6 +82,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         propertyType: data.propertyType,
         propertyAddress: data.propertyAddress,
         propertyVintage: data.propertyVintage,
+        investmentType: data.investmentType,
         sponsorNetWorth: data.sponsorNetWorth,
         sponsorLiquidity: data.sponsorLiquidity,
         loanRequest: data.loanRequest,
