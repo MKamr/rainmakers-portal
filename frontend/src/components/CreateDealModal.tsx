@@ -27,6 +27,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
     propertyType?: string;
     propertyAddress: string;
     propertyVintage?: string;
+    investmentType?: string;
     sponsorNetWorth?: string;
     sponsorLiquidity?: string;
     loanRequest?: string;
@@ -58,6 +59,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
         propertyType: data.propertyType,
         propertyAddress: data.propertyAddress,
         propertyVintage: data.propertyVintage,
+        investmentType: data.investmentType,
         sponsorNetWorth: data.sponsorNetWorth,
         sponsorLiquidity: data.sponsorLiquidity,
         loanRequest: data.loanRequest,
@@ -305,15 +307,38 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-300">Property Vintage</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      {...register('propertyVintage')}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Year Built (e.g., 2020)"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">Property Vintage</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        {...register('propertyVintage')}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Year Built (e.g., 2020)"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">Investment Type</label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <select
+                        {...register('investmentType')}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
+                      >
+                        <option value="">Select Investment Type</option>
+                        <option value="Permanent Debt">Permanent Debt</option>
+                        <option value="Bridge Debt">Bridge Debt</option>
+                        <option value="New Construction Debt">New Construction Debt</option>
+                        <option value="Mezzanine Debt">Mezzanine Debt</option>
+                        <option value="Preferred Equity">Preferred Equity</option>
+                        <option value="Joint Venture Equity">Joint Venture Equity</option>
+                        <option value="General Partner Equity">General Partner Equity</option>
+                        <option value="Limited Partner Equity">Limited Partner Equity</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -436,6 +436,9 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                               Deal Type
                             </div>
                             <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
+                              Investment Type
+                            </div>
+                            <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Client Phone
                             </div>
                             <div className="w-48 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
@@ -497,6 +500,9 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                               </div>
                               <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.dealType || deal.applicationDealType || 'N/A'}
+                              </div>
+                              <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
+                                {deal.investmentType || 'N/A'}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.contactPhone || 'N/A'}

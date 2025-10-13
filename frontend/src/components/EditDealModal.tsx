@@ -26,6 +26,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
     propertyType?: string;
     propertyAddress: string;
     propertyVintage?: string;
+    investmentType?: string;
     sponsorNetWorth?: string;
     sponsorLiquidity?: string;
     loanRequest?: string;
@@ -45,6 +46,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         propertyType: deal.propertyType || '',
         propertyAddress: deal.propertyAddress || '',
         propertyVintage: deal.propertyVintage || '',
+        investmentType: deal.investmentType || '',
         sponsorNetWorth: deal.sponsorNetWorth || '',
         sponsorLiquidity: deal.sponsorLiquidity || '',
         loanRequest: deal.loanRequest || '',
@@ -304,6 +306,27 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                           className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           placeholder="e.g., 2020"
                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Investment Type</label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <select
+                          {...register('investmentType')}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
+                        >
+                          <option value="">Select Investment Type</option>
+                          <option value="Permanent Debt">Permanent Debt</option>
+                          <option value="Bridge Debt">Bridge Debt</option>
+                          <option value="New Construction Debt">New Construction Debt</option>
+                          <option value="Mezzanine Debt">Mezzanine Debt</option>
+                          <option value="Preferred Equity">Preferred Equity</option>
+                          <option value="Joint Venture Equity">Joint Venture Equity</option>
+                          <option value="General Partner Equity">General Partner Equity</option>
+                          <option value="Limited Partner Equity">Limited Partner Equity</option>
+                        </select>
                       </div>
                     </div>
                   </div>
