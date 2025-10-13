@@ -367,4 +367,40 @@ This is an automated notification from Rainmakers Portal
       return false;
     }
   }
+
+  // Send a JSON attachment to configured notification emails
+  static async sendJsonAttachmentEmail(filename: string, jsonData: any, subject?: string, bodyText?: string): Promise<boolean> {
+    if (!this.transporter || !this.config) {
+      console.log('⚠️ [EMAIL] Email service not configured, cannot send JSON attachment');
+      return false;
+    }
+
+    if (!this.config.notificationEmails || this.config.notificationEmails.length === 0) {
+      console.log('⚠️ [EMAIL] No notification emails configured, skipping JSON attachment email');
+      return false;
+    }
+
+    try {
+      const mailOptions = {
+        from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
+        to: this.config.notificationEmails.join(', '),
+        subject: subject || `📄 ${filename}`,
+        text: bodyText || `Attached is ${filename}.`,
+        attachments: [
+          {
+            filename,
+            content: Buffer.from(JSON.stringify(jsonData, null, 2), 'utf-8'),
+            contentType: 'application/json'
+          }
+        ]
+      } as any;
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ [EMAIL] JSON attachment email sent:', result.messageId);
+      return true;
+    } catch (error) {
+      console.error('❌ [EMAIL] Failed to send JSON attachment email:', error);
+      return false;
+    }
+  }
 }

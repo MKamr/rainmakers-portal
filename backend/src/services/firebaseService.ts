@@ -84,6 +84,7 @@ export interface Deal {
   ghlOpportunityId?: string;
   ghlContactId?: string;
   oneDriveFolderId?: string;
+  documents?: Document[];
   propertyAddress?: string;
   propertyType?: string;
   dealType?: string;
@@ -107,6 +108,7 @@ export interface Analytics {
   totalValue: number;
   dealsByStatus: { [status: string]: number };
   dealsByMonth: { [month: string]: number };
+  usersByMonth: { [month: string]: number };
 }
 
 export interface OneDriveToken {

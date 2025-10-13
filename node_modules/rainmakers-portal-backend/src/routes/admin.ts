@@ -1690,28 +1690,36 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
       opportunityFields: opportunityFields.length
     };
     
-    // Save to JSON file
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(__dirname, '..', '..', 'ghl-custom-fields.json');
-    
-    const customFieldsData = {
+  const customFieldsData = {
       fetchedAt: new Date().toISOString(),
       summary,
       contactFields,
       opportunityFields,
       allFields
     };
-    
+  
+  // Try to save to disk; if read-only, fall back to email attachment
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(__dirname, '..', '..', 'ghl-custom-fields.json');
     fs.writeFileSync(filePath, JSON.stringify(customFieldsData, null, 2));
     console.log('💾 Custom fields saved to:', filePath);
-    
-    res.json({
+  } catch (writeErr: any) {
+    console.error('⚠️ [ADMIN] Save to file failed (likely read-only). Sending via email...', (writeErr && writeErr.message) ? writeErr.message : String(writeErr));
+    try {
+      await EmailService.sendJsonAttachmentEmail('ghl-custom-fields.json', customFieldsData, 'GHL Custom Fields Export', 'Attached are the latest GHL custom fields.');
+    } catch (emailErr) {
+      console.error('❌ [ADMIN] Failed to email custom fields JSON:', emailErr);
+    }
+  }
+  
+  res.json({
       success: true,
       summary,
       contactFields,
       opportunityFields,
-      message: `Successfully fetched ${summary.totalFields} custom fields and saved to ghl-custom-fields.json`
+    message: `Successfully fetched ${summary.totalFields} custom fields. Saved to file if possible; otherwise emailed as attachment.`
     });
     
   } catch (error) {

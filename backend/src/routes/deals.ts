@@ -67,12 +67,20 @@ const loadGHLFieldMapping = async () => {
         opportunityFieldsFromFile = all.filter(f => typeof f?.fieldKey === 'string' && f.fieldKey.startsWith('opportunity.'));
       }
 
-      // If still empty, fetch live as fallback
+      // If both empty, fetch live as fallback
       if ((!Array.isArray(contactFieldsFromFile) || contactFieldsFromFile.length === 0) &&
           (!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0)) {
         const contactResp = await GHLService.getContactCustomFields();
         const oppResp = await GHLService.getOpportunityCustomFields();
         return buildMapping(contactResp.customFields || [], oppResp.customFields || []);
+      }
+
+      // If opportunity fields are missing but contact fields exist, fetch just the opportunity fields live
+      if (!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0) {
+        try {
+          const oppResp = await GHLService.getOpportunityCustomFields();
+          opportunityFieldsFromFile = oppResp.customFields || [];
+        } catch {}
       }
 
       return buildMapping(contactFieldsFromFile, opportunityFieldsFromFile);
