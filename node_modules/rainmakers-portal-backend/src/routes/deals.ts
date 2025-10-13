@@ -9,18 +9,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Helper function to load GHL custom fields and determine field ownership
-const loadGHLFieldMapping = () => {
-  try {
-    const ghlFieldsPath = path.join(__dirname, '../../ghl-custom-fields.json');
-    const ghlFieldsData = fs.readFileSync(ghlFieldsPath, 'utf8');
-    const ghlFields = JSON.parse(ghlFieldsData);
-    
+// Strategy:
+// 1) Try reading local file (fast path)
+// 2) If file missing, or belongs to a different sub-account/location, fetch live from GHL (no writes)
+const loadGHLFieldMapping = async () => {
+  const buildMapping = (contactFields: any[], opportunityFields: any[]) => {
     const fieldMapping: { [fieldId: string]: { model: string; name: string; fieldKey: string } } = {};
-    
-    // Process contact fields
-    if (ghlFields.contactFields && Array.isArray(ghlFields.contactFields)) {
-      ghlFields.contactFields.forEach((field: any) => {
-        if (field.id) {
+    if (Array.isArray(contactFields)) {
+      contactFields.forEach((field: any) => {
+        if (field?.id) {
           fieldMapping[field.id] = {
             model: 'contact',
             name: field.name || field.fieldName || '',
@@ -29,11 +26,9 @@ const loadGHLFieldMapping = () => {
         }
       });
     }
-    
-    // Process opportunity fields
-    if (ghlFields.opportunityFields && Array.isArray(ghlFields.opportunityFields)) {
-      ghlFields.opportunityFields.forEach((field: any) => {
-        if (field.id) {
+    if (Array.isArray(opportunityFields)) {
+      opportunityFields.forEach((field: any) => {
+        if (field?.id) {
           fieldMapping[field.id] = {
             model: 'opportunity',
             name: field.name || field.fieldName || '',
@@ -42,9 +37,36 @@ const loadGHLFieldMapping = () => {
         }
       });
     }
-    
     return fieldMapping;
+  };
+
+  try {
+    const configuredLocationId = await FirebaseService.getConfiguration('ghl_location_id');
+    const ghlFieldsPath = path.join(__dirname, '../../ghl-custom-fields.json');
+
+    try {
+      const ghlFieldsData = fs.readFileSync(ghlFieldsPath, 'utf8');
+      const ghlFields = JSON.parse(ghlFieldsData);
+
+      // If the file's fields belong to a different location, bypass file and fetch live
+      const fileLocationId = ghlFields?.locationId || ghlFields?.summary?.locationId;
+      if (configuredLocationId && fileLocationId && configuredLocationId !== fileLocationId) {
+        // Fetch live from GHL for current location
+        const contactResp = await GHLService.getContactCustomFields();
+        const oppResp = await GHLService.getOpportunityCustomFields();
+        return buildMapping(contactResp.customFields || [], oppResp.customFields || []);
+      }
+
+      // Otherwise use file content
+      return buildMapping(ghlFields?.contactFields || [], ghlFields?.opportunityFields || []);
+    } catch (fileErr) {
+      // File missing/unreadable → fetch live
+      const contactResp = await GHLService.getContactCustomFields();
+      const oppResp = await GHLService.getOpportunityCustomFields();
+      return buildMapping(contactResp.customFields || [], oppResp.customFields || []);
+    }
   } catch (error) {
+    // As a last resort, return empty map
     return {};
   }
 };
@@ -428,8 +450,8 @@ router.post('/', [
             // Create new contact if none exists
           
           // Load GHL field mapping and build contact custom fields from normalized
-          const fieldMappingForCreate = loadGHLFieldMapping();
-          const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate);
+          const fieldMappingForCreate = await loadGHLFieldMapping();
+          const { contactCustomFields: contactFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForCreate as any);
           
           const contactCustomFieldsArrayForCreate = Object.entries(contactFieldsForCreate).map(([fieldId, value]) => {
             const fieldInfo = fieldMappingForCreate[fieldId];
@@ -488,8 +510,8 @@ router.post('/', [
         // Always create a NEW opportunity for a NEW deal (skip existing opportunity lookup)
         let ghlDeal;
         try {
-          const fieldMappingForOpp = loadGHLFieldMapping();
-          const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
+          const fieldMappingForOpp = await loadGHLFieldMapping();
+          const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp as any);
           // Build and deduplicate custom fields by id (keep last non-empty value)
           const rawOppCustomFieldsForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
             const fieldInfo = fieldMappingForOpp[fieldId];
@@ -739,10 +761,10 @@ router.put('/:id', [
         if (updates.opportunitySource) ghlUpdateData.source = updates.opportunitySource;
         
         // Load GHL field mapping to determine field ownership dynamically
-        const fieldMapping = loadGHLFieldMapping();
+        const fieldMapping = await loadGHLFieldMapping();
         
         // Dynamically separate fields based on GHL field model
-        const { opportunityCustomFields, contactCustomFields } = separateFieldsByModel(normalized, fieldMapping);
+        const { opportunityCustomFields, contactCustomFields } = separateFieldsByModel(normalized, fieldMapping as any);
         
         
         // Sync Contact-level fields if we have a contactId and contact fields to update
@@ -1189,7 +1211,7 @@ router.get('/test-field-separation', async (req: Request, res: Response) => {
     console.log('🧪 [FIELD TEST] Test updates:', testUpdates);
     
     // Separate fields
-    const { opportunityCustomFields, contactCustomFields } = separateFieldsByModel(testUpdates, fieldMapping);
+    const { opportunityCustomFields, contactCustomFields } = separateFieldsByModel(testUpdates, fieldMapping as any);
     
     console.log('🧪 [FIELD TEST] Opportunity fields:', opportunityCustomFields);
     console.log('🧪 [FIELD TEST] Contact fields:', contactCustomFields);
