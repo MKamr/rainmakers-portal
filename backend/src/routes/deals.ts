@@ -117,6 +117,7 @@ const separateFieldsByModel = (updates: any, fieldMapping: { [fieldId: string]: 
     'propertyState': 'opportunity.property_state',
     'propertyZip': 'opportunity.property_zip',
     'propertyType': 'opportunity.property_type',
+    'propertyVintage': 'opportunity.property_vintage',
     'numberOfUnits': 'opportunity.number_of_units',
     'purchasePrice': 'opportunity.purchase_price',
     'originalPurchaseDate': 'opportunity.original_purchase_date',
@@ -130,6 +131,8 @@ const separateFieldsByModel = (updates: any, fieldMapping: { [fieldId: string]: 
     'borrowingEntity': 'opportunity.borrowing_entity',
     'lender': 'opportunity.lender',
     'loanAmount': 'opportunity.loan_amount',
+    // Portal field `loanRequest` should map to GHL `opportunity.loan_amount`
+    'loanRequest': 'opportunity.loan_amount',
     'unpaidPrincipalBalance': 'opportunity.unpaid_principal_balance',
     'dealType': 'opportunity.deal_type',
     'investmentType': 'opportunity.investment_type',
