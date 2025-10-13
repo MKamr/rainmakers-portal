@@ -1,6 +1,8 @@
-import { Deal } from '../types'
+import { Deal, User } from '../types'
 import { DollarSign, MoreHorizontal, ChevronDown, ChevronRight, CheckSquare, Square, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { adminAPI } from '../services/api'
+import { useAuth } from '../hooks/useAuth'
 
 interface StageViewProps {
   deals: Deal[]
@@ -18,6 +20,9 @@ interface StageGroup {
 }
 
 export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewProps) {
+  const { user } = useAuth()
+  const [userCache, setUserCache] = useState<Record<string, User>>({})
+  
   // Define all possible stages in order with colors
   const stageConfig = [
     { name: 'Underwriting', color: 'bg-green-500', shortName: 'Underwriting' },
@@ -38,6 +43,52 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     'Qualification': true
   })
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set())
+
+  // Fetch user information for deals
+  useEffect(() => {
+    if (!user?.isAdmin || deals.length === 0) return
+
+    const fetchUsers = async () => {
+      const uniqueUserIds = [...new Set(deals.map(deal => deal.userId).filter(Boolean))]
+      const newUserCache: Record<string, User> = { ...userCache }
+
+      for (const userId of uniqueUserIds) {
+        if (!userCache[userId]) {
+          try {
+            const userData = await adminAPI.getUserById(userId)
+            newUserCache[userId] = userData
+          } catch (error) {
+            console.error(`Failed to fetch user ${userId}:`, error)
+            // Set a fallback user object
+            newUserCache[userId] = {
+              id: userId,
+              username: 'Unknown User',
+              name: 'Unknown User',
+              email: '',
+              discordId: '',
+              isAdmin: false,
+              isWhitelisted: false,
+              createdAt: ''
+            }
+          }
+        }
+      }
+
+      setUserCache(newUserCache)
+    }
+
+    fetchUsers()
+  }, [deals, user?.isAdmin, userCache])
+
+  // Helper function to get user display name
+  const getUserDisplayName = (userId: string): string => {
+    if (!user?.isAdmin) return 'N/A'
+    
+    const userData = userCache[userId]
+    if (!userData) return 'Loading...'
+    
+    return userData.username || 'Unknown User'
+  }
 
   // Function to normalize stage names
   const normalizeStageName = (stageName: string): string => {
@@ -373,7 +424,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                               Submitted Date
                             </div>
                             <div className="w-32 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
-                              Source
+                              Created By
                             </div>
                             <div className="w-40 px-2 py-2 text-xs font-bold text-white border-r border-gray-500 bg-gray-600">
                               Loan Amount
@@ -436,7 +487,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                                 {formatSubmittedDate(deal.createdAt || deal.applicationDate || deal.stageLastUpdated)}
                               </div>
                               <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {deal.opportunitySource || deal.contactSource || 'N/A'}
+                                {getUserDisplayName(deal.userId)}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {formatCurrencyFromString(deal.loanRequest || deal.applicationLoanRequest)}

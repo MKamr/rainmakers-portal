@@ -134,6 +134,9 @@ export const adminAPI = {
   getUsers: (): Promise<User[]> =>
     api.get('/admin/users').then(res => res.data),
   
+  getUserById: (id: string): Promise<User> =>
+    api.get(`/admin/users/${id}`).then(res => res.data),
+  
   updateUser: (id: string, data: { isWhitelisted?: boolean; isAdmin?: boolean }): Promise<User> =>
     api.put(`/admin/users/${id}`, data).then(res => res.data),
   

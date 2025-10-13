@@ -391,6 +391,28 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+// Get user by ID
+router.get('/users/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = await FirebaseService.getUserById(id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isWhitelisted: user.isWhitelisted
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
 // Test environment variables
 router.get('/env/test', async (req: Request, res: Response) => {
   try {
@@ -1611,7 +1633,7 @@ router.get('/analytics', async (req: Request, res: Response) => {
     // Top performing users
     const userPerformance = users.map((user: any) => ({
       id: user.id,
-      name: user.name || user.email,
+      name: user.username || user.email,
       email: user.email,
       dealsCount: dealsByUser[user.id] || 0,
       lastLogin: user.lastLoginAt instanceof Date ? user.lastLoginAt : (user.lastLoginAt?.toDate?.() || new Date(user.lastLoginAt)) || null
