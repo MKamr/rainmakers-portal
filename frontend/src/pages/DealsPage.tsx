@@ -16,7 +16,7 @@ export function DealsPage() {
   const [editingDeal, setEditingDeal] = useState<any>(null)
   const [viewingDeal, setViewingDeal] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'list' | 'pipeline'>('list')
-  const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('list')
+  const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('stages')
   const [dealFilters, setDealFilters] = useState({
     userId: '',
     status: '',
