@@ -490,10 +490,19 @@ router.post('/', [
         try {
           const fieldMappingForOpp = loadGHLFieldMapping();
           const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
-          const oppCustomFieldsArrayForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
+          // Build and deduplicate custom fields by id (keep last non-empty value)
+          const rawOppCustomFieldsForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
             const fieldInfo = fieldMappingForOpp[fieldId];
             return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
           });
+          const dedupMap: Record<string, { id: string; key: string; field_value: any }> = rawOppCustomFieldsForCreate.reduce((acc: Record<string, { id: string; key: string; field_value: any }>, f: { id: string; key: string; field_value: any }) => {
+            const isEmpty = f.field_value === undefined || f.field_value === null || f.field_value === '';
+            if (!isEmpty) {
+              acc[f.id] = f; // last write wins per id
+            }
+            return acc;
+          }, {} as Record<string, { id: string; key: string; field_value: any }>);
+          const oppCustomFieldsArrayForCreate: { id: string; key: string; field_value: any }[] = Object.values(dedupMap);
 
           console.log(`🔍 [DEAL CREATE] Creating GHL opportunity for deal: ${dealId}`);
           console.log(`🔍 [DEAL CREATE] customFields on create:`, oppCustomFieldsArrayForCreate);
@@ -524,15 +533,13 @@ router.post('/', [
             status: ghlDeal?.status
           });
 
-          // Safety: if platform ignores custom fields on create, try an immediate update with alt shape
+          // Safety: if platform ignores custom fields on create, try an immediate update with the same shape
           if (ghlDeal && ghlDeal.id) {
-            const altFields = oppCustomFieldsArrayForCreate.map((f: any) => ({ id: f.id, value: f.field_value }));
             try {
-              console.log(`🔄 [DEAL CREATE] Attempting follow-up update with alt customFields shape`, altFields);
+              console.log(`🔄 [DEAL CREATE] Attempting follow-up update with standard customFields shape`, oppCustomFieldsArrayForCreate);
               await GHLService.updateDeal(ghlDeal.id, {
-                // @ts-ignore alt shape
-                customFields: altFields
-              } as any);
+                customFields: oppCustomFieldsArrayForCreate
+              });
             } catch {}
           }
         } catch (opportunityError) {
@@ -547,8 +554,10 @@ router.post('/', [
         
         if (ghlDeal && ghlDeal.id) {
           dealUpdateData.ghlOpportunityId = ghlDeal.id;
-          dealUpdateData.pipelineId = ghlDeal.pipelineId;
-          dealUpdateData.stageId = ghlDeal.stageId;
+          dealUpdateData.ghlPipelineId = ghlDeal.pipelineId;
+          if (ghlDeal.stageId) {
+            dealUpdateData.ghlStageId = ghlDeal.stageId;
+          }
           
           console.log(`✅ [DEAL CREATE] Successfully created GHL opportunity: ${ghlDeal.id}`);
           console.log(`✅ [DEAL CREATE] Updating portal deal ${deal.id} with GHL opportunity ID: ${ghlDeal.id}`);
@@ -557,7 +566,7 @@ router.post('/', [
         }
         
         console.log(`🔍 [DEAL CREATE] Deal update data:`, dealUpdateData);
-        await FirebaseService.updateDeal(deal.id, dealUpdateData);
+        await FirebaseService.updateDeal(deal.id, dealUpdateData as any);
         console.log(`✅ [DEAL CREATE] Successfully updated portal deal ${deal.id} with GHL data`);
       } else {
       }
