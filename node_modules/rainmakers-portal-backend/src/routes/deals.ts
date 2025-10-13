@@ -59,6 +59,13 @@ const loadGHLFieldMapping = async () => {
       // Support alternate schema where all fields are under `customFields`
       let contactFieldsFromFile: any[] = ghlFields?.contactFields || [];
       let opportunityFieldsFromFile: any[] = ghlFields?.opportunityFields || [];
+      // Support arrays named CONTACT_FIELDS_FULL / OPPORTUNITY_FIELDS_FULL (export format)
+      if ((!Array.isArray(contactFieldsFromFile) || contactFieldsFromFile.length === 0) && Array.isArray(ghlFields?.CONTACT_FIELDS_FULL)) {
+        contactFieldsFromFile = ghlFields.CONTACT_FIELDS_FULL;
+      }
+      if ((!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0) && Array.isArray(ghlFields?.OPPORTUNITY_FIELDS_FULL)) {
+        opportunityFieldsFromFile = ghlFields.OPPORTUNITY_FIELDS_FULL;
+      }
       if ((!Array.isArray(contactFieldsFromFile) || contactFieldsFromFile.length === 0) &&
           (!Array.isArray(opportunityFieldsFromFile) || opportunityFieldsFromFile.length === 0) &&
           Array.isArray(ghlFields?.customFields)) {
