@@ -291,7 +291,7 @@ router.get('/debug/all-deals', async (req: Request, res: Response) => {
       }
       acc[deal.userId].push(deal);
       return acc;
-    }, {} as { [userId: string]: Deal[] });
+    }, {} as { [userId: string]: any[] });
     
     res.json({
       totalDeals: allDeals.length,
@@ -470,9 +470,9 @@ router.post('/', [
             // Update deal with GHL info
             await FirebaseService.updateDeal(deal.id, {
               ghlOpportunityId: ghlDeal.id,
-              pipelineId: ghlDeal.pipelineId,
-              stageId: ghlDeal.stageId
-            });
+              ghlPipelineId: ghlDeal.pipelineId,
+              ghlStageId: ghlDeal.stageId
+            } as any);
             return; // Exit early since we handled it
           } catch (fallbackError) {
             console.error('❌ [GHL] Fallback minimal opportunity creation failed:', fallbackError);
@@ -485,98 +485,59 @@ router.post('/', [
           throw new Error('No valid GHL contact available');
         }
 
-        // Check for existing opportunities for this contact in this pipeline
-        const existingOpportunities = await GHLService.getOpportunitiesByContact(ghlContact.id, ghlPipelineId);
-        
+        // Always create a NEW opportunity for a NEW deal (skip existing opportunity lookup)
         let ghlDeal;
-        if (existingOpportunities.length > 0) {
-          // Update existing opportunity and push custom fields via V2
-          const existingId = existingOpportunities[0].id;
+        try {
           const fieldMappingForOpp = loadGHLFieldMapping();
-          const { opportunityCustomFields: oppFieldsForUpdate } = separateFieldsByModel(normalized, fieldMappingForOpp);
-          const oppCustomFieldsArrayForUpdate = Object.entries(oppFieldsForUpdate).map(([fieldId, value]) => {
+          const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
+          const oppCustomFieldsArrayForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
             const fieldInfo = fieldMappingForOpp[fieldId];
             return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
           });
 
-          try {
-            // Primary attempt: key/field_value shape
-            ghlDeal = await GHLService.updateDeal(existingId, {
+          console.log(`🔍 [DEAL CREATE] Creating GHL opportunity for deal: ${dealId}`);
+          console.log(`🔍 [DEAL CREATE] customFields on create:`, oppCustomFieldsArrayForCreate);
+          console.log(`🔍 [DEAL CREATE] GHL opportunity data:`, {
             name: normalized.applicationPropertyAddress || dealId,
-              pipelineStageId: ghlStageId,
-              customFields: oppCustomFieldsArrayForUpdate
-            });
+            pipelineId: ghlPipelineId,
+            stageId: ghlStageId,
+            locationId: ghlLocationId,
+            contactId: ghlContact.id,
+            source: normalized.source,
+            customFieldsCount: oppCustomFieldsArrayForCreate.length
+          });
 
-            // Safety: if API response has no custom fields, try alt shape {id, value}
-            if (!ghlDeal?.customFields || (Array.isArray(ghlDeal.customFields) && ghlDeal.customFields.length === 0)) {
-              const altFields = oppCustomFieldsArrayForUpdate.map((f: any) => ({ id: f.id, value: f.field_value }));
-              await GHLService.updateDeal(existingId, {
-                name: normalized.applicationPropertyAddress || dealId,
-                pipelineStageId: ghlStageId,
-                // @ts-ignore allow alt shape
+          ghlDeal = await GHLService.createDeal({
+            name: normalized.applicationPropertyAddress || dealId,
+            pipelineId: ghlPipelineId,
+            stageId: ghlStageId,
+            locationId: ghlLocationId,
+            contactId: ghlContact.id,
+            source: normalized.source,
+            customFields: oppCustomFieldsArrayForCreate
+          });
+
+          console.log(`🔍 [DEAL CREATE] GHL opportunity creation result:`, {
+            success: !!ghlDeal,
+            opportunityId: ghlDeal?.id,
+            name: ghlDeal?.name,
+            status: ghlDeal?.status
+          });
+
+          // Safety: if platform ignores custom fields on create, try an immediate update with alt shape
+          if (ghlDeal && ghlDeal.id) {
+            const altFields = oppCustomFieldsArrayForCreate.map((f: any) => ({ id: f.id, value: f.field_value }));
+            try {
+              console.log(`🔄 [DEAL CREATE] Attempting follow-up update with alt customFields shape`, altFields);
+              await GHLService.updateDeal(ghlDeal.id, {
+                // @ts-ignore alt shape
                 customFields: altFields
               } as any);
-            }
-          } catch (updateExistingErr) {
-            // Fallback to minimal update without custom fields if V2 fails
-            ghlDeal = await GHLService.updateOpportunity(existingId, {
-              name: normalized.applicationPropertyAddress || dealId,
-              status: 'open',
-              stageId: ghlStageId
-            });
+            } catch {}
           }
-        } else {
-          // Create new opportunity (send custom fields in the CREATE call itself)
-          try {
-            const fieldMappingForOpp = loadGHLFieldMapping();
-            const { opportunityCustomFields: oppFieldsForCreate } = separateFieldsByModel(normalized, fieldMappingForOpp);
-            const oppCustomFieldsArrayForCreate = Object.entries(oppFieldsForCreate).map(([fieldId, value]) => {
-              const fieldInfo = fieldMappingForOpp[fieldId];
-              return { id: fieldId, key: fieldInfo?.fieldKey || fieldInfo?.name || fieldId, field_value: value };
-            });
-            
-            console.log(`🔍 [DEAL CREATE] Creating GHL opportunity for deal: ${dealId}`);
-            console.log(`🔍 [DEAL CREATE] GHL opportunity data:`, {
-              name: normalized.applicationPropertyAddress || dealId,
-              pipelineId: ghlPipelineId,
-              stageId: ghlStageId,
-              locationId: ghlLocationId,
-              contactId: ghlContact.id,
-              source: normalized.source,
-              customFieldsCount: oppCustomFieldsArrayForCreate.length
-            });
-            
-            ghlDeal = await GHLService.createDeal({
-              name: normalized.applicationPropertyAddress || dealId,
-              pipelineId: ghlPipelineId,
-              stageId: ghlStageId,
-              locationId: ghlLocationId,
-              contactId: ghlContact.id,
-              source: normalized.source,
-              customFields: oppCustomFieldsArrayForCreate
-            });
-            
-            console.log(`🔍 [DEAL CREATE] GHL opportunity creation result:`, {
-              success: !!ghlDeal,
-              opportunityId: ghlDeal?.id,
-              name: ghlDeal?.name,
-              status: ghlDeal?.status
-            });
-
-            // Safety: if platform ignores custom fields on create, try an immediate update with alt shape
-            if (ghlDeal && ghlDeal.id) {
-              const altFields = oppCustomFieldsArrayForCreate.map((f: any) => ({ id: f.id, value: f.field_value }));
-              try {
-                await GHLService.updateDeal(ghlDeal.id, {
-                  // @ts-ignore alt shape
-                  customFields: altFields
-                } as any);
-              } catch {}
-            }
-          } catch (opportunityError) {
-            console.error('❌ [GHL] Opportunity creation failed:', opportunityError);
-            ghlDeal = null; // Set to null so we don't try to access its properties
-          }
+        } catch (opportunityError) {
+          console.error('❌ [GHL] Opportunity creation failed:', opportunityError);
+          ghlDeal = null; // Set to null so we don't try to access its properties
         }
 
         // Update deal with GHL info
@@ -776,7 +737,7 @@ router.put('/:id', [
         
         
         // Sync Contact-level fields if we have a contactId and contact fields to update
-        if (deal.contactId && Object.keys(contactCustomFields).length > 0) {
+        if (deal.ghlContactId && Object.keys(contactCustomFields).length > 0) {
           try {
             
             // Format: Array with id, key and field_value for Contact API
@@ -789,7 +750,7 @@ router.put('/:id', [
               };
             });
             
-            await GHLService.updateContactCustomFields(deal.contactId, contactCustomFieldsArray);
+            await GHLService.updateContactCustomFields(deal.ghlContactId, contactCustomFieldsArray);
           } catch (contactError: any) {
             // Don't fail the deal update if contact sync fails
           }
@@ -801,7 +762,7 @@ router.put('/:id', [
         
         
         // Get the pipeline ID from the pipeline name for the update data
-        const pipelineName = updates.pipeline || deal.pipeline;
+        const pipelineName = updates.pipeline;
         if (pipelineName) {
           const pipelineId = await GHLService.getPipelineId(pipelineName);
           if (pipelineId) {
@@ -1030,7 +991,7 @@ router.post('/webhook/ghl-contact-update', async (req: Request, res: Response) =
     
     // Find deals associated with this contact
     const deals = await FirebaseService.getAllDeals();
-    const relatedDeals = deals.filter(d => d.contactId === contact.id);
+    const relatedDeals = deals.filter(d => d.ghlContactId === contact.id);
     
     if (relatedDeals.length === 0) {
       console.log('⚠️ [GHL CONTACT WEBHOOK] No deals found with contact ID:', contact.id);
@@ -1168,10 +1129,10 @@ router.get('/webhook/test-info', async (req: Request, res: Response) => {
     // Get first few deals with their GHL info
     const testDeals = deals.slice(0, 5).map(deal => ({
       id: deal.id,
-      propertyName: deal.propertyName,
+      propertyName: (deal as any).propertyName,
       currentStage: deal.stage,
       ghlOpportunityId: deal.ghlOpportunityId,
-      ghlContactId: deal.contactId
+      ghlContactId: deal.ghlContactId
     }));
     
     res.json({
