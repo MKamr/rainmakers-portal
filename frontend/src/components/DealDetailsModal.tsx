@@ -230,13 +230,25 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-400">Property Vintage</label>
-                      <div className="p-3 bg-gray-700 rounded-lg border border-gray-600 flex items-center space-x-3">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <p className="text-white font-medium">
-                          {deal.propertyVintage || deal.applicationPropertyVintage || 'N/A'}
-                        </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-400">Property Vintage</label>
+                        <div className="p-3 bg-gray-700 rounded-lg border border-gray-600 flex items-center space-x-3">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <p className="text-white font-medium">
+                            {deal.propertyVintage || deal.applicationPropertyVintage || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-400">Investment Type</label>
+                        <div className="p-3 bg-gray-700 rounded-lg border border-gray-600 flex items-center space-x-3">
+                          <Briefcase className="h-4 w-4 text-gray-400" />
+                          <p className="text-white font-medium">
+                            {deal.investmentType || 'N/A'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
