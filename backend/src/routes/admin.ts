@@ -1698,28 +1698,21 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
       allFields
     };
   
-  // Try to save to disk; if read-only, fall back to email attachment
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(__dirname, '..', '..', 'ghl-custom-fields.json');
-    fs.writeFileSync(filePath, JSON.stringify(customFieldsData, null, 2));
-    console.log('💾 Custom fields saved to:', filePath);
-  } catch (writeErr: any) {
-    console.error('⚠️ [ADMIN] Save to file failed (likely read-only). Sending via email...', (writeErr && writeErr.message) ? writeErr.message : String(writeErr));
-    try {
-      await EmailService.sendJsonAttachmentEmail('ghl-custom-fields.json', customFieldsData, 'GHL Custom Fields Export', 'Attached are the latest GHL custom fields.');
-    } catch (emailErr) {
-      console.error('❌ [ADMIN] Failed to email custom fields JSON:', emailErr);
-    }
-  }
+  // Do not write file in read-only environments; just log the JSON
+  console.log('🧾 [ADMIN] GHL custom fields JSON (truncated view below):');
+  console.log('[SUMMARY]', JSON.stringify(customFieldsData.summary));
+  console.log('[CONTACT_FIELDS_COUNT]', customFieldsData.contactFields.length);
+  console.log('[OPPORTUNITY_FIELDS_COUNT]', customFieldsData.opportunityFields.length);
+  // For debugging: print first few of each list to avoid massive logs
+  console.log('[CONTACT_FIELDS_SAMPLE]', JSON.stringify(customFieldsData.contactFields.slice(0, 5), null, 2));
+  console.log('[OPPORTUNITY_FIELDS_SAMPLE]', JSON.stringify(customFieldsData.opportunityFields.slice(0, 5), null, 2));
   
   res.json({
       success: true,
       summary,
       contactFields,
       opportunityFields,
-    message: `Successfully fetched ${summary.totalFields} custom fields. Saved to file if possible; otherwise emailed as attachment.`
+    message: `Successfully fetched ${summary.totalFields} custom fields. Output logged to server.`
     });
     
   } catch (error) {
