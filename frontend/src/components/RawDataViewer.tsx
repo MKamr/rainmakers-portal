@@ -149,26 +149,27 @@ const RawDataViewer: React.FC = () => {
 
         // Custom field comparisons
         if (matchedOpportunity.customFields) {
-          const ghlCustomFields = matchedOpportunity.customFields.reduce((acc: any, field: any) => {
-            acc[field.key] = field.field_value || field.fieldValue;
+          // Create a map of GHL custom fields by field ID for easier lookup
+          const ghlCustomFieldsById = matchedOpportunity.customFields.reduce((acc: any, field: any) => {
+            acc[field.id] = field.field_value || field.fieldValue;
             return acc;
           }, {});
 
-          // Map portal fields to GHL custom fields
+          // Map portal fields to GHL custom field IDs (based on the actual GHL data structure)
           const customFieldMappings = [
-            { portal: 'dealType', ghl: 'opportunity.deal_type' },
-            { portal: 'propertyType', ghl: 'opportunity.property_type' },
-            { portal: 'propertyVintage', ghl: 'opportunity.property_vintage' },
-            { portal: 'sponsorNetWorth', ghl: 'opportunity.sponsor_net_worth' },
-            { portal: 'sponsorLiquidity', ghl: 'opportunity.sponsor_liquidity' },
-            { portal: 'loanRequest', ghl: 'opportunity.loan_request' },
-            { portal: 'additionalInformation', ghl: 'opportunity.additional_information' },
-            { portal: 'notes', ghl: 'opportunity.notes' }
+            { portal: 'dealType', ghlFieldId: 'km8O2SU2QW9ka5ItStr1' }, // Refinance
+            { portal: 'propertyType', ghlFieldId: 'sWtzj1WAHJWaAIBK5yoh' }, // Multifamily
+            { portal: 'propertyVintage', ghlFieldId: 'A2NRf0Go0BYzaKtqMrOw' }, // Property vintage
+            { portal: 'sponsorNetWorth', ghlFieldId: 'eZFXdR4ADEDZDXplXBAs' }, // Sponsor net worth
+            { portal: 'sponsorLiquidity', ghlFieldId: 'dySlW74ZykeVJwnNciQH' }, // Sponsor liquidity
+            { portal: 'loanRequest', ghlFieldId: '0arbFwqGN5CkJ8juGi7r' }, // Loan amount (4.8million)
+            { portal: 'additionalInformation', ghlFieldId: '8Hup5EejJhfD2c55gTAv' }, // Additional info
+            { portal: 'notes', ghlFieldId: '8Hup5EejJhfD2c55gTAv' } // Same as additional info
           ];
 
-          customFieldMappings.forEach(({ portal, ghl }) => {
+          customFieldMappings.forEach(({ portal, ghlFieldId }) => {
             const portalValue = portalDeal[portal];
-            const ghlValue = ghlCustomFields[ghl];
+            const ghlValue = ghlCustomFieldsById[ghlFieldId];
             
             if (String(portalValue || '').trim() !== String(ghlValue || '').trim()) {
               differences.push({
@@ -181,12 +182,12 @@ const RawDataViewer: React.FC = () => {
           });
 
           // Check for GHL-only custom fields
-          Object.entries(ghlCustomFields).forEach(([key, value]) => {
+          Object.entries(ghlCustomFieldsById).forEach(([fieldId, value]) => {
             if (value && String(value).trim() !== '') {
-              const mappedField = customFieldMappings.find(m => m.ghl === key);
+              const mappedField = customFieldMappings.find(m => m.ghlFieldId === fieldId);
               if (!mappedField) {
                 differences.push({
-                  field: `ghl_only_${key}`,
+                  field: `ghl_only_${fieldId}`,
                   portalValue: '(not in portal)',
                   ghlValue: value,
                   type: 'ghl_only'
