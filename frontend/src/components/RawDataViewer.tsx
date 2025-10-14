@@ -123,14 +123,9 @@ const RawDataViewer: React.FC = () => {
       }> = [];
 
       if (matchedOpportunity) {
-        // Basic field comparisons
+        // Basic field comparisons - Only key fields
         const basicFields = [
-          { portal: 'title', ghl: 'name' },
-          { portal: 'propertyAddress', ghl: 'name' },
-          { portal: 'status', ghl: 'status' },
-          { portal: 'contactName', ghl: 'contact?.name' },
-          { portal: 'contactEmail', ghl: 'contact?.email' },
-          { portal: 'contactPhone', ghl: 'contact?.phone' }
+          { portal: 'propertyAddress', ghl: 'name' }
         ];
 
         basicFields.forEach(({ portal, ghl }) => {
@@ -144,9 +139,8 @@ const RawDataViewer: React.FC = () => {
               return acc;
             }, {});
             
-            // Map basic fields to potential custom field IDs (from the image data)
+            // Map basic fields to potential custom field IDs - Only key fields
             const basicFieldToCustomIdMap: { [key: string]: string } = {
-              'contactPhone': 'TQYpu0alDvrq1D1wGFic', // Phone number from image
               'propertyAddress': 'LHxZmz2YirytBOhD6nTT' // Property address from image
             };
             
@@ -173,18 +167,9 @@ const RawDataViewer: React.FC = () => {
             return acc;
           }, {});
 
-          // Map portal fields to GHL custom field IDs (based on the actual GHL data structure)
+          // Map portal fields to GHL custom field IDs - Only key fields
           const customFieldMappings = [
-            { portal: 'dealType', ghlFieldId: 'km8O2SU2QW9ka5ItStr1' }, // Refinance
-            { portal: 'propertyType', ghlFieldId: 'sWtzj1WAHJWaAIBK5yoh' }, // Multifamily
-            { portal: 'propertyVintage', ghlFieldId: 'A2NRf0Go0BYzaKtqMrOw' }, // Property vintage
-            { portal: 'sponsorNetWorth', ghlFieldId: 'eZFXdR4ADEDZDXplXBAs' }, // Sponsor net worth
-            { portal: 'sponsorLiquidity', ghlFieldId: 'dySlW74ZykeVJwnNciQH' }, // Sponsor liquidity
             { portal: 'loanRequest', ghlFieldId: '0arbFwqGN5CkJ8juGi7r' }, // Loan amount (4.8million)
-            { portal: 'additionalInformation', ghlFieldId: '8Hup5EejJhfD2c55gTAv' }, // Additional info
-            { portal: 'notes', ghlFieldId: '8Hup5EejJhfD2c55gTAv' }, // Same as additional info
-            // Additional fields that might be stored in custom fields
-            { portal: 'contactPhone', ghlFieldId: 'TQYpu0alDvrq1D1wGFic' }, // Phone number from image
             { portal: 'propertyAddress', ghlFieldId: 'LHxZmz2YirytBOhD6nTT' } // Property address from image
           ];
 
