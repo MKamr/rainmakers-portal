@@ -192,6 +192,16 @@ const RawDataViewer: React.FC = () => {
             const portalValue = portalDeal[portal];
             const ghlValue = ghlCustomFieldsById[ghlFieldId];
             
+            // Debug logging for key fields
+            if (portal === 'propertyAddress' || portal === 'loanRequest') {
+              console.log(`🔍 [COMPARISON] ${portal}:`, {
+                portalValue,
+                ghlValue,
+                ghlFieldId,
+                ghlCustomFieldsById: Object.keys(ghlCustomFieldsById)
+              });
+            }
+            
             if (String(portalValue || '').trim() !== String(ghlValue || '').trim()) {
               differences.push({
                 field: portal,
