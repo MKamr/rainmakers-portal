@@ -135,7 +135,25 @@ const RawDataViewer: React.FC = () => {
 
         basicFields.forEach(({ portal, ghl }) => {
           const portalValue = portalDeal[portal];
-          const ghlValue = ghl.split('.').reduce((obj, key) => obj?.[key], matchedOpportunity);
+          let ghlValue = ghl.split('.').reduce((obj, key) => obj?.[key], matchedOpportunity);
+          
+          // If the basic field lookup failed and we have custom fields, try to find it there
+          if (!ghlValue && matchedOpportunity.customFields) {
+            const ghlCustomFieldsById = matchedOpportunity.customFields.reduce((acc: any, field: any) => {
+              acc[field.id] = field.field_value || field.fieldValue;
+              return acc;
+            }, {});
+            
+            // Map basic fields to potential custom field IDs (from the image data)
+            const basicFieldToCustomIdMap: { [key: string]: string } = {
+              'contactPhone': 'TQYpu0alDvrq1D1wGFic', // Phone number from image
+              'propertyAddress': 'LHxZmz2YirytBOhD6nTT' // Property address from image
+            };
+            
+            if (basicFieldToCustomIdMap[portal]) {
+              ghlValue = ghlCustomFieldsById[basicFieldToCustomIdMap[portal]];
+            }
+          }
           
           if (String(portalValue || '').trim() !== String(ghlValue || '').trim()) {
             differences.push({
@@ -164,7 +182,10 @@ const RawDataViewer: React.FC = () => {
             { portal: 'sponsorLiquidity', ghlFieldId: 'dySlW74ZykeVJwnNciQH' }, // Sponsor liquidity
             { portal: 'loanRequest', ghlFieldId: '0arbFwqGN5CkJ8juGi7r' }, // Loan amount (4.8million)
             { portal: 'additionalInformation', ghlFieldId: '8Hup5EejJhfD2c55gTAv' }, // Additional info
-            { portal: 'notes', ghlFieldId: '8Hup5EejJhfD2c55gTAv' } // Same as additional info
+            { portal: 'notes', ghlFieldId: '8Hup5EejJhfD2c55gTAv' }, // Same as additional info
+            // Additional fields that might be stored in custom fields
+            { portal: 'contactPhone', ghlFieldId: 'TQYpu0alDvrq1D1wGFic' }, // Phone number from image
+            { portal: 'propertyAddress', ghlFieldId: 'LHxZmz2YirytBOhD6nTT' } // Property address from image
           ];
 
           customFieldMappings.forEach(({ portal, ghlFieldId }) => {
