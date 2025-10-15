@@ -181,9 +181,9 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   const formatCurrency = (amount: number | undefined) => {
     if (!amount || amount === 0) return '$0'
     if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`
-    } else if (amount >= 10000) {
-      return `$${(amount / 1000).toFixed(0)}K`
+      return `$${(amount / 1000000).toFixed(1)}MM`
+    } else if (amount >= 1000) {
+      return `$${Math.round(amount / 1000)}K`
     }
     return `$${amount.toLocaleString()}`
   }
@@ -220,29 +220,54 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   }
 
 
+  const parseLoanAmountToDollars = (value: string | number | undefined): number => {
+    if (value === undefined || value === null) return 0
+    if (typeof value === 'number') {
+      if (value < 1000) return value * 1_000_000 // assume millions for small numbers
+      return value
+    }
+    const raw = String(value).trim()
+    if (!raw) return 0
+    const lower = raw.toLowerCase().replace(/[$,\s]/g, '')
+    const match = lower.match(/^(\d+(?:\.\d+)?)(mm|m|million|k|b|bn|billion)?$/)
+    if (match) {
+      const num = parseFloat(match[1])
+      const unit = match[2]
+      if (!unit) return num < 1000 ? num * 1_000_000 : num
+      switch (unit) {
+        case 'mm':
+        case 'm':
+        case 'million':
+          return num * 1_000_000
+        case 'k':
+          return num * 1_000
+        case 'b':
+        case 'bn':
+        case 'billion':
+          return num * 1_000_000_000
+        default:
+          return num
+      }
+    }
+    const numeric = parseFloat(lower.replace(/[^0-9.]/g, ''))
+    if (isNaN(numeric)) return 0
+    return numeric < 1000 ? numeric * 1_000_000 : numeric
+  }
+
+  const formatLoanAmountDisplay = (value: string | number | undefined): string => {
+    const dollars = parseLoanAmountToDollars(value)
+    if (!dollars) return '$0'
+    if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}MM`
+    if (dollars >= 1_000) return `$${Math.round(dollars / 1_000)}K`
+    return `$${dollars}`
+  }
+
   const getTotalLoanAmount = (deals: Deal[]) => {
     return deals.reduce((sum, deal) => {
-      // Try loanAmount first (for backwards compatibility)
       if (deal.loanAmount && typeof deal.loanAmount === 'number') {
         return sum + deal.loanAmount
       }
-      
-      // Then try loanRequest (current primary field)
-      if (deal.loanRequest) {
-        // Remove common characters and parse
-        const cleanedValue = deal.loanRequest.toString()
-          .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
-          .replace(/[Kk]/g, '000') // Convert K/k to 000
-          .replace(/[Mm]/g, '000000') // Convert M/m to 000000
-          .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
-          .trim()
-        
-        const parsed = parseFloat(cleanedValue)
-        return sum + (isNaN(parsed) ? 0 : parsed)
-      }
-      
-      // Fallback to 0
-      return sum + 0
+      return sum + parseLoanAmountToDollars(deal.loanRequest || deal.applicationLoanRequest)
     }, 0)
   }
 
@@ -493,7 +518,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
                                 {getUserDisplayName(deal.userId)}
                               </div>
                               <div className="w-40 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
-                                {formatCurrencyFromString(deal.loanRequest || deal.applicationLoanRequest)}
+                                {formatLoanAmountDisplay(deal.loanRequest || deal.applicationLoanRequest)}
                               </div>
                               <div className="w-32 px-2 py-2 text-xs text-white border-r border-gray-500 truncate">
                                 {deal.propertyType || deal.applicationPropertyType || 'N/A'}
