@@ -180,10 +180,14 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
 
   const formatCurrency = (amount: number | undefined) => {
     if (!amount || amount === 0) return '$0'
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}MM`
-    } else if (amount >= 1000) {
-      return `$${Math.round(amount / 1000)}K`
+    if (amount >= 1_000_000_000) {
+      return `$${(amount / 1_000_000_000).toFixed(1)}B`
+    }
+    if (amount >= 1_000_000) {
+      return `$${(amount / 1_000_000).toFixed(1)}MM`
+    }
+    if (amount >= 1_000) {
+      return `$${Math.round(amount / 1_000)}K`
     }
     return `$${amount.toLocaleString()}`
   }
@@ -257,6 +261,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   const formatLoanAmountDisplay = (value: string | number | undefined): string => {
     const dollars = parseLoanAmountToDollars(value)
     if (!dollars) return '$0'
+    if (dollars >= 1_000_000_000) return `$${(dollars / 1_000_000_000).toFixed(1)}B`
     if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}MM`
     if (dollars >= 1_000) return `$${Math.round(dollars / 1_000)}K`
     return `$${dollars}`
