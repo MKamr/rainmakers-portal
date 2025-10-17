@@ -59,9 +59,9 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (50MB limit)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('File size must be less than 50MB');
+    // Validate file size (10MB limit - reduced for testing)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
       return;
     }
 
@@ -175,7 +175,7 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
                     <span className="font-medium">Archives:</span> ZIP, RAR, 7Z, TAR, GZ, BZ2
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Maximum file size: 50MB</p>
+                <p className="text-xs text-gray-400 mt-1">Maximum file size: 10MB (testing)</p>
               </div>
             </div>
           </div>

@@ -27,9 +27,9 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file size (50MB limit)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('File size must be less than 50MB')
+    // Validate file size (10MB limit - reduced for testing)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB')
       return
     }
 
