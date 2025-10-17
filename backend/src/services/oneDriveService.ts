@@ -322,6 +322,34 @@ export class OneDriveService {
     }
   }
 
+  // Helper method to get the most appropriate MIME type for Graph API
+  private static getOptimalMimeType(mimeType: string): string {
+    // Map common MIME types to their optimal Graph API equivalents
+    const mimeTypeMap: { [key: string]: string } = {
+      'application/pdf': 'application/pdf',
+      'application/msword': 'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel': 'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg': 'image/jpeg',
+      'image/png': 'image/png',
+      'image/gif': 'image/gif',
+      'image/webp': 'image/webp',
+      'application/zip': 'application/zip',
+      'application/x-zip-compressed': 'application/zip',
+      'application/x-rar-compressed': 'application/vnd.rar',
+      'application/vnd.rar': 'application/vnd.rar',
+      'application/x-7z-compressed': 'application/x-7z-compressed',
+      'application/x-tar': 'application/x-tar',
+      'application/gzip': 'application/gzip',
+      'application/x-bzip2': 'application/x-bzip2',
+      'text/plain': 'text/plain',
+      'text/csv': 'text/csv'
+    };
+    
+    return mimeTypeMap[mimeType] || 'application/octet-stream';
+  }
+
   static async uploadFile(dealId: string, filename: string, fileBuffer: Buffer, mimeType: string): Promise<OneDriveFile> {
     try {
       const accessToken = await this.getAccessToken();
@@ -335,6 +363,20 @@ export class OneDriveService {
       const filePath = `${folderPath}/${dealFolderName}/${sanitizedFilename}`;
       
       console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
+      console.log('📤 [ONEDRIVE] File size:', fileBuffer.length, 'bytes');
+      console.log('📤 [ONEDRIVE] Original MIME type:', mimeType);
+      
+      // Get optimal MIME type for Graph API
+      const optimalMimeType = this.getOptimalMimeType(mimeType);
+      console.log('📤 [ONEDRIVE] Using MIME type:', optimalMimeType);
+      
+      // Check if file is larger than 4MB and needs upload session
+      const FILE_SIZE_THRESHOLD = 4 * 1024 * 1024; // 4MB
+      
+      if (fileBuffer.length > FILE_SIZE_THRESHOLD) {
+        console.log('📤 [ONEDRIVE] Large file detected, using upload session...');
+        return await this.uploadLargeFile(accessToken, filePath, fileBuffer, optimalMimeType, sanitizedFilename);
+      }
       
       // Note: Deal folder should already exist from deal creation or document check
       // If it doesn't exist, the upload will fail with 404, which is handled by the caller
@@ -374,7 +416,9 @@ export class OneDriveService {
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': mimeType
+            'Content-Type': optimalMimeType,
+            'Content-Length': fileBuffer.length.toString(),
+            'Prefer': 'respond-async'
           }
         }
       );
@@ -392,6 +436,101 @@ export class OneDriveService {
     } catch (error) {
       console.error('❌ [ONEDRIVE] Error uploading file to OneDrive:', error);
       throw new Error('Failed to upload file');
+    }
+  }
+
+  // Upload large files (>4MB) using upload sessions
+  private static async uploadLargeFile(accessToken: string, filePath: string, fileBuffer: Buffer, mimeType: string, filename: string): Promise<OneDriveFile> {
+    try {
+      // Find the SharePoint site for the upload
+      let sharePointSiteId = null;
+      try {
+        const siteResponse = await axios.get(
+          `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        if (siteResponse.data && siteResponse.data.id) {
+          sharePointSiteId = siteResponse.data.id;
+        }
+      } catch (siteError: any) {
+        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for large file upload, using OneDrive...');
+      }
+      
+      const baseUrl = sharePointSiteId 
+        ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
+        : `${this.GRAPH_BASE_URL}/me/drive`;
+      
+      // Step 1: Create upload session
+      const createSessionUrl = `${baseUrl}/root:/${encodeURIComponent(filePath)}:/createUploadSession`;
+      
+      const sessionResponse = await axios.post(
+        createSessionUrl,
+        {
+          item: {
+            '@microsoft.graph.conflictBehavior': 'replace'
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const uploadUrl = sessionResponse.data.uploadUrl;
+      console.log('📤 [ONEDRIVE] Created upload session for large file');
+      
+      // Step 2: Upload file in chunks
+      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
+      const totalSize = fileBuffer.length;
+      
+      for (let start = 0; start < totalSize; start += CHUNK_SIZE) {
+        const end = Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
+        const chunk = fileBuffer.slice(start, end + 1);
+        
+        console.log(`📤 [ONEDRIVE] Uploading chunk ${Math.floor(start / CHUNK_SIZE) + 1}/${Math.ceil(totalSize / CHUNK_SIZE)}`);
+        
+        await axios.put(
+          uploadUrl,
+          chunk,
+          {
+            headers: {
+              'Content-Length': chunk.length.toString(),
+              'Content-Range': `bytes ${start}-${end}/${totalSize}`
+            }
+          }
+        );
+      }
+      
+      console.log('✅ [ONEDRIVE] Large file uploaded successfully:', filename);
+      
+      // Step 3: Get file metadata
+      const fileUrl = `${baseUrl}/root:/${encodeURIComponent(filePath)}`;
+      const fileResponse = await axios.get(fileUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      return {
+        id: fileResponse.data.id,
+        name: fileResponse.data.name,
+        size: fileResponse.data.size,
+        createdDateTime: fileResponse.data.createdDateTime,
+        lastModifiedDateTime: fileResponse.data.lastModifiedDateTime,
+        webUrl: fileResponse.data.webUrl,
+        downloadUrl: fileResponse.data['@microsoft.graph.downloadUrl']
+      };
+      
+    } catch (error) {
+      console.error('❌ [ONEDRIVE] Error uploading large file:', error);
+      throw new Error('Failed to upload large file');
     }
   }
 
