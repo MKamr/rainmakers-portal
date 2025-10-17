@@ -13,7 +13,7 @@ import { generatePKCEChallenge } from '../utils/pkce';
 
 const router = express.Router();
 
-// Handle CORS preflight requests for admin file uploads
+// Handle CORS preflight requests for admin file upload
 router.options('/onedrive/upload', (req, res) => {
   console.log('🌐 [CORS] Preflight request for /admin/onedrive/upload');
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');

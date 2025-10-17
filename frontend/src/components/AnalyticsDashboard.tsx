@@ -13,7 +13,7 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
-  // Helper function to parse loan amount from string
+  // Helper function to parse loan amount from strings
   const parseLoanAmount = (deal: Deal): number => {
     // Always parse consistently to avoid data inconsistencies
     const stringValue = (deal.loanAmount || deal.loanRequest || deal.applicationLoanRequest || '').toString()
