@@ -527,7 +527,7 @@ router.get('/firebase/test', async (req: Request, res: Response) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit (reduced for testing)
+    fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req: Request, file: any, cb: any) => {
     const allowedTypes = [

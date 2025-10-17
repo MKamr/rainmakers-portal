@@ -8,11 +8,47 @@ import { Request, Response } from 'express';
 
 const router = express.Router();
 
+// Add CORS middleware specifically for documents routes
+router.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://rain.club',
+    'https://www.rain.club',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 // Handle CORS preflight requests for file uploads
 router.options('/upload', (req, res) => {
   console.log('🌐 [CORS] Preflight request for /upload');
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+// Handle CORS preflight requests for file deletion
+router.options('/:id', (req, res) => {
+  console.log('🌐 [CORS] Preflight request for DELETE /:id');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.status(200).end();
@@ -33,7 +69,7 @@ router.get('/test-cors', (req, res) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit (reduced for testing)
+    fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req: Request, file: any, cb: any) => {
     const allowedTypes = [
@@ -269,10 +305,25 @@ router.put('/:id', [
 // Delete document
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    // Document operations are disabled
-    res.status(404).json({ error: 'Document not found' });
+    console.log('🗑️ [DELETE] Delete document request:', req.params.id);
+    
+    const documentId = req.params.id;
+    if (!documentId) {
+      return res.status(400).json({ error: 'Document ID is required' });
+    }
+
+    // Delete from OneDrive
+    try {
+      await OneDriveService.deleteFile(documentId);
+      console.log('✅ [DELETE] Document deleted from OneDrive:', documentId);
+    } catch (oneDriveError) {
+      console.warn('⚠️ [DELETE] Failed to delete from OneDrive:', oneDriveError);
+      // Continue with response even if OneDrive deletion fails
+    }
+
+    res.json({ message: 'Document deleted successfully' });
   } catch (error) {
-    console.error('Delete document error:', error);
+    console.error('❌ [DELETE] Delete document error:', error);
     res.status(500).json({ error: 'Failed to delete document' });
   }
 });
