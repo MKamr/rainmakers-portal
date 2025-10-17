@@ -19,7 +19,7 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
     const stringValue = (deal.loanAmount || deal.loanRequest || deal.applicationLoanRequest || '').toString()
     
     // Extract the first number from the string (before any non-numeric characters)
-    const match = stringValue.match(/[\d,]+/)
+    const match = stringValue.match(/^[\d,]+/)
     if (!match) return 0
     
     const numericPart = match[0]

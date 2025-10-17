@@ -232,16 +232,11 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     }
     const raw = String(value).trim()
     if (!raw) return 0
-    
-    // Debug logging
-    console.log('🔍 [DEBUG] Parsing loan amount:', { raw, value })
-    
     const lower = raw.toLowerCase().replace(/[$,\s]/g, '')
     const match = lower.match(/^(\d+(?:\.\d+)?)(mm|m|million|k|b|bn|billion)?$/)
     if (match) {
       const num = parseFloat(match[1])
       const unit = match[2]
-      console.log('🔍 [DEBUG] Regex match:', { num, unit })
       if (!unit) return num < 1000 ? num * 1_000_000 : num
       switch (unit) {
         case 'mm':
@@ -258,15 +253,17 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
           return num
       }
     }
-    const numeric = parseFloat(lower.replace(/[^0-9.]/g, ''))
-    console.log('🔍 [DEBUG] Fallback parsing:', { lower, numeric })
+    // Extract only the first number from the string to avoid concatenating multiple numbers
+    const firstNumberMatch = lower.match(/^(\d+(?:\.\d+)?)/)
+    if (!firstNumberMatch) return 0
+    
+    const numeric = parseFloat(firstNumberMatch[1])
     if (isNaN(numeric)) return 0
     return numeric < 1000 ? numeric * 1_000_000 : numeric
   }
 
   const formatLoanAmountDisplay = (value: string | number | undefined): string => {
     const dollars = parseLoanAmountToDollars(value)
-    console.log('🔍 [DEBUG] formatLoanAmountDisplay:', { value, dollars })
     if (!dollars) return '$0'
     if (dollars >= 1_000_000_000) return `$${(dollars / 1_000_000_000).toFixed(1)}B`
     if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}M`
@@ -278,14 +275,6 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     return deals.reduce((sum, deal) => {
       // Always use parseLoanAmountToDollars for consistency
       const loanAmount = parseLoanAmountToDollars(deal.loanAmount || deal.loanRequest || deal.applicationLoanRequest)
-      console.log('🔍 [DEBUG] getTotalLoanAmount:', { 
-        dealId: deal.id, 
-        loanAmount: deal.loanAmount, 
-        loanRequest: deal.loanRequest, 
-        applicationLoanRequest: deal.applicationLoanRequest,
-        parsedAmount: loanAmount,
-        runningSum: sum + loanAmount
-      })
       return sum + loanAmount
     }, 0)
   }
