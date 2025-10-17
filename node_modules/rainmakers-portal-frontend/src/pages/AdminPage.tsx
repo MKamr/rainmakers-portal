@@ -8,7 +8,6 @@ import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, C
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 import DiscordAutoAccess from '../components/DiscordAutoAccess'
-import RawDataViewer from '../components/RawDataViewer'
 
 // Email Configuration Tab Component
 function EmailConfigurationTab() {
@@ -1354,7 +1353,10 @@ export function AdminPage() {
 
 
       {activeTab === 'raw-data' && (
-        <RawDataViewer />
+        <div className="bg-gray-800 shadow rounded-lg border border-gray-700 p-6">
+          <h3 className="text-lg font-medium text-white mb-4">Raw Data Viewer</h3>
+          <p className="text-gray-400">This feature is currently unavailable.</p>
+        </div>
       )}
 
       {activeTab === 'discord-auto-access' && (
