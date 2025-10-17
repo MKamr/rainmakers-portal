@@ -77,7 +77,9 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
       'image/gif',
       'image/webp',
       'application/zip',
+      'application/x-zip-compressed',
       'application/x-rar-compressed',
+      'application/vnd.rar',
       'application/x-7z-compressed',
       'application/x-tar',
       'application/gzip',
@@ -87,7 +89,13 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error('File type not supported. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP, ZIP, RAR, 7Z, TAR, GZ, BZ2, TXT, or CSV files.');
+      console.log('🔍 [DEBUG] File upload rejected:', { 
+        fileName: file.name, 
+        fileType: file.type, 
+        fileSize: file.size,
+        allowedTypes: allowedTypes 
+      });
+      toast.error(`File type not supported. Detected type: ${file.type}. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP, ZIP, RAR, 7Z, TAR, GZ, BZ2, TXT, or CSV files.`);
       return;
     }
 
