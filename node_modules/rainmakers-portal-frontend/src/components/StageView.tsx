@@ -184,7 +184,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
       return `$${(amount / 1_000_000_000).toFixed(1)}B`
     }
     if (amount >= 1_000_000) {
-      return `$${(amount / 1_000_000).toFixed(1)}MM`
+      return `$${(amount / 1_000_000).toFixed(1)}M`
     }
     if (amount >= 1_000) {
       return `$${Math.round(amount / 1_000)}K`
@@ -227,7 +227,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   const parseLoanAmountToDollars = (value: string | number | undefined): number => {
     if (value === undefined || value === null) return 0
     if (typeof value === 'number') {
-      if (value < 1000) return value * 1_000_000 // assume millions for small numbers
+      // If it's a number, return it as-is (assuming it's already in dollars)
       return value
     }
     const raw = String(value).trim()
@@ -290,8 +290,17 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
       return formatCurrency(value)
     }
     
-    // If it's a string, parse it
-    const cleanedValue = value.toString()
+    // If it's a string, extract the numeric part
+    const stringValue = value.toString()
+    
+    // Extract the first number from the string (before any non-numeric characters)
+    const match = stringValue.match(/[\d,]+/)
+    if (!match) return 'N/A'
+    
+    const numericPart = match[0]
+    
+    // Clean and parse the numeric part
+    const cleanedValue = numericPart
       .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
       .replace(/[Kk]/g, '000') // Convert K/k to 000
       .replace(/[Mm]/g, '000000') // Convert M/m to 000000

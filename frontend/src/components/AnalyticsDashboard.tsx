@@ -22,8 +22,16 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
     
     // Then try loanRequest (current primary field)
     if (deal.loanRequest) {
-      // Remove common characters and parse
-      const cleanedValue = deal.loanRequest.toString()
+      const stringValue = deal.loanRequest.toString()
+      
+      // Extract the first number from the string (before any non-numeric characters)
+      const match = stringValue.match(/[\d,]+/)
+      if (!match) return 0
+      
+      const numericPart = match[0]
+      
+      // Clean and parse the numeric part
+      const cleanedValue = numericPart
         .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
         .replace(/[Kk]/g, '000') // Convert K/k to 000
         .replace(/[Mm]/g, '000000') // Convert M/m to 000000
