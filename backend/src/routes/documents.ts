@@ -8,6 +8,16 @@ import { Request, Response } from 'express';
 
 const router = express.Router();
 
+// Handle CORS preflight requests for file uploads
+router.options('/upload', (req, res) => {
+  console.log('🌐 [CORS] Preflight request for /upload');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -126,6 +136,8 @@ router.post('/upload', upload.single('file'), [
 ], async (req: Request, res: Response) => {
   try {
     console.log('📄 [UPLOAD] Upload request received');
+    console.log('📄 [UPLOAD] Request origin:', req.headers.origin);
+    console.log('📄 [UPLOAD] Request headers:', req.headers);
     console.log('📄 [UPLOAD] User ID:', req.user?.id);
     console.log('📄 [UPLOAD] Request body:', req.body);
     console.log('📄 [UPLOAD] File:', req.file ? { name: req.file.originalname, size: req.file.size, type: req.file.mimetype } : 'No file');
