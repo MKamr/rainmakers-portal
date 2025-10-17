@@ -262,17 +262,16 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     const dollars = parseLoanAmountToDollars(value)
     if (!dollars) return '$0'
     if (dollars >= 1_000_000_000) return `$${(dollars / 1_000_000_000).toFixed(1)}B`
-    if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}MM`
+    if (dollars >= 1_000_000) return `$${(dollars / 1_000_000).toFixed(1)}M`
     if (dollars >= 1_000) return `$${Math.round(dollars / 1_000)}K`
     return `$${dollars}`
   }
 
   const getTotalLoanAmount = (deals: Deal[]) => {
     return deals.reduce((sum, deal) => {
-      if (deal.loanAmount && typeof deal.loanAmount === 'number') {
-        return sum + deal.loanAmount
-      }
-      return sum + parseLoanAmountToDollars(deal.loanRequest || deal.applicationLoanRequest)
+      // Always use parseLoanAmountToDollars for consistency
+      const loanAmount = parseLoanAmountToDollars(deal.loanAmount || deal.loanRequest || deal.applicationLoanRequest)
+      return sum + loanAmount
     }, 0)
   }
 

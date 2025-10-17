@@ -59,9 +59,9 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File size must be less than 50MB');
       return;
     }
 
@@ -74,11 +74,20 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/jpeg',
       'image/png',
-      'application/zip'
+      'image/gif',
+      'image/webp',
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/x-tar',
+      'application/gzip',
+      'application/x-bzip2',
+      'text/plain',
+      'text/csv'
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error('File type not supported. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, or ZIP files.');
+      toast.error('File type not supported. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP, ZIP, RAR, 7Z, TAR, GZ, BZ2, TXT, or CSV files.');
       return;
     }
 
@@ -113,7 +122,8 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
     if (mimeType.includes('image')) return '🖼️';
-    if (mimeType.includes('zip')) return '📦';
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z') || mimeType.includes('tar') || mimeType.includes('gzip') || mimeType.includes('bzip2')) return '📦';
+    if (mimeType.includes('text') || mimeType.includes('csv')) return '📄';
     return '📄';
   };
 
@@ -126,7 +136,7 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
           type="file"
           onChange={handleFileSelect}
           className="hidden"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z,.tar,.gz,.bz2,.txt,.csv"
           disabled={isUploading}
         />
         
@@ -141,9 +151,24 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
               >
                 {isUploading ? 'Uploading...' : 'Click to upload documents'}
               </button>
-              <p className="text-sm text-gray-500 mt-1">
-                PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max 10MB)
-              </p>
+              <div className="text-sm text-gray-500 mt-2 space-y-1">
+                <p className="font-medium">Supported file types:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div>
+                    <span className="font-medium">Documents:</span> PDF, DOC, DOCX, TXT, CSV
+                  </div>
+                  <div>
+                    <span className="font-medium">Spreadsheets:</span> XLS, XLSX
+                  </div>
+                  <div>
+                    <span className="font-medium">Images:</span> JPG, PNG, GIF, WEBP
+                  </div>
+                  <div>
+                    <span className="font-medium">Archives:</span> ZIP, RAR, 7Z, TAR, GZ, BZ2
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Maximum file size: 50MB</p>
+              </div>
             </div>
           </div>
       </div>

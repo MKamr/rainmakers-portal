@@ -27,6 +27,38 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File size must be less than 50MB')
+      return
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/x-tar',
+      'application/gzip',
+      'application/x-bzip2',
+      'text/plain',
+      'text/csv'
+    ]
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('File type not supported. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP, ZIP, RAR, 7Z, TAR, GZ, BZ2, TXT, or CSV files.')
+      return
+    }
+
     // Allow all users to upload documents
 
     setUploading(true)
@@ -389,6 +421,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                           type="file"
                           onChange={handleFileUpload}
                           disabled={uploading}
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z,.tar,.gz,.bz2,.txt,.csv"
                         className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
                         />
                         {uploading && (

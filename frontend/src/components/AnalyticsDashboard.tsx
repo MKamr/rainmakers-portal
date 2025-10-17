@@ -15,35 +15,25 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
   // Helper function to parse loan amount from string
   const parseLoanAmount = (deal: Deal): number => {
-    // Try loanAmount first (for backwards compatibility)
-    if (deal.loanAmount && typeof deal.loanAmount === 'number') {
-      return deal.loanAmount
-    }
+    // Always parse consistently to avoid data inconsistencies
+    const stringValue = (deal.loanAmount || deal.loanRequest || deal.applicationLoanRequest || '').toString()
     
-    // Then try loanRequest (current primary field)
-    if (deal.loanRequest) {
-      const stringValue = deal.loanRequest.toString()
-      
-      // Extract the first number from the string (before any non-numeric characters)
-      const match = stringValue.match(/[\d,]+/)
-      if (!match) return 0
-      
-      const numericPart = match[0]
-      
-      // Clean and parse the numeric part
-      const cleanedValue = numericPart
-        .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
-        .replace(/[Kk]/g, '000') // Convert K/k to 000
-        .replace(/[Mm]/g, '000000') // Convert M/m to 000000
-        .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
-        .trim()
-      
-      const parsed = parseFloat(cleanedValue)
-      return isNaN(parsed) ? 0 : parsed
-    }
+    // Extract the first number from the string (before any non-numeric characters)
+    const match = stringValue.match(/[\d,]+/)
+    if (!match) return 0
     
-    // Fallback to 0
-    return 0
+    const numericPart = match[0]
+    
+    // Clean and parse the numeric part
+    const cleanedValue = numericPart
+      .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
+      .replace(/[Kk]/g, '000') // Convert K/k to 000
+      .replace(/[Mm]/g, '000000') // Convert M/m to 000000
+      .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
+      .trim()
+    
+    const parsed = parseFloat(cleanedValue)
+    return isNaN(parsed) ? 0 : parsed
   }
 
   // Calculate analytics using new field names
