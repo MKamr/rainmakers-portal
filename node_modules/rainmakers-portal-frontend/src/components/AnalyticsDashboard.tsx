@@ -13,9 +13,34 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
+  // Helper function to parse loan amount from string
+  const parseLoanAmount = (deal: Deal): number => {
+    // Try loanAmount first (for backwards compatibility)
+    if (deal.loanAmount && typeof deal.loanAmount === 'number') {
+      return deal.loanAmount
+    }
+    
+    // Then try loanRequest (current primary field)
+    if (deal.loanRequest) {
+      // Remove common characters and parse
+      const cleanedValue = deal.loanRequest.toString()
+        .replace(/[$,\s]/g, '') // Remove $, commas, and spaces
+        .replace(/[Kk]/g, '000') // Convert K/k to 000
+        .replace(/[Mm]/g, '000000') // Convert M/m to 000000
+        .replace(/[Bb]/g, '000000000') // Convert B/b to 000000000
+        .trim()
+      
+      const parsed = parseFloat(cleanedValue)
+      return isNaN(parsed) ? 0 : parsed
+    }
+    
+    // Fallback to 0
+    return 0
+  }
+
   // Calculate analytics using new field names
   const totalDeals = deals.length
-  const totalLoanAmount = deals.reduce((sum, deal) => sum + (deal.loanAmount || 0), 0)
+  const totalLoanAmount = deals.reduce((sum, deal) => sum + parseLoanAmount(deal), 0)
   const activeDeals = deals.filter(deal => deal.status !== 'Closed').length
   
   // Stage distribution
@@ -229,7 +254,7 @@ export function AnalyticsDashboard({ deals }: AnalyticsDashboardProps) {
                     {deal.propertyName || deal.opportunityName || 'Unnamed Deal'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 matrix-activity-details">
-                    {deal.stage || 'Qualification'} • {formatCurrency(deal.loanAmount || 0)}
+                    {deal.stage || 'Qualification'} • {formatCurrency(parseLoanAmount(deal))}
                   </p>
                 </div>
               </div>
