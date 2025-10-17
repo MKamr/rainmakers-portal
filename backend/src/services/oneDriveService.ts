@@ -610,9 +610,10 @@ export class OneDriveService {
 
   static async deleteFile(fileId: string): Promise<void> {
     try {
+      console.log('🗑️ [ONEDRIVE] Attempting to delete file:', fileId);
       const accessToken = await this.getAccessToken();
       
-      await axios.delete(
+      const response = await axios.delete(
         `${this.GRAPH_BASE_URL}/me/drive/items/${fileId}`,
         {
           headers: {
@@ -620,9 +621,17 @@ export class OneDriveService {
           }
         }
       );
-    } catch (error) {
-      console.error('Error deleting OneDrive file:', error);
-      throw new Error('Failed to delete file');
+      
+      console.log('✅ [ONEDRIVE] File deleted successfully:', fileId, 'Status:', response.status);
+    } catch (error: any) {
+      console.error('❌ [ONEDRIVE] Error deleting file:', fileId);
+      console.error('❌ [ONEDRIVE] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw new Error(`Failed to delete file: ${error.response?.data?.error?.message || error.message}`);
     }
   }
 }

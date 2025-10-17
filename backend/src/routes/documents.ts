@@ -65,6 +65,30 @@ router.get('/test-cors', (req, res) => {
   });
 });
 
+// Test endpoint to list OneDrive files for debugging
+router.get('/test-onedrive', async (req, res) => {
+  try {
+    console.log('🔍 [TEST] Listing OneDrive files for debugging');
+    const files = await OneDriveService.getFiles();
+    res.json({
+      message: 'OneDrive files retrieved',
+      count: files.length,
+      files: files.map(f => ({
+        id: f.id,
+        name: f.name,
+        size: f.size,
+        webUrl: f.webUrl
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [TEST] OneDrive test error:', error);
+    res.status(500).json({ 
+      error: 'Failed to list OneDrive files', 
+      details: error.message 
+    });
+  }
+});
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -313,18 +337,16 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
 
     // Delete from OneDrive
-    try {
-      await OneDriveService.deleteFile(documentId);
-      console.log('✅ [DELETE] Document deleted from OneDrive:', documentId);
-    } catch (oneDriveError) {
-      console.warn('⚠️ [DELETE] Failed to delete from OneDrive:', oneDriveError);
-      // Continue with response even if OneDrive deletion fails
-    }
+    await OneDriveService.deleteFile(documentId);
+    console.log('✅ [DELETE] Document deleted successfully from OneDrive:', documentId);
 
     res.json({ message: 'Document deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [DELETE] Delete document error:', error);
-    res.status(500).json({ error: 'Failed to delete document' });
+    res.status(500).json({ 
+      error: 'Failed to delete document', 
+      details: error.message 
+    });
   }
 });
 
