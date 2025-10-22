@@ -329,7 +329,7 @@ export const appointmentsAPI = {
   deleteSubAccount: (id: string): Promise<{ message: string }> =>
     api.delete(`/appointments/admin/sub-accounts/${id}`).then(res => res.data),
 
-  testSubAccount: (id: string): Promise<{ success: boolean; message: string; appointmentsFound?: number }> =>
+  testSubAccount: (id: string): Promise<{ success: boolean; message: string; appointmentsFound?: number; statusCode?: number; details?: any }> =>
     api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
 };
 
