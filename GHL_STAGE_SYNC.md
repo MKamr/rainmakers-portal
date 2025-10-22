@@ -81,36 +81,6 @@ Since GHL doesn't accept localhost URLs, use ngrok to create a public tunnel:
 4. **Copy ngrok URL**: Use the HTTPS URL from ngrok (e.g., `https://abc123.ngrok.io`)
 5. **Set up GHL webhook**: Use `https://abc123.ngrok.io/api/deals/webhook/ghl-opportunity-update`
 
-### GHL V2 Calendars / Events (appointments) — quick reference
-The V2 "LeadConnectorHQ" calendars/events endpoint can be used to list appointments in a time range. Useful when you need to verify scheduled appointments or test calendar webhooks.
-
-- Base URL: https://services.leadconnectorhq.com
-- Path: /calendars/events
-- Method: GET
-- Required headers:
-  - Authorization: Bearer <V2_TOKEN>
-  - Version: 2021-04-15
-  - Accept: application/json
-- Required query params:
-  - locationId (string)
-  - startTime (epoch milliseconds)
-  - endTime (epoch milliseconds)
-  - At least one of: calendarId, userId, or groupId
-
-Example curl (replace placeholders):
-```bash
-# Example: list events for a short window (startTime/endTime are epoch ms)
-curl -L "https://services.leadconnectorhq.com/calendars/events?locationId=Tlhr44fv13JVDLKJAX1g&calendarId=FxphdAHb9GEmE1sI4Gu1&startTime=1761142800000&endTime=1761144600000" \
-  -H "Accept: application/json" \
-  -H "Version: 2021-04-15" \
-  -H "Authorization: Bearer YOUR_GHL_V2_TOKEN"
-```
-
-Notes:
-- startTime and endTime must be epoch milliseconds (Unix ms). Use a short range when testing.
-- Provide one of calendarId, userId or groupId or the API will return an error.
-- Use your V2 private integration token (do not commit tokens to repo). 
-
 ## Troubleshooting
 
 ### Common Issues

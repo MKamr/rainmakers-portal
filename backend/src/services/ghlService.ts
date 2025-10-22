@@ -1238,7 +1238,11 @@ export class GHLService {
       
       // Merge with existing custom fields (if any)
       const existingCustomFields = Array.isArray(currentContact.customFields) ? currentContact.customFields : [];
-      const updatedCustomFields = [...existingCustomFields];
+      const updatedCustomFields = existingCustomFields.map(field => ({
+        id: field.id,
+        key: field.key,
+        field_value: field.field_value || field.fieldValue || ''
+      }));
       
       // Update or add new custom fields
       customFieldsArray.forEach(newField => {
@@ -1249,7 +1253,7 @@ export class GHLService {
           updatedCustomFields.push({
             id: newField.id,
             key: newField.key,
-            field_value: newField.field_value
+            field_value: newField.field_value || ''
           });
         }
       });
@@ -1365,6 +1369,78 @@ export class GHLService {
 
   static async getAllCustomFields(): Promise<any> {
     return await this.getCustomFields('all');
+  }
+
+  // Calendar Events method (matching the provided curl command)
+  static async getCalendarEvents(params: {
+    locationId: string;
+    calendarId: string;
+    startTime: number;
+    endTime: number;
+    subAccountId?: string; // Optional sub-account ID
+  }): Promise<any[]> {
+    try {
+      console.log('📅 [GHL CALENDAR EVENTS] Fetching calendar events with params:', params);
+
+      // Get sub-account credentials if subAccountId is provided
+      let subAccountCredentials = null;
+      if (params?.subAccountId) {
+        subAccountCredentials = await FirebaseService.getSubAccountById(params.subAccountId);
+        if (!subAccountCredentials) {
+          throw new Error(`Sub-account with ID ${params.subAccountId} not found`);
+        }
+      }
+
+      // Use V2 API (matching the curl command)
+      let v2Token: string | null = null;
+      let headers: any;
+
+      if (subAccountCredentials?.v2Token) {
+        console.log('📅 [GHL CALENDAR EVENTS] Using sub-account V2 token');
+        v2Token = subAccountCredentials.v2Token;
+        headers = {
+          'Authorization': `Bearer ${v2Token}`,
+          'Version': '2021-04-15', // Matching curl command version
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+      } else {
+        v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+        if (v2Token) {
+          console.log('📅 [GHL CALENDAR EVENTS] Using default V2 API');
+          headers = {
+            'Authorization': `Bearer ${v2Token}`,
+            'Version': '2021-04-15', // Matching curl command version
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+        } else {
+          throw new Error('V2 token not configured');
+        }
+      }
+
+      const endpoint = `${this.GHL_V2_BASE_URL}/calendars/events`;
+      const queryParams: any = {
+        locationId: params.locationId,
+        calendarId: params.calendarId,
+        startTime: params.startTime,
+        endTime: params.endTime
+      };
+
+      console.log('📅 [GHL CALENDAR EVENTS] Using endpoint:', endpoint);
+      console.log('📅 [GHL CALENDAR EVENTS] Query params:', queryParams);
+
+      const response = await axios.get(endpoint, {
+        headers,
+        params: queryParams
+      });
+
+      console.log('✅ [GHL CALENDAR EVENTS] Success, found events:', response.data.events?.length || 0);
+      return response.data.events || [];
+    } catch (error: any) {
+      console.error('❌ [GHL CALENDAR EVENTS] Error fetching calendar events:', error);
+      throw error;
+    }
   }
 
   // Appointment methods
