@@ -93,7 +93,8 @@ export const SubAccountManagement: React.FC = () => {
       setError(null);
       const result = await appointmentsAPI.testSubAccount(id);
       if (result.success) {
-        alert(`✅ Connection successful! Found ${result.appointmentsFound || 0} appointments.`);
+        const testInfo = result.testResult ? ` (${result.testResult.message})` : '';
+        alert(`✅ Connection successful!${testInfo}`);
       } else {
         let errorMsg = result.message;
         if (result.statusCode) {

@@ -329,8 +329,516 @@ export const appointmentsAPI = {
   deleteSubAccount: (id: string): Promise<{ message: string }> =>
     api.delete(`/appointments/admin/sub-accounts/${id}`).then(res => res.data),
 
+  testSubAccount: (id: string): Promise<{ success: boolean; message: string; testResult?: any; statusCode?: number; details?: any }> =>
+    api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
+};
+
+export default api;
+
+
+
+  getGHLPipelinesWithKey: (apiKey: string): Promise<{ pipelines: any[] }> =>
+
+    api.post('/admin/ghl/pipelines', { apiKey }).then(res => res.data),
+
+
+
+  getGHLCalendars: (): Promise<{ calendars: any[] }> =>
+
+    api.get('/admin/ghl/calendars').then(res => res.data),
+
+
+
+  getGHLConfig: (): Promise<{
+
+    apiKey?: string;
+
+    v2Token?: string;
+
+    pipelineId?: string;
+
+    calendarId?: string;
+
+    locationId?: string;
+
+    assignedUserId?: string;
+
+    underReviewStageId?: string;
+
+    inUnderwritingStageId?: string;
+
+    loeSentStageId?: string;
+
+    closedStageId?: string;
+
+    noShowStageId?: string;
+
+  }> =>
+
+    api.get('/admin/ghl/config').then(res => res.data),
+
+  
+
+  saveGHLConfig: (config: {
+
+    apiKey: string;
+
+    v2Token?: string;
+
+    pipelineId?: string;
+
+    calendarId?: string;
+
+    locationId?: string;
+
+    assignedUserId?: string;
+
+    underReviewStageId?: string;
+
+    inUnderwritingStageId?: string;
+
+    loeSentStageId?: string;
+
+    closedStageId?: string;
+
+    noShowStageId?: string;
+
+  }): Promise<{ message: string }> =>
+
+    api.post('/admin/ghl/config', config).then(res => res.data),
+
+  
+
+  getAnalytics: (): Promise<Analytics> =>
+
+    api.get('/admin/analytics').then(res => res.data),
+
+
+
+  testGHLContact: (data: {
+
+    firstName: string;
+
+    lastName: string;
+
+    email: string;
+
+    phone: string;
+
+  }): Promise<{ success: boolean; contact: any }> =>
+
+    api.post('/admin/ghl/test-contact', data).then(res => res.data),
+
+
+
+  fetchGHLCustomFields: (): Promise<{
+
+    success: boolean;
+
+    summary: {
+
+      totalFields: number;
+
+      contactFields: number;
+
+      opportunityFields: number;
+
+    };
+
+    contactFields: any[];
+
+    opportunityFields: any[];
+
+  }> =>
+
+    api.post('/admin/ghl/fetch-custom-fields').then(res => res.data),
+
+
+
+  // GHL Import methods
+
+  getGHLOpportunities: (): Promise<{ opportunities: any[] }> =>
+
+    api.get('/admin/ghl/opportunities').then(res => res.data),
+
+
+
+  importGHLOpportunity: (data: {
+
+    opportunityId: string;
+
+    userId: string;
+
+    opportunity: any;
+
+  }): Promise<{ success: boolean; dealId: string; message: string }> =>
+
+    api.post('/admin/ghl/import-opportunity', data).then(res => res.data),
+
+
+
+  // Pipeline-specific methods
+
+  getGHLPipelineOpportunities: (pipelineId: string): Promise<{ opportunities: any[] }> =>
+
+    api.get(`/admin/ghl/pipeline/${pipelineId}/opportunities`).then(res => res.data),
+
+
+
+  // Email configuration methods
+
+  getEmailConfig: (): Promise<any> =>
+
+    api.get('/admin/email/config').then(res => res.data),
+
+
+
+  saveEmailConfig: (config: any): Promise<{ success: boolean; message: string }> =>
+
+    api.post('/admin/email/config', config).then(res => res.data),
+
+
+
+  testEmail: (data: { testEmail: string }): Promise<{ success: boolean; message: string }> =>
+
+    api.post('/admin/email/test', data).then(res => res.data),
+
+};
+
+
+// Appointments API
+export const appointmentsAPI = {
+  // User methods
+  getTermsText: (): Promise<{ terms: string }> =>
+    api.get('/appointments/terms').then(res => res.data),
+  
+  acceptTerms: (): Promise<{ message: string }> =>
+    api.post('/appointments/accept-terms').then(res => res.data),
+  
+  getTermsStatus: (): Promise<{ hasAccepted: boolean }> =>
+    api.get('/appointments/terms-status').then(res => res.data),
+  
+  getMyAssignments: (): Promise<{ appointments: Appointment[] }> =>
+    api.get('/appointments/my-assignments').then(res => res.data),
+  
+  submitCallNotes: (id: string, data: CallNotesData): Promise<{ appointment: Appointment }> =>
+    api.post(`/appointments/${id}/call-notes`, data).then(res => res.data),
+  
+  getAppointmentDetails: (id: string): Promise<{ appointment: Appointment }> =>
+    api.get(`/appointments/${id}`).then(res => res.data),
+  
+  // Admin methods
+  listAllAppointments: (filters?: AppointmentFilters): Promise<{ appointments: Appointment[] }> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.assignedToUserId) params.append('assignedToUserId', filters.assignedToUserId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/appointments/admin/list?${queryString}` : '/appointments/admin/list';
+    return api.get(url).then(res => res.data);
+  },
+  
+  syncFromGHL: (data?: { startDate?: string; endDate?: string; calendarId?: string; subAccountId?: string }): Promise<{ 
+    message: string; 
+    syncedCount: number; 
+    skippedCount: number; 
+    totalFromGHL: number;
+    subAccountName?: string;
+  }> =>
+    api.post('/appointments/admin/sync', data).then(res => res.data),
+  
+  assignAppointment: (appointmentId: string, userId: string): Promise<{ appointment: Appointment }> =>
+    api.post('/appointments/admin/assign', { appointmentId, userId }).then(res => res.data),
+  
+  unassignAppointment: (id: string): Promise<{ appointment: Appointment }> =>
+    api.put(`/appointments/admin/${id}/unassign`).then(res => res.data),
+  
+  getAppointmentStats: (): Promise<{ 
+    stats: {
+      total: number;
+      unassigned: number;
+      assigned: number;
+      called: number;
+      completed: number;
+      noAnswer: number;
+      rescheduled: number;
+      cancelled: number;
+    }
+  }> =>
+    api.get('/appointments/admin/stats').then(res => res.data),
+
+  // Sub-account management methods
+  getSubAccounts: (): Promise<{ subAccounts: SubAccount[] }> =>
+    api.get('/appointments/admin/sub-accounts').then(res => res.data),
+
+  createSubAccount: (data: { name: string; apiKey: string; v2Token?: string; locationId: string }): Promise<{ subAccount: SubAccount }> =>
+    api.post('/appointments/admin/sub-accounts', data).then(res => res.data),
+
+  updateSubAccount: (id: string, data: { name?: string; apiKey?: string; v2Token?: string; locationId?: string; isActive?: boolean }): Promise<{ subAccount: SubAccount }> =>
+    api.put(`/appointments/admin/sub-accounts/${id}`, data).then(res => res.data),
+
+  deleteSubAccount: (id: string): Promise<{ message: string }> =>
+    api.delete(`/appointments/admin/sub-accounts/${id}`).then(res => res.data),
+
   testSubAccount: (id: string): Promise<{ success: boolean; message: string; appointmentsFound?: number; statusCode?: number; details?: any }> =>
     api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
 };
+
+
+export default api;
+
+
+
+  getGHLPipelinesWithKey: (apiKey: string): Promise<{ pipelines: any[] }> =>
+
+    api.post('/admin/ghl/pipelines', { apiKey }).then(res => res.data),
+
+
+
+  getGHLCalendars: (): Promise<{ calendars: any[] }> =>
+
+    api.get('/admin/ghl/calendars').then(res => res.data),
+
+
+
+  getGHLConfig: (): Promise<{
+
+    apiKey?: string;
+
+    v2Token?: string;
+
+    pipelineId?: string;
+
+    calendarId?: string;
+
+    locationId?: string;
+
+    assignedUserId?: string;
+
+    underReviewStageId?: string;
+
+    inUnderwritingStageId?: string;
+
+    loeSentStageId?: string;
+
+    closedStageId?: string;
+
+    noShowStageId?: string;
+
+  }> =>
+
+    api.get('/admin/ghl/config').then(res => res.data),
+
+  
+
+  saveGHLConfig: (config: {
+
+    apiKey: string;
+
+    v2Token?: string;
+
+    pipelineId?: string;
+
+    calendarId?: string;
+
+    locationId?: string;
+
+    assignedUserId?: string;
+
+    underReviewStageId?: string;
+
+    inUnderwritingStageId?: string;
+
+    loeSentStageId?: string;
+
+    closedStageId?: string;
+
+    noShowStageId?: string;
+
+  }): Promise<{ message: string }> =>
+
+    api.post('/admin/ghl/config', config).then(res => res.data),
+
+  
+
+  getAnalytics: (): Promise<Analytics> =>
+
+    api.get('/admin/analytics').then(res => res.data),
+
+
+
+  testGHLContact: (data: {
+
+    firstName: string;
+
+    lastName: string;
+
+    email: string;
+
+    phone: string;
+
+  }): Promise<{ success: boolean; contact: any }> =>
+
+    api.post('/admin/ghl/test-contact', data).then(res => res.data),
+
+
+
+  fetchGHLCustomFields: (): Promise<{
+
+    success: boolean;
+
+    summary: {
+
+      totalFields: number;
+
+      contactFields: number;
+
+      opportunityFields: number;
+
+    };
+
+    contactFields: any[];
+
+    opportunityFields: any[];
+
+  }> =>
+
+    api.post('/admin/ghl/fetch-custom-fields').then(res => res.data),
+
+
+
+  // GHL Import methods
+
+  getGHLOpportunities: (): Promise<{ opportunities: any[] }> =>
+
+    api.get('/admin/ghl/opportunities').then(res => res.data),
+
+
+
+  importGHLOpportunity: (data: {
+
+    opportunityId: string;
+
+    userId: string;
+
+    opportunity: any;
+
+  }): Promise<{ success: boolean; dealId: string; message: string }> =>
+
+    api.post('/admin/ghl/import-opportunity', data).then(res => res.data),
+
+
+
+  // Pipeline-specific methods
+
+  getGHLPipelineOpportunities: (pipelineId: string): Promise<{ opportunities: any[] }> =>
+
+    api.get(`/admin/ghl/pipeline/${pipelineId}/opportunities`).then(res => res.data),
+
+
+
+  // Email configuration methods
+
+  getEmailConfig: (): Promise<any> =>
+
+    api.get('/admin/email/config').then(res => res.data),
+
+
+
+  saveEmailConfig: (config: any): Promise<{ success: boolean; message: string }> =>
+
+    api.post('/admin/email/config', config).then(res => res.data),
+
+
+
+  testEmail: (data: { testEmail: string }): Promise<{ success: boolean; message: string }> =>
+
+    api.post('/admin/email/test', data).then(res => res.data),
+
+};
+
+
+// Appointments API
+export const appointmentsAPI = {
+  // User methods
+  getTermsText: (): Promise<{ terms: string }> =>
+    api.get('/appointments/terms').then(res => res.data),
+  
+  acceptTerms: (): Promise<{ message: string }> =>
+    api.post('/appointments/accept-terms').then(res => res.data),
+  
+  getTermsStatus: (): Promise<{ hasAccepted: boolean }> =>
+    api.get('/appointments/terms-status').then(res => res.data),
+  
+  getMyAssignments: (): Promise<{ appointments: Appointment[] }> =>
+    api.get('/appointments/my-assignments').then(res => res.data),
+  
+  submitCallNotes: (id: string, data: CallNotesData): Promise<{ appointment: Appointment }> =>
+    api.post(`/appointments/${id}/call-notes`, data).then(res => res.data),
+  
+  getAppointmentDetails: (id: string): Promise<{ appointment: Appointment }> =>
+    api.get(`/appointments/${id}`).then(res => res.data),
+  
+  // Admin methods
+  listAllAppointments: (filters?: AppointmentFilters): Promise<{ appointments: Appointment[] }> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.assignedToUserId) params.append('assignedToUserId', filters.assignedToUserId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/appointments/admin/list?${queryString}` : '/appointments/admin/list';
+    return api.get(url).then(res => res.data);
+  },
+  
+  syncFromGHL: (data?: { startDate?: string; endDate?: string; calendarId?: string; subAccountId?: string }): Promise<{ 
+    message: string; 
+    syncedCount: number; 
+    skippedCount: number; 
+    totalFromGHL: number;
+    subAccountName?: string;
+  }> =>
+    api.post('/appointments/admin/sync', data).then(res => res.data),
+  
+  assignAppointment: (appointmentId: string, userId: string): Promise<{ appointment: Appointment }> =>
+    api.post('/appointments/admin/assign', { appointmentId, userId }).then(res => res.data),
+  
+  unassignAppointment: (id: string): Promise<{ appointment: Appointment }> =>
+    api.put(`/appointments/admin/${id}/unassign`).then(res => res.data),
+  
+  getAppointmentStats: (): Promise<{ 
+    stats: {
+      total: number;
+      unassigned: number;
+      assigned: number;
+      called: number;
+      completed: number;
+      noAnswer: number;
+      rescheduled: number;
+      cancelled: number;
+    }
+  }> =>
+    api.get('/appointments/admin/stats').then(res => res.data),
+
+  // Sub-account management methods
+  getSubAccounts: (): Promise<{ subAccounts: SubAccount[] }> =>
+    api.get('/appointments/admin/sub-accounts').then(res => res.data),
+
+  createSubAccount: (data: { name: string; apiKey: string; v2Token?: string; locationId: string }): Promise<{ subAccount: SubAccount }> =>
+    api.post('/appointments/admin/sub-accounts', data).then(res => res.data),
+
+  updateSubAccount: (id: string, data: { name?: string; apiKey?: string; v2Token?: string; locationId?: string; isActive?: boolean }): Promise<{ subAccount: SubAccount }> =>
+    api.put(`/appointments/admin/sub-accounts/${id}`, data).then(res => res.data),
+
+  deleteSubAccount: (id: string): Promise<{ message: string }> =>
+    api.delete(`/appointments/admin/sub-accounts/${id}`).then(res => res.data),
+
+  testSubAccount: (id: string): Promise<{ success: boolean; message: string; appointmentsFound?: number; statusCode?: number; details?: any }> =>
+    api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
+};
+
 
 export default api;

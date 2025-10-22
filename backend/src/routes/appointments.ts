@@ -534,17 +534,15 @@ router.post('/admin/sub-accounts/:id/test', async (req: Request, res: Response) 
       return res.status(404).json({ error: 'Sub-account not found' });
     }
 
-    // Test the connection by trying to fetch appointments
+    // Test the connection using a simple API call
     try {
-      // First try without date parameters to avoid V1 API issues
-      const appointments = await GHLService.getAppointments({
-        subAccountId: subAccountId
-      });
+      // Test with a simple API call to verify credentials
+      const testResult = await GHLService.testSubAccountConnection(subAccountId);
 
       res.json({ 
         success: true, 
         message: 'Connection successful',
-        appointmentsFound: appointments.length
+        testResult: testResult
       });
     } catch (ghlError: any) {
       console.error('Sub-account test failed:', ghlError);

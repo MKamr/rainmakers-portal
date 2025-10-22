@@ -1483,6 +1483,78 @@ export class GHLService {
     }
   }
 
+  // Test sub-account connection
+  static async testSubAccountConnection(subAccountId: string): Promise<{ success: boolean; message: string; endpoint?: string }> {
+    try {
+      console.log('🔍 [GHL TEST] Testing sub-account connection:', subAccountId);
+      
+      // Get sub-account credentials
+      const subAccountCredentials = await FirebaseService.getSubAccountById(subAccountId);
+      if (!subAccountCredentials) {
+        throw new Error(`Sub-account with ID ${subAccountId} not found`);
+      }
+
+      // Try V2 API first with a simple endpoint
+      if (subAccountCredentials.v2Token) {
+        try {
+          console.log('🔍 [GHL TEST] Testing V2 API');
+          const headers = {
+            'Authorization': `Bearer ${subAccountCredentials.v2Token}`,
+            'Version': '2021-07-28',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+          
+          // Test with a simple endpoint that should work
+          const response = await axios.get(`${this.GHL_V2_BASE_URL}/locations/${subAccountCredentials.locationId}`, {
+            headers
+          });
+          
+          console.log('✅ [GHL TEST] V2 API test successful');
+          return { 
+            success: true, 
+            message: 'V2 API connection successful',
+            endpoint: 'locations'
+          };
+        } catch (v2Error: any) {
+          console.log('⚠️ [GHL TEST] V2 API failed, trying V1 API:', v2Error.message);
+        }
+      }
+
+      // Fallback to V1 API
+      if (subAccountCredentials.apiKey) {
+        try {
+          console.log('🔍 [GHL TEST] Testing V1 API');
+          const headers = {
+            'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28'
+          };
+          
+          // Test with a simple endpoint that should work
+          const response = await axios.get(`${this.GHL_BASE_URL}/locations/`, {
+            headers
+          });
+          
+          console.log('✅ [GHL TEST] V1 API test successful');
+          return { 
+            success: true, 
+            message: 'V1 API connection successful',
+            endpoint: 'locations'
+          };
+        } catch (v1Error: any) {
+          console.log('❌ [GHL TEST] V1 API also failed:', v1Error.message);
+          throw v1Error;
+        }
+      }
+
+      throw new Error('No valid API credentials found for sub-account');
+    } catch (error: any) {
+      console.error('❌ [GHL TEST] Connection test failed:', error);
+      throw error;
+    }
+  }
+
   static async getAppointmentById(appointmentId: string, subAccountId?: string): Promise<GHLAppointment | null> {
     try {
       console.log('📅 [GHL APPOINTMENT] Fetching appointment by ID:', appointmentId);
