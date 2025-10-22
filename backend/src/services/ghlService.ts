@@ -60,6 +60,20 @@ export interface GHLDeal {
   updatedAt: string;
 }
 
+export interface GHLAppointment {
+  id: string;
+  calendarId: string;
+  contactId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+  status: string;
+  location?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export class GHLService {
   private static readonly GHL_BASE_URL = process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1';
   private static readonly GHL_V2_BASE_URL = 'https://services.leadconnectorhq.com';
@@ -1351,6 +1365,196 @@ export class GHLService {
 
   static async getAllCustomFields(): Promise<any> {
     return await this.getCustomFields('all');
+  }
+
+  // Appointment methods
+  static async getAppointments(params?: {
+    calendarId?: string;
+    locationId?: string;
+    startDate?: string;
+    endDate?: string;
+    subAccountId?: string; // Optional sub-account ID
+  }): Promise<GHLAppointment[]> {
+    try {
+      console.log('📅 [GHL APPOINTMENTS] Fetching appointments with params:', params);
+      
+      // Get sub-account credentials if subAccountId is provided
+      let subAccountCredentials = null;
+      if (params?.subAccountId) {
+        subAccountCredentials = await FirebaseService.getSubAccountById(params.subAccountId);
+        if (!subAccountCredentials) {
+          throw new Error(`Sub-account with ID ${params.subAccountId} not found`);
+        }
+      }
+      
+      // Try V2 API first
+      try {
+        let v2Token: string | null = null;
+        let headers: any;
+        
+        if (subAccountCredentials?.v2Token) {
+          console.log('📅 [GHL APPOINTMENTS] Using sub-account V2 token');
+          v2Token = subAccountCredentials.v2Token;
+          headers = {
+            'Authorization': `Bearer ${v2Token}`,
+            'Version': '2021-07-28',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+        } else {
+          v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+          if (v2Token) {
+            console.log('📅 [GHL APPOINTMENTS] Using default V2 API');
+            headers = await this.getV2Headers();
+          }
+        }
+        
+        if (v2Token) {
+          const locationId = params?.locationId || subAccountCredentials?.locationId || await this.getLocationId();
+          
+          if (!locationId) {
+            throw new Error('Location ID is required for appointments');
+          }
+          
+          const endpoint = `${this.GHL_V2_BASE_URL}/calendars/events`;
+          const queryParams: any = { locationId };
+          
+          if (params?.calendarId) {
+            queryParams.calendarId = params.calendarId;
+          }
+          if (params?.startDate) {
+            queryParams.startDate = params.startDate;
+          }
+          if (params?.endDate) {
+            queryParams.endDate = params.endDate;
+          }
+          
+          const response = await axios.get(endpoint, {
+            headers,
+            params: queryParams
+          });
+          
+          console.log('✅ [GHL APPOINTMENTS] V2 API success, found appointments:', response.data.events?.length || 0);
+          return response.data.events || [];
+        }
+      } catch (v2Error: any) {
+        console.log('⚠️ [GHL APPOINTMENTS] V2 API failed, trying V1 API:', v2Error.message);
+      }
+      
+      // Fallback to V1 API
+      console.log('📅 [GHL APPOINTMENTS] Using V1 API');
+      let headers: any;
+      
+      if (subAccountCredentials?.apiKey) {
+        console.log('📅 [GHL APPOINTMENTS] Using sub-account V1 API key');
+        headers = {
+          'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28'
+        };
+      } else {
+        headers = await this.getHeaders();
+      }
+      
+      const endpoint = `${this.GHL_BASE_URL}/appointments/`;
+      
+      const queryParams: any = {};
+      if (params?.calendarId) {
+        queryParams.calendarId = params.calendarId;
+      }
+      if (params?.startDate) {
+        queryParams.startDate = params.startDate;
+      }
+      if (params?.endDate) {
+        queryParams.endDate = params.endDate;
+      }
+      
+      const response = await axios.get(endpoint, {
+        headers,
+        params: queryParams
+      });
+      
+      console.log('✅ [GHL APPOINTMENTS] V1 API success, found appointments:', response.data.appointments?.length || 0);
+      return response.data.appointments || [];
+    } catch (error: any) {
+      console.error('❌ [GHL APPOINTMENTS] Error fetching appointments:', error);
+      throw error;
+    }
+  }
+
+  static async getAppointmentById(appointmentId: string, subAccountId?: string): Promise<GHLAppointment | null> {
+    try {
+      console.log('📅 [GHL APPOINTMENT] Fetching appointment by ID:', appointmentId);
+      
+      // Get sub-account credentials if subAccountId is provided
+      let subAccountCredentials = null;
+      if (subAccountId) {
+        subAccountCredentials = await FirebaseService.getSubAccountById(subAccountId);
+        if (!subAccountCredentials) {
+          throw new Error(`Sub-account with ID ${subAccountId} not found`);
+        }
+      }
+      
+      // Try V2 API first
+      try {
+        let v2Token: string | null = null;
+        let headers: any;
+        
+        if (subAccountCredentials?.v2Token) {
+          console.log('📅 [GHL APPOINTMENT] Using sub-account V2 token');
+          v2Token = subAccountCredentials.v2Token;
+          headers = {
+            'Authorization': `Bearer ${v2Token}`,
+            'Version': '2021-07-28',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+        } else {
+          v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+          if (v2Token) {
+            console.log('📅 [GHL APPOINTMENT] Using default V2 API');
+            headers = await this.getV2Headers();
+          }
+        }
+        
+        if (v2Token) {
+          const endpoint = `${this.GHL_V2_BASE_URL}/calendars/events/${appointmentId}`;
+          
+          const response = await axios.get(endpoint, { headers });
+          console.log('✅ [GHL APPOINTMENT] V2 API success');
+          return response.data.event || response.data;
+        }
+      } catch (v2Error: any) {
+        console.log('⚠️ [GHL APPOINTMENT] V2 API failed, trying V1 API:', v2Error.message);
+      }
+      
+      // Fallback to V1 API
+      console.log('📅 [GHL APPOINTMENT] Using V1 API');
+      let headers: any;
+      
+      if (subAccountCredentials?.apiKey) {
+        console.log('📅 [GHL APPOINTMENT] Using sub-account V1 API key');
+        headers = {
+          'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28'
+        };
+      } else {
+        headers = await this.getHeaders();
+      }
+      
+      const endpoint = `${this.GHL_BASE_URL}/appointments/${appointmentId}`;
+      
+      const response = await axios.get(endpoint, { headers });
+      console.log('✅ [GHL APPOINTMENT] V1 API success');
+      return response.data.appointment || response.data;
+    } catch (error: any) {
+      console.error('❌ [GHL APPOINTMENT] Error fetching appointment:', error);
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
 }

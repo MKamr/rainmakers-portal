@@ -4,10 +4,11 @@ import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
 import { StageView } from '../components/StageView'
-import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, Shield, Mail, Database } from 'lucide-react'
+import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, Shield, Mail, Database, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { safeFormatDate } from '../utils/dateUtils'
 import DiscordAutoAccess from '../components/DiscordAutoAccess'
+import { AppointmentManagement } from '../components/AppointmentManagement'
 
 // Email Configuration Tab Component
 function EmailConfigurationTab() {
@@ -864,6 +865,7 @@ export function AdminPage() {
     { id: 'ghl-import', name: 'GHL Import', icon: Import },
     { id: 'raw-data', name: 'Raw Data', icon: Database },
     { id: 'discord-auto-access', name: 'Discord Auto-Access', icon: Shield },
+    { id: 'appointments', name: 'Appointments', icon: Calendar },
     { id: 'email-config', name: 'Email Config', icon: Mail },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
@@ -1361,6 +1363,10 @@ export function AdminPage() {
 
       {activeTab === 'discord-auto-access' && (
         <DiscordAutoAccess />
+      )}
+
+      {activeTab === 'appointments' && (
+        <AppointmentManagement />
       )}
 
       {activeTab === 'email-config' && (

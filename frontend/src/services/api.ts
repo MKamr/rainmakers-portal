@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Deal, Document, Analytics, AuthResponse } from '../types';
+import { User, Deal, Document, Analytics, AuthResponse, Appointment, CallNotesData, AppointmentFilters, SubAccount } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://rain.club/api';
 
@@ -251,6 +251,86 @@ export const adminAPI = {
 
   testEmail: (data: { testEmail: string }): Promise<{ success: boolean; message: string }> =>
     api.post('/admin/email/test', data).then(res => res.data),
+};
+
+// Appointments API
+export const appointmentsAPI = {
+  // User methods
+  getTermsText: (): Promise<{ terms: string }> =>
+    api.get('/appointments/terms').then(res => res.data),
+  
+  acceptTerms: (): Promise<{ message: string }> =>
+    api.post('/appointments/accept-terms').then(res => res.data),
+  
+  getTermsStatus: (): Promise<{ hasAccepted: boolean }> =>
+    api.get('/appointments/terms-status').then(res => res.data),
+  
+  getMyAssignments: (): Promise<{ appointments: Appointment[] }> =>
+    api.get('/appointments/my-assignments').then(res => res.data),
+  
+  submitCallNotes: (id: string, data: CallNotesData): Promise<{ appointment: Appointment }> =>
+    api.post(`/appointments/${id}/call-notes`, data).then(res => res.data),
+  
+  getAppointmentDetails: (id: string): Promise<{ appointment: Appointment }> =>
+    api.get(`/appointments/${id}`).then(res => res.data),
+  
+  // Admin methods
+  listAllAppointments: (filters?: AppointmentFilters): Promise<{ appointments: Appointment[] }> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.assignedToUserId) params.append('assignedToUserId', filters.assignedToUserId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/appointments/admin/list?${queryString}` : '/appointments/admin/list';
+    return api.get(url).then(res => res.data);
+  },
+  
+  syncFromGHL: (data?: { startDate?: string; endDate?: string; calendarId?: string; subAccountId?: string }): Promise<{ 
+    message: string; 
+    syncedCount: number; 
+    skippedCount: number; 
+    totalFromGHL: number;
+    subAccountName?: string;
+  }> =>
+    api.post('/appointments/admin/sync', data).then(res => res.data),
+  
+  assignAppointment: (appointmentId: string, userId: string): Promise<{ appointment: Appointment }> =>
+    api.post('/appointments/admin/assign', { appointmentId, userId }).then(res => res.data),
+  
+  unassignAppointment: (id: string): Promise<{ appointment: Appointment }> =>
+    api.put(`/appointments/admin/${id}/unassign`).then(res => res.data),
+  
+  getAppointmentStats: (): Promise<{ 
+    stats: {
+      total: number;
+      unassigned: number;
+      assigned: number;
+      called: number;
+      completed: number;
+      noAnswer: number;
+      rescheduled: number;
+      cancelled: number;
+    }
+  }> =>
+    api.get('/appointments/admin/stats').then(res => res.data),
+
+  // Sub-account management methods
+  getSubAccounts: (): Promise<{ subAccounts: SubAccount[] }> =>
+    api.get('/appointments/admin/sub-accounts').then(res => res.data),
+
+  createSubAccount: (data: { name: string; apiKey: string; v2Token?: string; locationId: string }): Promise<{ subAccount: SubAccount }> =>
+    api.post('/appointments/admin/sub-accounts', data).then(res => res.data),
+
+  updateSubAccount: (id: string, data: { name?: string; apiKey?: string; v2Token?: string; locationId?: string; isActive?: boolean }): Promise<{ subAccount: SubAccount }> =>
+    api.put(`/appointments/admin/sub-accounts/${id}`, data).then(res => res.data),
+
+  deleteSubAccount: (id: string): Promise<{ message: string }> =>
+    api.delete(`/appointments/admin/sub-accounts/${id}`).then(res => res.data),
+
+  testSubAccount: (id: string): Promise<{ success: boolean; message: string; appointmentsFound?: number }> =>
+    api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
 };
 
 export default api;

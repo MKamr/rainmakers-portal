@@ -7,6 +7,7 @@ import { DashboardLayout } from './components/DashboardLayout'
 import { HomePage } from './pages/HomePage'
 import { DealsPage } from './pages/DealsPage'
 import { AdminPage } from './pages/AdminPage'
+import { AppointmentsPage } from './pages/AppointmentsPage'
 import { LoadingSpinner } from './components/LoadingSpinner'
 
 // Join redirect component
@@ -145,6 +146,7 @@ function App() {
           <Route path="/" element={<DealsPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/deals" element={<DealsPage />} />
+          <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/join" element={<JoinRedirect />} />
           <Route path="*" element={<Navigate to="/" replace />} />

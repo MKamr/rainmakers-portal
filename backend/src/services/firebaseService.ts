@@ -118,10 +118,60 @@ export interface OneDriveToken {
   scope: string;
 }
 
+export interface Appointment {
+  id: string;
+  ghlAppointmentId: string;
+  ghlCalendarId: string;
+  ghlContactId: string;
+  subAccountId: string; // Reference to the sub-account
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  appointmentDate: Timestamp;
+  appointmentTitle: string;
+  appointmentNotes?: string;
+  assignedToUserId?: string;
+  assignedByUserId?: string;
+  assignedAt?: Timestamp;
+  status: 'unassigned' | 'assigned' | 'called' | 'completed' | 'no-answer' | 'rescheduled' | 'cancelled';
+  callNotes?: string;
+  callOutcome?: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callDuration?: number;
+  followUpDate?: Timestamp;
+  appointmentStatusUpdate?: string;
+  calledAt?: Timestamp;
+  completedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface TermsAcceptance {
+  id: string;
+  userId: string;
+  acceptedAt: Timestamp;
+  ipAddress?: string;
+  userAgent?: string;
+  termsVersion: string;
+}
+
+export interface SubAccount {
+  id: string;
+  name: string;
+  apiKey: string;
+  v2Token?: string;
+  locationId: string;
+  isActive: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export class FirebaseService {
   private static usersCollection = db.collection('users');
   private static dealsCollection = db.collection('deals');
   private static discordAutoAccessCollection = db.collection('discordAutoAccess');
+  private static appointmentsCollection = db.collection('appointments');
+  private static termsAcceptanceCollection = db.collection('termsAcceptance');
+  private static subAccountsCollection = db.collection('subAccounts');
 
   // User methods
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
@@ -348,6 +398,7 @@ export class FirebaseService {
 
   static async getDealAnalytics(): Promise<Analytics> {
     const deals = await this.getAllDeals();
+    const users = await this.getAllUsers();
     const totalDeals = deals.length;
     const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
 
@@ -362,11 +413,18 @@ export class FirebaseService {
       return acc;
     }, {} as { [month: string]: number });
 
+    const usersByMonth = users.reduce((acc, user) => {
+      const month = user.createdAt.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {} as { [month: string]: number });
+
     return {
       totalDeals,
       totalValue,
       dealsByStatus,
       dealsByMonth,
+      usersByMonth,
     };
   }
 
@@ -564,6 +622,211 @@ export class FirebaseService {
     } catch (error) {
       console.error('❌ [FIREBASE] Error saving email config:', error);
       throw error;
+    }
+  }
+
+  // Appointment methods
+  static async createAppointment(data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Appointment> {
+    const newAppointmentRef = FirebaseService.appointmentsCollection.doc();
+    const now = Timestamp.now();
+    const newAppointment: Appointment = {
+      id: newAppointmentRef.id,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await newAppointmentRef.set(newAppointment);
+    return newAppointment;
+  }
+
+  static async getAppointmentById(id: string): Promise<Appointment | null> {
+    const appointmentDoc = await FirebaseService.appointmentsCollection.doc(id).get();
+    return appointmentDoc.exists ? (appointmentDoc.data() as Appointment) : null;
+  }
+
+  static async updateAppointment(id: string, data: Partial<Omit<Appointment, 'id' | 'createdAt'>>): Promise<Appointment | null> {
+    const appointmentRef = FirebaseService.appointmentsCollection.doc(id);
+    const now = Timestamp.now();
+    await appointmentRef.update({ ...data, updatedAt: now });
+    return this.getAppointmentById(id);
+  }
+
+  static async getAllAppointments(filters?: {
+    status?: string;
+    assignedToUserId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Appointment[]> {
+    try {
+      let query: any = FirebaseService.appointmentsCollection;
+
+      if (filters?.status) {
+        query = query.where('status', '==', filters.status);
+      }
+      if (filters?.assignedToUserId) {
+        query = query.where('assignedToUserId', '==', filters.assignedToUserId);
+      }
+      if (filters?.startDate) {
+        query = query.where('appointmentDate', '>=', Timestamp.fromDate(filters.startDate));
+      }
+      if (filters?.endDate) {
+        query = query.where('appointmentDate', '<=', Timestamp.fromDate(filters.endDate));
+      }
+
+      const snapshot = await query.orderBy('appointmentDate', 'desc').get();
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
+    } catch (error) {
+      console.error('Error getting appointments:', error);
+      return [];
+    }
+  }
+
+  static async getAppointmentsByUserId(userId: string): Promise<Appointment[]> {
+    try {
+      const snapshot = await FirebaseService.appointmentsCollection
+        .where('assignedToUserId', '==', userId)
+        .orderBy('appointmentDate', 'desc')
+        .get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+    } catch (error) {
+      console.error('Error getting appointments by user ID:', error);
+      return [];
+    }
+  }
+
+  static async getUnassignedAppointments(): Promise<Appointment[]> {
+    try {
+      const snapshot = await FirebaseService.appointmentsCollection
+        .where('status', '==', 'unassigned')
+        .orderBy('appointmentDate', 'asc')
+        .get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+    } catch (error) {
+      console.error('Error getting unassigned appointments:', error);
+      return [];
+    }
+  }
+
+  // Terms acceptance methods
+  static async hasUserAcceptedTerms(userId: string): Promise<boolean> {
+    try {
+      const snapshot = await FirebaseService.termsAcceptanceCollection
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
+      return !snapshot.empty;
+    } catch (error) {
+      console.error('Error checking terms acceptance:', error);
+      return false;
+    }
+  }
+
+  static async recordTermsAcceptance(userId: string, metadata?: {
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
+    try {
+      const newTermsRef = FirebaseService.termsAcceptanceCollection.doc();
+      const now = Timestamp.now();
+      const termsAcceptance: TermsAcceptance = {
+        id: newTermsRef.id,
+        userId,
+        acceptedAt: now,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
+        termsVersion: 'v1.0'
+      };
+      await newTermsRef.set(termsAcceptance);
+    } catch (error) {
+      console.error('Error recording terms acceptance:', error);
+      throw error;
+    }
+  }
+
+  static async getTermsAcceptance(userId: string): Promise<TermsAcceptance | null> {
+    try {
+      const snapshot = await FirebaseService.termsAcceptanceCollection
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
+      if (snapshot.empty) {
+        return null;
+      }
+      return snapshot.docs[0].data() as TermsAcceptance;
+    } catch (error) {
+      console.error('Error getting terms acceptance:', error);
+      return null;
+    }
+  }
+
+  // Sub-account methods
+  static async createSubAccount(data: Omit<SubAccount, 'id' | 'createdAt' | 'updatedAt'>): Promise<SubAccount> {
+    const newSubAccountRef = FirebaseService.subAccountsCollection.doc();
+    const now = Timestamp.now();
+    const newSubAccount: SubAccount = {
+      id: newSubAccountRef.id,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await newSubAccountRef.set(newSubAccount);
+    return newSubAccount;
+  }
+
+  static async getSubAccountById(id: string): Promise<SubAccount | null> {
+    const subAccountDoc = await FirebaseService.subAccountsCollection.doc(id).get();
+    return subAccountDoc.exists ? (subAccountDoc.data() as SubAccount) : null;
+  }
+
+  static async updateSubAccount(id: string, data: Partial<Omit<SubAccount, 'id' | 'createdAt'>>): Promise<SubAccount | null> {
+    const subAccountRef = FirebaseService.subAccountsCollection.doc(id);
+    const now = Timestamp.now();
+    await subAccountRef.update({ ...data, updatedAt: now });
+    return this.getSubAccountById(id);
+  }
+
+  static async deleteSubAccount(id: string): Promise<void> {
+    await FirebaseService.subAccountsCollection.doc(id).delete();
+  }
+
+  static async getAllSubAccounts(): Promise<SubAccount[]> {
+    try {
+      const snapshot = await FirebaseService.subAccountsCollection
+        .orderBy('createdAt', 'desc')
+        .get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubAccount));
+    } catch (error) {
+      console.error('Error getting sub-accounts:', error);
+      return [];
+    }
+  }
+
+  static async getActiveSubAccounts(): Promise<SubAccount[]> {
+    try {
+      const snapshot = await FirebaseService.subAccountsCollection
+        .where('isActive', '==', true)
+        .orderBy('createdAt', 'desc')
+        .get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubAccount));
+    } catch (error) {
+      console.error('Error getting active sub-accounts:', error);
+      return [];
+    }
+  }
+
+  static async getSubAccountByName(name: string): Promise<SubAccount | null> {
+    try {
+      const snapshot = await FirebaseService.subAccountsCollection
+        .where('name', '==', name)
+        .limit(1)
+        .get();
+      if (snapshot.empty) {
+        return null;
+      }
+      return snapshot.docs[0].data() as SubAccount;
+    } catch (error) {
+      console.error('Error getting sub-account by name:', error);
+      return null;
     }
   }
 }

@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   LogOut,
-  User
+  User,
+  Calendar
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
@@ -27,6 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: 'Deals', href: '/', icon: FileText },
     { name: 'Home', href: '/home', icon: Home },
+    { name: 'My Appointments', href: '/appointments', icon: Calendar },
   ]
 
   if (user?.isAdmin) {

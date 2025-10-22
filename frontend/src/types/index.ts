@@ -230,3 +230,64 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export interface Appointment {
+  id: string;
+  ghlAppointmentId: string;
+  ghlCalendarId: string;
+  ghlContactId: string;
+  subAccountId: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  appointmentDate: string;
+  appointmentTitle: string;
+  appointmentNotes?: string;
+  assignedToUserId?: string;
+  assignedByUserId?: string;
+  assignedAt?: string;
+  status: 'unassigned' | 'assigned' | 'called' | 'completed' | 'no-answer' | 'rescheduled' | 'cancelled';
+  callNotes?: string;
+  callOutcome?: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callDuration?: number;
+  followUpDate?: string;
+  appointmentStatusUpdate?: string;
+  calledAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TermsAcceptance {
+  id: string;
+  userId: string;
+  acceptedAt: string;
+  termsVersion: string;
+}
+
+export interface CallNotesData {
+  callNotes: string;
+  callOutcome: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callDuration?: number;
+  followUpDate?: string;
+  appointmentStatusUpdate?: string;
+}
+
+export interface AppointmentFilters {
+  status?: string;
+  assignedToUserId?: string;
+  startDate?: string;
+  endDate?: string;
+  subAccountId?: string;
+}
+
+export interface SubAccount {
+  id: string;
+  name: string;
+  apiKey: string;
+  v2Token?: string;
+  locationId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

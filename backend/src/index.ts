@@ -14,6 +14,7 @@ import documentRoutes from './routes/documents';
 import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
 import onedriveRoutes from './routes/onedrive';
+import appointmentsRoutes from './routes/appointments';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -124,6 +125,7 @@ app.use('/api/user', authenticateToken, userRoutes);
 app.use('/api/deals', authenticateToken, dealRoutes);
 app.use('/api/documents', authenticateToken, documentRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
+app.use('/api/appointments', authenticateToken, appointmentsRoutes);
 
 // Root route for testing
 app.get('/', (req, res) => {
@@ -138,7 +140,8 @@ app.get('/', (req, res) => {
       webhooks: '/api/webhooks',
       deals: '/api/deals',
       documents: '/api/documents',
-      admin: '/api/admin'
+      admin: '/api/admin',
+      appointments: '/api/appointments'
     }
   });
 });
