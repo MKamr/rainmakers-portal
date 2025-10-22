@@ -536,10 +536,9 @@ router.post('/admin/sub-accounts/:id/test', async (req: Request, res: Response) 
 
     // Test the connection by trying to fetch appointments
     try {
+      // First try without date parameters to avoid V1 API issues
       const appointments = await GHLService.getAppointments({
-        subAccountId: subAccountId,
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0]
+        subAccountId: subAccountId
       });
 
       res.json({ 
@@ -548,9 +547,24 @@ router.post('/admin/sub-accounts/:id/test', async (req: Request, res: Response) 
         appointmentsFound: appointments.length
       });
     } catch (ghlError: any) {
+      console.error('Sub-account test failed:', ghlError);
+      
+      let errorMessage = 'Connection failed';
+      if (ghlError.response?.status === 422) {
+        errorMessage = 'Invalid API credentials or parameters';
+      } else if (ghlError.response?.status === 401) {
+        errorMessage = 'Invalid API key or token';
+      } else if (ghlError.response?.status === 403) {
+        errorMessage = 'API key does not have required permissions';
+      } else if (ghlError.message) {
+        errorMessage = ghlError.message;
+      }
+      
       res.json({ 
         success: false, 
-        message: `Connection failed: ${ghlError.message}` 
+        message: errorMessage,
+        statusCode: ghlError.response?.status,
+        details: ghlError.response?.data
       });
     }
   } catch (error) {

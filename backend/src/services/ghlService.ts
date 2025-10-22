@@ -1462,12 +1462,13 @@ export class GHLService {
       if (params?.calendarId) {
         queryParams.calendarId = params.calendarId;
       }
-      if (params?.startDate) {
-        queryParams.startDate = params.startDate;
-      }
-      if (params?.endDate) {
-        queryParams.endDate = params.endDate;
-      }
+      // V1 API might not support date filtering, so we'll skip it for now
+      // if (params?.startDate) {
+      //   queryParams.startDate = params.startDate;
+      // }
+      // if (params?.endDate) {
+      //   queryParams.endDate = params.endDate;
+      // }
       
       const response = await axios.get(endpoint, {
         headers,

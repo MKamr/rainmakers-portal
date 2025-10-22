@@ -95,7 +95,14 @@ export const SubAccountManagement: React.FC = () => {
       if (result.success) {
         alert(`✅ Connection successful! Found ${result.appointmentsFound || 0} appointments.`);
       } else {
-        alert(`❌ Connection failed: ${result.message}`);
+        let errorMsg = result.message;
+        if (result.statusCode) {
+          errorMsg += ` (Status: ${result.statusCode})`;
+        }
+        if (result.details) {
+          errorMsg += `\nDetails: ${JSON.stringify(result.details)}`;
+        }
+        alert(`❌ ${errorMsg}`);
       }
     } catch (error: any) {
       console.error('Error testing sub-account:', error);
