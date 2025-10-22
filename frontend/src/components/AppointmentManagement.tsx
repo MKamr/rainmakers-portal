@@ -9,9 +9,7 @@ import {
   Phone, 
   Mail, 
   Clock,
-  Download,
-  Upload,
-  Settings
+  Upload
 } from 'lucide-react';
 import { appointmentsAPI, adminAPI } from '../services/api';
 import { Appointment, User, AppointmentFilters, SubAccount } from '../types';

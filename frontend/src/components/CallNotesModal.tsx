@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Clock, Calendar, MessageSquare } from 'lucide-react';
+import { X, Save, Clock, MessageSquare } from 'lucide-react';
 import { appointmentsAPI } from '../services/api';
 import { CallNotesData } from '../types';
 

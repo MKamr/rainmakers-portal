@@ -5,8 +5,6 @@ import {
   Trash2, 
   TestTube, 
   RefreshCw, 
-  CheckCircle, 
-  XCircle,
   Settings,
   Key,
   MapPin
