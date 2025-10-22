@@ -558,7 +558,7 @@ export const AppointmentManagement: React.FC = () => {
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Sub-Accounts Tab */}
       {activeTab === 'sub-accounts' && (
