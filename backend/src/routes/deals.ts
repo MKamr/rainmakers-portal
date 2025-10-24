@@ -769,7 +769,22 @@ router.put('/:id', [
 
         // Get user info for the notification
         const user = await FirebaseService.getUserById(req.user!.id);
-        const updatedBy = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User' : 'Unknown User';
+        let updatedBy = 'Unknown User';
+        
+        if (user) {
+          // Try to get the full name first
+          const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+          if (fullName && fullName !== ' ') {
+            updatedBy = fullName;
+          } else if (user.name && user.name.trim()) {
+            // Fallback to the name field
+            updatedBy = user.name.trim();
+          } else if (user.email) {
+            // Last resort: use email but extract username part
+            const emailUsername = user.email.split('@')[0];
+            updatedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+          }
+        }
         
         // Send deal update notification with only actual changes
         await EmailService.sendDealUpdateNotificationEmail(updatedDeal, actualChanges, updatedBy);
@@ -1347,7 +1362,22 @@ router.post('/test-email-notifications', async (req: Request, res: Response) => 
 
     // Get user info
     const user = await FirebaseService.getUserById(req.user!.id);
-    const userName = user ? `${user.firstName} ${user.lastName}` : 'Test User';
+    let userName = 'Test User';
+    
+    if (user) {
+      // Try to get the full name first
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      if (fullName && fullName !== ' ') {
+        userName = fullName;
+      } else if (user.name && user.name.trim()) {
+        // Fallback to the name field
+        userName = user.name.trim();
+      } else if (user.email) {
+        // Last resort: use email but extract username part
+        const emailUsername = user.email.split('@')[0];
+        userName = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      }
+    }
 
     let result;
     

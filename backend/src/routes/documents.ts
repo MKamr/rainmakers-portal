@@ -281,7 +281,22 @@ router.post('/upload', upload.single('file'), [
 
       // Get user info for the notification
       const user = await FirebaseService.getUserById(req.user!.id);
-      const uploadedBy = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User' : 'Unknown User';
+      let uploadedBy = 'Unknown User';
+      
+      if (user) {
+        // Try to get the full name first
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        if (fullName && fullName !== ' ') {
+          uploadedBy = fullName;
+        } else if (user.name && user.name.trim()) {
+          // Fallback to the name field
+          uploadedBy = user.name.trim();
+        } else if (user.email) {
+          // Last resort: use email but extract username part
+          const emailUsername = user.email.split('@')[0];
+          uploadedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+        }
+      }
       
       // Send document upload notification
       await EmailService.sendDocumentUploadNotificationEmail(deal, req.file.originalname, uploadedBy);
