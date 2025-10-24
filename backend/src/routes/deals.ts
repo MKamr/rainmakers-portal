@@ -710,12 +710,41 @@ router.put('/:id', [
       return res.status(404).json({ error: 'Deal not found' });
     }
 
+    // Track actual changes by comparing with original deal
+    const actualChanges: string[] = [];
+    Object.keys(updates).forEach(key => {
+      if (updates[key] !== undefined && updates[key] !== deal[key as keyof typeof deal]) {
+        // Map internal field names to user-friendly names
+        const fieldDisplayNames: { [key: string]: string } = {
+          'contactName': 'Contact Name',
+          'contactEmail': 'Contact Email', 
+          'contactPhone': 'Contact Phone',
+          'opportunitySource': 'Source',
+          'propertyAddress': 'Property Address',
+          'propertyType': 'Property Type',
+          'notes': 'Notes',
+          'dealType': 'Deal Type',
+          'propertyVintage': 'Property Vintage',
+          'investmentType': 'Investment Type',
+          'sponsorNetWorth': 'Sponsor Net Worth',
+          'sponsorLiquidity': 'Sponsor Liquidity',
+          'loanRequest': 'Loan Request',
+          'additionalInformation': 'Additional Information',
+          'status': 'Status',
+          'stage': 'Stage'
+        };
+        
+        const displayName = fieldDisplayNames[key] || key;
+        actualChanges.push(displayName);
+      }
+    });
+
     // Add audit log for the update
     const auditLog = {
       timestamp: new Date().toISOString(),
       action: 'UPDATE',
       userId: req.user!.id,
-      changes: Object.keys(updates).filter(key => updates[key] !== undefined)
+      changes: actualChanges
     };
     
     // Add audit log to updates
@@ -724,28 +753,30 @@ router.put('/:id', [
     // Update deal in Firebase
     const updatedDeal = await FirebaseService.updateDeal(id, updates);
 
-    // Send email notification for deal update
-    try {
-      // Ensure email service initialized (handles serverless cold starts)
+    // Send email notification for deal update (only if there are actual changes)
+    if (actualChanges.length > 0) {
       try {
-        const ready = await EmailService.testEmailConnection();
-        if (!ready) {
-          const storedConfig = await FirebaseService.getEmailConfig();
-          if (storedConfig && storedConfig.enabled) {
-            await EmailService.initialize(storedConfig);
+        // Ensure email service initialized (handles serverless cold starts)
+        try {
+          const ready = await EmailService.testEmailConnection();
+          if (!ready) {
+            const storedConfig = await FirebaseService.getEmailConfig();
+            if (storedConfig && storedConfig.enabled) {
+              await EmailService.initialize(storedConfig);
+            }
           }
-        }
-      } catch {}
+        } catch {}
 
-      // Get user info for the notification
-      const user = await FirebaseService.getUserById(req.user!.id);
-      const updatedBy = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
-      
-      // Send deal update notification
-      await EmailService.sendDealUpdateNotificationEmail(updatedDeal, Object.keys(updates), updatedBy);
-    } catch (emailError) {
-      // Don't fail the deal update if email fails
-      console.error('❌ [EMAIL] Failed to send deal update notification:', emailError);
+        // Get user info for the notification
+        const user = await FirebaseService.getUserById(req.user!.id);
+        const updatedBy = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User' : 'Unknown User';
+        
+        // Send deal update notification with only actual changes
+        await EmailService.sendDealUpdateNotificationEmail(updatedDeal, actualChanges, updatedBy);
+      } catch (emailError) {
+        // Don't fail the deal update if email fails
+        console.error('❌ [EMAIL] Failed to send deal update notification:', emailError);
+      }
     }
 
     // Sync with GHL if deal has GHL ID

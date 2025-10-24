@@ -281,7 +281,7 @@ router.post('/upload', upload.single('file'), [
 
       // Get user info for the notification
       const user = await FirebaseService.getUserById(req.user!.id);
-      const uploadedBy = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      const uploadedBy = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User' : 'Unknown User';
       
       // Send document upload notification
       await EmailService.sendDocumentUploadNotificationEmail(deal, req.file.originalname, uploadedBy);
