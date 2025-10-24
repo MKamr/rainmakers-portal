@@ -4,6 +4,7 @@ import { body, validationResult } from 'express-validator';
 import { FirebaseService } from '../services/firebaseService';
 import { OneDriveService } from '../services/oneDriveService';
 import { GHLService } from '../services/ghlService';
+import { EmailService } from '../services/emailService';
 import { Request, Response } from 'express';
 
 const router = express.Router();
@@ -264,6 +265,30 @@ router.post('/upload', upload.single('file'), [
     );
 
     console.log('📄 [UPLOAD] File uploaded to OneDrive:', oneDriveFile.id);
+
+    // Send email notification for document upload
+    try {
+      // Ensure email service initialized (handles serverless cold starts)
+      try {
+        const ready = await EmailService.testEmailConnection();
+        if (!ready) {
+          const storedConfig = await FirebaseService.getEmailConfig();
+          if (storedConfig && storedConfig.enabled) {
+            await EmailService.initialize(storedConfig);
+          }
+        }
+      } catch {}
+
+      // Get user info for the notification
+      const user = await FirebaseService.getUserById(req.user!.id);
+      const uploadedBy = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      
+      // Send document upload notification
+      await EmailService.sendDocumentUploadNotificationEmail(deal, req.file.originalname, uploadedBy);
+    } catch (emailError) {
+      // Don't fail the document upload if email fails
+      console.error('❌ [EMAIL] Failed to send document upload notification:', emailError);
+    }
 
     // Sync to GHL if configured
     try {

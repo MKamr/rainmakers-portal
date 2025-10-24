@@ -724,6 +724,30 @@ router.put('/:id', [
     // Update deal in Firebase
     const updatedDeal = await FirebaseService.updateDeal(id, updates);
 
+    // Send email notification for deal update
+    try {
+      // Ensure email service initialized (handles serverless cold starts)
+      try {
+        const ready = await EmailService.testEmailConnection();
+        if (!ready) {
+          const storedConfig = await FirebaseService.getEmailConfig();
+          if (storedConfig && storedConfig.enabled) {
+            await EmailService.initialize(storedConfig);
+          }
+        }
+      } catch {}
+
+      // Get user info for the notification
+      const user = await FirebaseService.getUserById(req.user!.id);
+      const updatedBy = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      
+      // Send deal update notification
+      await EmailService.sendDealUpdateNotificationEmail(updatedDeal, Object.keys(updates), updatedBy);
+    } catch (emailError) {
+      // Don't fail the deal update if email fails
+      console.error('❌ [EMAIL] Failed to send deal update notification:', emailError);
+    }
+
     // Sync with GHL if deal has GHL ID
     if (deal.ghlOpportunityId) {
       try {
@@ -1269,6 +1293,57 @@ router.get('/test-field-separation', async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Failed to test field separation',
       details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Test email notification endpoint
+router.post('/test-email-notifications', async (req: Request, res: Response) => {
+  try {
+    const { type, dealId } = req.body;
+    
+    if (!type || !dealId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: type (deal-update|document-upload) and dealId' 
+      });
+    }
+
+    // Get the deal
+    const deal = await FirebaseService.getDealById(dealId);
+    if (!deal) {
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+
+    // Get user info
+    const user = await FirebaseService.getUserById(req.user!.id);
+    const userName = user ? `${user.firstName} ${user.lastName}` : 'Test User';
+
+    let result;
+    
+    if (type === 'deal-update') {
+      const changes = ['Property Address', 'Contact Email', 'Loan Request'];
+      await EmailService.sendDealUpdateNotificationEmail(deal, changes, userName);
+      result = { message: 'Deal update notification sent', changes, updatedBy: userName };
+    } else if (type === 'document-upload') {
+      const fileName = 'test-document.pdf';
+      await EmailService.sendDocumentUploadNotificationEmail(deal, fileName, userName);
+      result = { message: 'Document upload notification sent', fileName, uploadedBy: userName };
+    } else {
+      return res.status(400).json({ error: 'Invalid type. Use "deal-update" or "document-upload"' });
+    }
+
+    res.json({
+      success: true,
+      ...result,
+      dealId: deal.dealId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ [TEST EMAIL] Error:', error);
+    res.status(500).json({
+      error: 'Email notification test failed',
+      message: error.message,
+      details: error.response?.data
     });
   }
 });
