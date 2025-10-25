@@ -782,7 +782,16 @@ export class FirebaseService {
   static async updateSubAccount(id: string, data: Partial<Omit<SubAccount, 'id' | 'createdAt'>>): Promise<SubAccount | null> {
     const subAccountRef = FirebaseService.subAccountsCollection.doc(id);
     const now = Timestamp.now();
-    await subAccountRef.update({ ...data, updatedAt: now });
+    
+    // Filter out undefined values from the update data
+    const updateData: any = { updatedAt: now };
+    Object.keys(data).forEach(key => {
+      if (data[key as keyof typeof data] !== undefined) {
+        updateData[key] = data[key as keyof typeof data];
+      }
+    });
+    
+    await subAccountRef.update(updateData);
     return this.getSubAccountById(id);
   }
 

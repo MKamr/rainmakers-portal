@@ -475,14 +475,16 @@ router.put('/admin/sub-accounts/:id', async (req: Request, res: Response) => {
     const subAccountId = req.params.id;
     const { name, apiKey, v2Token, locationId, ghlUserId, isActive } = req.body;
 
-    const subAccount = await FirebaseService.updateSubAccount(subAccountId, {
-      name,
-      apiKey,
-      v2Token,
-      locationId,
-      ghlUserId,
-      isActive
-    });
+    // Build update object with only defined values
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (apiKey !== undefined) updateData.apiKey = apiKey;
+    if (v2Token !== undefined) updateData.v2Token = v2Token;
+    if (locationId !== undefined) updateData.locationId = locationId;
+    if (ghlUserId !== undefined) updateData.ghlUserId = ghlUserId;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const subAccount = await FirebaseService.updateSubAccount(subAccountId, updateData);
 
     if (!subAccount) {
       return res.status(404).json({ error: 'Sub-account not found' });
