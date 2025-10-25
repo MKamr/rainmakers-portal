@@ -225,6 +225,11 @@ export class AppointmentService {
             }
           }
           
+          // Validate that we have at least one required identifier
+          if (!queryParams.calendarId && !queryParams.userId && !queryParams.groupId) {
+            throw new Error('GHL V2 API requires either calendarId, userId, or groupId parameter');
+          }
+          
           console.log('📅 [GHL APPOINTMENTS] Using V2 endpoint:', endpoint);
           console.log('📅 [GHL APPOINTMENTS] Query params:', queryParams);
           console.log('📅 [GHL APPOINTMENTS] Headers:', headers);
@@ -260,9 +265,43 @@ export class AppointmentService {
       const endpoint = `${this.GHL_BASE_URL}/appointments/`;
       
       const queryParams: any = {};
+      
+      // V1 API needs locationId or userId or calendarId
+      const locationId = params?.locationId || subAccountCredentials?.locationId;
+      if (locationId) {
+        queryParams.locationId = locationId;
+      }
+      
       if (params?.calendarId) {
         queryParams.calendarId = params.calendarId;
       }
+      
+      // Add userId if available and no calendarId
+      if (!params?.calendarId) {
+        if (subAccountCredentials?.ghlUserId) {
+          console.log('📅 [GHL APPOINTMENTS V1] Using userId from sub-account:', subAccountCredentials.ghlUserId);
+          queryParams.userId = subAccountCredentials.ghlUserId;
+        } else {
+          // Try default userId
+          try {
+            const defaultUserId = await FirebaseService.getConfiguration('ghl_user_id');
+            if (defaultUserId) {
+              console.log('📅 [GHL APPOINTMENTS V1] Using userId from default config:', defaultUserId);
+              queryParams.userId = defaultUserId;
+            }
+          } catch (configError) {
+            console.log('⚠️ [GHL APPOINTMENTS V1] Could not retrieve default userId config');
+          }
+        }
+      }
+      
+      // Validate that we have at least one required identifier
+      if (!queryParams.locationId && !queryParams.calendarId && !queryParams.userId) {
+        throw new Error('GHL V1 API requires either locationId, calendarId, or userId parameter');
+      }
+      
+      console.log('📅 [GHL APPOINTMENTS V1] Using endpoint:', endpoint);
+      console.log('📅 [GHL APPOINTMENTS V1] Query params:', queryParams);
       
       const response = await axios.get(endpoint, {
         headers,

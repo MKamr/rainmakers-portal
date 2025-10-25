@@ -661,6 +661,7 @@ export class FirebaseService {
     try {
       let query: any = FirebaseService.appointmentsCollection;
 
+      // Apply filters
       if (filters?.status) {
         query = query.where('status', '==', filters.status);
       }
@@ -674,10 +675,63 @@ export class FirebaseService {
         query = query.where('appointmentDate', '<=', Timestamp.fromDate(filters.endDate));
       }
 
+      // If we have status filter with other filters, we need to avoid orderBy to prevent index requirements
+      // Instead, we'll get the data and sort in memory
+      if (filters?.status && (filters?.startDate || filters?.endDate || filters?.assignedToUserId)) {
+        const snapshot = await query.get();
+        let results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
+        
+        // Sort in memory by appointmentDate descending
+        results.sort((a: Appointment, b: Appointment) => {
+          const aDate = a.appointmentDate?.toMillis() || 0;
+          const bDate = b.appointmentDate?.toMillis() || 0;
+          return bDate - aDate;
+        });
+        
+        return results;
+      }
+
+      // For simple queries without status filter, we can use orderBy
       const snapshot = await query.orderBy('appointmentDate', 'desc').get();
       return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
       console.error('Error getting appointments:', error);
+      // If error is about missing index, try getting all and filtering in memory
+      if (error instanceof Error && error.message.includes('index')) {
+        console.log('⚠️ [FIRESTORE] Missing index, falling back to in-memory filtering');
+        try {
+          const snapshot = await FirebaseService.appointmentsCollection.get();
+          let results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
+          
+          // Apply filters in memory
+          if (filters?.status) {
+            results = results.filter(apt => apt.status === filters.status);
+          }
+          if (filters?.assignedToUserId) {
+            results = results.filter(apt => apt.assignedToUserId === filters.assignedToUserId);
+          }
+          if (filters?.startDate) {
+            const startTimestamp = Timestamp.fromDate(filters.startDate);
+            results = results.filter(apt => apt.appointmentDate && apt.appointmentDate >= startTimestamp);
+          }
+          if (filters?.endDate) {
+            const endTimestamp = Timestamp.fromDate(filters.endDate);
+            results = results.filter(apt => apt.appointmentDate && apt.appointmentDate <= endTimestamp);
+          }
+          
+          // Sort by appointmentDate descending
+          results.sort((a: Appointment, b: Appointment) => {
+            const aDate = a.appointmentDate?.toMillis() || 0;
+            const bDate = b.appointmentDate?.toMillis() || 0;
+            return bDate - aDate;
+          });
+          
+          return results;
+        } catch (fallbackError) {
+          console.error('Error in fallback query:', fallbackError);
+          return [];
+        }
+      }
       return [];
     }
   }
