@@ -239,10 +239,17 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
 
     const { startDate, endDate, calendarId, locationId, subAccountId } = req.body;
     
+    // Clean up empty strings - treat them as undefined
+    const cleanStartDate = startDate && startDate.trim() !== '' ? startDate : undefined;
+    const cleanEndDate = endDate && endDate.trim() !== '' ? endDate : undefined;
+    const cleanCalendarId = calendarId && calendarId.trim() !== '' ? calendarId : undefined;
+    const cleanLocationId = locationId && locationId.trim() !== '' ? locationId : undefined;
+    const cleanSubAccountId = subAccountId && subAccountId.trim() !== '' ? subAccountId : undefined;
+    
     // Validate sub-account if provided
     let subAccount = null;
-    if (subAccountId) {
-      subAccount = await FirebaseService.getSubAccountById(subAccountId);
+    if (cleanSubAccountId) {
+      subAccount = await FirebaseService.getSubAccountById(cleanSubAccountId);
       if (!subAccount) {
         return res.status(400).json({ error: 'Sub-account not found' });
       }
@@ -250,11 +257,11 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
     
     // Get appointments from GHL
     const ghlAppointments = await AppointmentService.getAppointments({
-      calendarId,
-      locationId,
-      startDate,
-      endDate,
-      subAccountId
+      calendarId: cleanCalendarId,
+      locationId: cleanLocationId,
+      startDate: cleanStartDate,
+      endDate: cleanEndDate,
+      subAccountId: cleanSubAccountId
     });
 
     let syncedCount = 0;

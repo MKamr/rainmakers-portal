@@ -128,12 +128,19 @@ export class AppointmentService {
     try {
       console.log('📅 [GHL APPOINTMENTS] Fetching appointments with params:', params);
       
+      // If subAccountId is not provided or is empty string, get default credentials
       let subAccountCredentials = null;
-      if (params?.subAccountId) {
+      if (params?.subAccountId && params.subAccountId.trim() !== '') {
         subAccountCredentials = await FirebaseService.getSubAccountById(params.subAccountId);
         if (!subAccountCredentials) {
           throw new Error(`Sub-account with ID ${params.subAccountId} not found`);
         }
+      }
+      
+      // For default account, check if there are any sub-accounts with ghlUserId configured
+      // This is a fallback when no sub-account is explicitly provided
+      if (!subAccountCredentials) {
+        console.log('📅 [GHL APPOINTMENTS] No sub-account specified, using default configuration');
       }
       
       // Try V2 API first
@@ -197,8 +204,25 @@ export class AppointmentService {
           }
           
           // Add userId from sub-account if available (either calendarId, userId, or groupId is required)
-          if (subAccountCredentials?.ghlUserId && !queryParams.calendarId) {
-            queryParams.userId = subAccountCredentials.ghlUserId;
+          // If no calendarId provided, check for userId in sub-account or default config
+          if (!queryParams.calendarId) {
+            if (subAccountCredentials?.ghlUserId) {
+              console.log('📅 [GHL APPOINTMENTS] Using userId from sub-account:', subAccountCredentials.ghlUserId);
+              queryParams.userId = subAccountCredentials.ghlUserId;
+            } else {
+              // Try to get userId from default configuration
+              try {
+                const defaultUserId = await FirebaseService.getConfiguration('ghl_user_id');
+                if (defaultUserId) {
+                  console.log('📅 [GHL APPOINTMENTS] Using userId from default config:', defaultUserId);
+                  queryParams.userId = defaultUserId;
+                } else {
+                  console.log('⚠️ [GHL APPOINTMENTS] No userId found in default config or sub-account. API may fail if calendarId is not provided.');
+                }
+              } catch (configError) {
+                console.log('⚠️ [GHL APPOINTMENTS] Could not retrieve default userId config');
+              }
+            }
           }
           
           console.log('📅 [GHL APPOINTMENTS] Using V2 endpoint:', endpoint);
