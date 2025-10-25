@@ -196,6 +196,11 @@ export class AppointmentService {
             queryParams.calendarId = params.calendarId;
           }
           
+          // Add userId from sub-account if available (either calendarId, userId, or groupId is required)
+          if (subAccountCredentials?.ghlUserId && !queryParams.calendarId) {
+            queryParams.userId = subAccountCredentials.ghlUserId;
+          }
+          
           console.log('📅 [GHL APPOINTMENTS] Using V2 endpoint:', endpoint);
           console.log('📅 [GHL APPOINTMENTS] Query params:', queryParams);
           console.log('📅 [GHL APPOINTMENTS] Headers:', headers);

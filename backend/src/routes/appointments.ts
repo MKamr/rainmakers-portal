@@ -437,7 +437,7 @@ router.post('/admin/sub-accounts', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { name, apiKey, v2Token, locationId } = req.body;
+    const { name, apiKey, v2Token, locationId, ghlUserId } = req.body;
 
     if (!name || !apiKey || !locationId) {
       return res.status(400).json({ error: 'Name, API key, and location ID are required' });
@@ -454,6 +454,7 @@ router.post('/admin/sub-accounts', async (req: Request, res: Response) => {
       apiKey,
       v2Token,
       locationId,
+      ghlUserId,
       isActive: true
     });
 
@@ -472,13 +473,14 @@ router.put('/admin/sub-accounts/:id', async (req: Request, res: Response) => {
     }
 
     const subAccountId = req.params.id;
-    const { name, apiKey, v2Token, locationId, isActive } = req.body;
+    const { name, apiKey, v2Token, locationId, ghlUserId, isActive } = req.body;
 
     const subAccount = await FirebaseService.updateSubAccount(subAccountId, {
       name,
       apiKey,
       v2Token,
       locationId,
+      ghlUserId,
       isActive
     });
 

@@ -23,7 +23,8 @@ export const SubAccountManagement: React.FC = () => {
     name: '',
     apiKey: '',
     v2Token: '',
-    locationId: ''
+    locationId: '',
+    ghlUserId: ''
   });
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export const SubAccountManagement: React.FC = () => {
       setError(null);
       await appointmentsAPI.createSubAccount(formData);
       await fetchSubAccounts();
-      setFormData({ name: '', apiKey: '', v2Token: '', locationId: '' });
+      setFormData({ name: '', apiKey: '', v2Token: '', locationId: '', ghlUserId: '' });
     } catch (error: any) {
       console.error('Error creating sub-account:', error);
       setError(error.response?.data?.error || 'Failed to create sub-account');
@@ -65,7 +66,7 @@ export const SubAccountManagement: React.FC = () => {
       await appointmentsAPI.updateSubAccount(id, formData);
       await fetchSubAccounts();
       setEditingId(null);
-      setFormData({ name: '', apiKey: '', v2Token: '', locationId: '' });
+      setFormData({ name: '', apiKey: '', v2Token: '', locationId: '', ghlUserId: '' });
     } catch (error: any) {
       console.error('Error updating sub-account:', error);
       setError(error.response?.data?.error || 'Failed to update sub-account');
@@ -119,13 +120,14 @@ export const SubAccountManagement: React.FC = () => {
       name: subAccount.name,
       apiKey: subAccount.apiKey,
       v2Token: subAccount.v2Token || '',
-      locationId: subAccount.locationId
+      locationId: subAccount.locationId,
+      ghlUserId: subAccount.ghlUserId || ''
     });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', apiKey: '', v2Token: '', locationId: '' });
+    setFormData({ name: '', apiKey: '', v2Token: '', locationId: '', ghlUserId: '' });
   };
 
   if (isLoading) {
@@ -219,6 +221,19 @@ export const SubAccountManagement: React.FC = () => {
               placeholder="GHL V2 Private Integration Token"
             />
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              GHL User ID (Optional)
+            </label>
+            <input
+              type="text"
+              value={formData.ghlUserId}
+              onChange={(e) => setFormData(prev => ({ ...prev, ghlUserId: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="GHL User ID for appointments filtering"
+            />
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 mt-6">
@@ -281,7 +296,7 @@ export const SubAccountManagement: React.FC = () => {
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
                       <div className="flex items-center space-x-2">
                         <Key className="h-4 w-4" />
                         <span>API Key: {subAccount.apiKey ? '••••••••' : 'Not set'}</span>
@@ -293,6 +308,10 @@ export const SubAccountManagement: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Settings className="h-4 w-4" />
                         <span>V2 Token: {subAccount.v2Token ? '••••••••' : 'Not set'}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>User ID: {subAccount.ghlUserId || 'Not set'}</span>
                       </div>
                     </div>
                   </div>

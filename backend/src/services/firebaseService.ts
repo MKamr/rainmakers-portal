@@ -160,6 +160,7 @@ export interface SubAccount {
   apiKey: string;
   v2Token?: string;
   locationId: string;
+  ghlUserId?: string;
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;

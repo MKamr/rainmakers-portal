@@ -320,10 +320,10 @@ export const appointmentsAPI = {
   getSubAccounts: (): Promise<{ subAccounts: SubAccount[] }> =>
     api.get('/appointments/admin/sub-accounts').then(res => res.data),
 
-  createSubAccount: (data: { name: string; apiKey: string; v2Token?: string; locationId: string }): Promise<{ subAccount: SubAccount }> =>
+  createSubAccount: (data: { name: string; apiKey: string; v2Token?: string; locationId: string; ghlUserId?: string }): Promise<{ subAccount: SubAccount }> =>
     api.post('/appointments/admin/sub-accounts', data).then(res => res.data),
 
-  updateSubAccount: (id: string, data: { name?: string; apiKey?: string; v2Token?: string; locationId?: string; isActive?: boolean }): Promise<{ subAccount: SubAccount }> =>
+  updateSubAccount: (id: string, data: { name?: string; apiKey?: string; v2Token?: string; locationId?: string; ghlUserId?: string; isActive?: boolean }): Promise<{ subAccount: SubAccount }> =>
     api.put(`/appointments/admin/sub-accounts/${id}`, data).then(res => res.data),
 
   deleteSubAccount: (id: string): Promise<{ message: string }> =>
