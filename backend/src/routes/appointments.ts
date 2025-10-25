@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { FirebaseService, Appointment } from '../services/firebaseService';
+import { AppointmentService } from '../services/appointmentService';
 import { GHLService } from '../services/ghlService';
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -236,7 +237,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { startDate, endDate, calendarId, subAccountId } = req.body;
+    const { startDate, endDate, calendarId, locationId, subAccountId } = req.body;
     
     // Validate sub-account if provided
     let subAccount = null;
@@ -248,8 +249,9 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
     }
     
     // Get appointments from GHL
-    const ghlAppointments = await GHLService.getAppointments({
+    const ghlAppointments = await AppointmentService.getAppointments({
       calendarId,
+      locationId,
       startDate,
       endDate,
       subAccountId
