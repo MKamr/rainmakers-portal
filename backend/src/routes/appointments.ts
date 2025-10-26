@@ -264,6 +264,8 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
       subAccountId: cleanSubAccountId
     });
 
+    console.log(`📊 Fetched ${ghlAppointments.length} appointments from GHL`);
+
     let syncedCount = 0;
     let skippedCount = 0;
 
@@ -277,10 +279,11 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
         
         const exists = existingAppointments.some(apt => 
           apt.ghlAppointmentId === ghlAppointment.id && 
-          apt.subAccountId === (subAccountId || 'default')
+          apt.subAccountId === (cleanSubAccountId || 'default')
         );
 
         if (exists) {
+          console.log(`⏭️ Skipping existing appointment: ${ghlAppointment.id}`);
           skippedCount++;
           continue;
         }
@@ -288,12 +291,14 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
         // Get contact information
         const contact = await GHLService.getContactById(ghlAppointment.contactId);
         
+        console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contact?.name || 'Unknown'}`);
+        
         // Create appointment in Firebase
         await FirebaseService.createAppointment({
           ghlAppointmentId: ghlAppointment.id,
           ghlCalendarId: ghlAppointment.calendarId,
           ghlContactId: ghlAppointment.contactId,
-          subAccountId: subAccountId || 'default',
+          subAccountId: cleanSubAccountId || 'default',
           contactName: contact?.name || 'Unknown Contact',
           contactEmail: contact?.email || '',
           contactPhone: contact?.phone || '',
@@ -303,9 +308,10 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           status: 'unassigned'
         });
 
+        console.log(`✅ Successfully created appointment: ${ghlAppointment.id}`);
         syncedCount++;
       } catch (appointmentError) {
-        console.error('Error syncing individual appointment:', appointmentError);
+        console.error('❌ Error syncing individual appointment:', appointmentError);
         skippedCount++;
       }
     }
