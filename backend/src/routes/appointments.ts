@@ -288,8 +288,24 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           continue;
         }
 
-        // Get contact information
-        const contact = await GHLService.getContactById(ghlAppointment.contactId);
+        // Get contact information using sub-account credentials if available
+        let contact = null;
+        try {
+          if (cleanSubAccountId && subAccount) {
+            // Use sub-account credentials to fetch contact
+            contact = await GHLService.getContactById(ghlAppointment.contactId, cleanSubAccountId);
+          } else {
+            // Use default credentials
+            contact = await GHLService.getContactById(ghlAppointment.contactId);
+          }
+          console.log(`📞 Contact fetched: ${contact?.name || 'Unknown'} (${contact?.email || 'no email'})`);
+        } catch (contactError: any) {
+          console.warn(`⚠️ Could not fetch contact ${ghlAppointment.contactId}:`, contactError.message);
+        }
+        
+        // Parse date correctly - GHL returns ISO 8601 strings with timezone
+        const startDate = new Date(ghlAppointment.startTime);
+        console.log(`📅 Parsing date from: ${ghlAppointment.startTime} -> ${startDate.toISOString()}`);
         
         console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contact?.name || 'Unknown'}`);
         
@@ -302,7 +318,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           contactName: contact?.name || 'Unknown Contact',
           contactEmail: contact?.email || '',
           contactPhone: contact?.phone || '',
-          appointmentDate: Timestamp.fromDate(new Date(ghlAppointment.startTime)),
+          appointmentDate: Timestamp.fromDate(startDate),
           appointmentTitle: ghlAppointment.title,
           appointmentNotes: ghlAppointment.notes,
           status: 'unassigned'

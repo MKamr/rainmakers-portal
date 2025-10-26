@@ -175,12 +175,30 @@ export class GHLService {
     }
   }
 
-  static async getContactById(contactId: string): Promise<GHLContact | null> {
+  static async getContactById(contactId: string, subAccountId?: string): Promise<GHLContact | null> {
     try {
-      const headers = await this.getHeaders();
+      let headers;
+      
+      // If subAccountId is provided, use sub-account credentials
+      if (subAccountId) {
+        const subAccount = await FirebaseService.getSubAccountById(subAccountId);
+        if (subAccount?.apiKey) {
+          headers = {
+            'Authorization': `Bearer ${subAccount.apiKey}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28'
+          };
+        } else {
+          headers = await this.getHeaders();
+        }
+      } else {
+        headers = await this.getHeaders();
+      }
+      
       const response = await axios.get(`${this.GHL_BASE_URL}/contacts/${contactId}`, { headers });
       return response.data.contact;
     } catch (error) {
+      console.error('Error fetching contact:', error);
       return null;
     }
   }
