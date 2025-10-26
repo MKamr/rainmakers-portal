@@ -757,6 +757,28 @@ export class FirebaseService {
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
       console.error('Error getting appointments by user ID:', error);
+      // If error is about missing index, try fetching without orderBy
+      if (error instanceof Error && error.message.includes('index')) {
+        console.log('⚠️ [FIRESTORE] Missing index for getAppointmentsByUserId, falling back to in-memory sorting');
+        try {
+          const snapshot = await FirebaseService.appointmentsCollection
+            .where('assignedToUserId', '==', userId)
+            .get();
+          let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+          
+          // Sort in memory by appointmentDate descending
+          results.sort((a: Appointment, b: Appointment) => {
+            const aDate = a.appointmentDate?.toMillis() || 0;
+            const bDate = b.appointmentDate?.toMillis() || 0;
+            return bDate - aDate;
+          });
+          
+          return results;
+        } catch (fallbackError) {
+          console.error('Error in fallback query:', fallbackError);
+          return [];
+        }
+      }
       return [];
     }
   }

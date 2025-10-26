@@ -14,6 +14,7 @@ import {
 import { appointmentsAPI, adminAPI } from '../services/api';
 import { Appointment, User, AppointmentFilters, SubAccount } from '../types';
 import { SubAccountManagement } from './SubAccountManagement';
+import { formatTime } from '../utils/dateUtils';
 
 export const AppointmentManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -497,6 +498,18 @@ export const AppointmentManagement: React.FC = () => {
                           <Calendar className="h-4 w-4" />
                           <span>{formatDate(appointment.appointmentDate)}</span>
                         </div>
+                        {appointment.appointmentStartTime && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Clock className="h-4 w-4" />
+                            <span>Start: {formatTime(appointment.appointmentStartTime)}</span>
+                          </div>
+                        )}
+                        {appointment.appointmentEndTime && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Clock className="h-4 w-4" />
+                            <span>End: {formatTime(appointment.appointmentEndTime)}</span>
+                          </div>
+                        )}
                       </div>
 
                       {appointment.appointmentNotes && (
