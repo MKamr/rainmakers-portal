@@ -128,6 +128,8 @@ export interface Appointment {
   contactEmail: string;
   contactPhone: string;
   appointmentDate: Timestamp;
+  appointmentStartTime: Timestamp;
+  appointmentEndTime: Timestamp;
   appointmentTitle: string;
   appointmentNotes?: string;
   assignedToUserId?: string;

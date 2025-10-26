@@ -241,6 +241,8 @@ export interface Appointment {
   contactEmail: string;
   contactPhone: string;
   appointmentDate: string;
+  appointmentStartTime: string;
+  appointmentEndTime: string;
   appointmentTitle: string;
   appointmentNotes?: string;
   assignedToUserId?: string;

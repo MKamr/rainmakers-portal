@@ -303,11 +303,18 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           console.warn(`⚠️ Could not fetch contact ${ghlAppointment.contactId}:`, contactError.message);
         }
         
-        // Parse date correctly - GHL returns ISO 8601 strings with timezone
+        // Parse dates correctly - GHL returns ISO 8601 strings with timezone
         const startDate = new Date(ghlAppointment.startTime);
-        console.log(`📅 Parsing date from: ${ghlAppointment.startTime} -> ${startDate.toISOString()}`);
+        const endDate = new Date(ghlAppointment.endTime);
+        console.log(`📅 Parsing start: ${ghlAppointment.startTime} -> ${startDate.toISOString()}`);
+        console.log(`📅 Parsing end: ${ghlAppointment.endTime} -> ${endDate.toISOString()}`);
         
-        console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contact?.name || 'Unknown'}`);
+        // Extract contact name properly
+        const contactName = contact?.name || (contact?.firstName && contact?.lastName 
+          ? `${contact.firstName} ${contact.lastName}`.trim() 
+          : 'Unknown Contact');
+        
+        console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contactName}`);
         
         // Create appointment in Firebase
         await FirebaseService.createAppointment({
@@ -315,10 +322,12 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           ghlCalendarId: ghlAppointment.calendarId,
           ghlContactId: ghlAppointment.contactId,
           subAccountId: cleanSubAccountId || 'default',
-          contactName: contact?.name || 'Unknown Contact',
+          contactName: contactName,
           contactEmail: contact?.email || '',
           contactPhone: contact?.phone || '',
           appointmentDate: Timestamp.fromDate(startDate),
+          appointmentStartTime: Timestamp.fromDate(startDate),
+          appointmentEndTime: Timestamp.fromDate(endDate),
           appointmentTitle: ghlAppointment.title,
           appointmentNotes: ghlAppointment.notes,
           status: 'unassigned'
@@ -382,6 +391,69 @@ router.post('/admin/assign', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error assigning appointment:', error);
     res.status(500).json({ error: 'Failed to assign appointment' });
+  }
+});
+
+// Bulk assign appointments to user
+router.post('/admin/bulk-assign', async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { appointmentIds, userId } = req.body;
+
+    if (!appointmentIds || !Array.isArray(appointmentIds) || appointmentIds.length === 0) {
+      return res.status(400).json({ error: 'Appointment IDs array is required' });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Check if user has accepted terms
+    const hasAccepted = await FirebaseService.hasUserAcceptedTerms(userId);
+    if (!hasAccepted) {
+      return res.status(400).json({ error: 'User must accept terms and conditions before being assigned appointments' });
+    }
+
+    const results = {
+      successful: [] as string[],
+      failed: [] as Array<{ appointmentId: string; error: string }>
+    };
+
+    // Assign each appointment
+    for (const appointmentId of appointmentIds) {
+      try {
+        // Get the appointment
+        const appointment = await FirebaseService.getAppointmentById(appointmentId);
+        if (!appointment) {
+          results.failed.push({ appointmentId, error: 'Appointment not found' });
+          continue;
+        }
+
+        // Update appointment assignment
+        await FirebaseService.updateAppointment(appointmentId, {
+          assignedToUserId: userId,
+          assignedByUserId: req.user.id,
+          assignedAt: Timestamp.now(),
+          status: 'assigned'
+        });
+
+        results.successful.push(appointmentId);
+      } catch (error: any) {
+        results.failed.push({ appointmentId, error: error.message });
+      }
+    }
+
+    res.json({
+      message: `Bulk assignment completed: ${results.successful.length} successful, ${results.failed.length} failed`,
+      successful: results.successful,
+      failed: results.failed
+    });
+  } catch (error) {
+    console.error('Error bulk assigning appointments:', error);
+    res.status(500).json({ error: 'Failed to bulk assign appointments' });
   }
 });
 
