@@ -675,9 +675,10 @@ export class FirebaseService {
         query = query.where('appointmentDate', '<=', Timestamp.fromDate(filters.endDate));
       }
 
-      // If we have status filter with other filters, we need to avoid orderBy to prevent index requirements
+      // If we have a status filter, we need to avoid orderBy to prevent index requirements
       // Instead, we'll get the data and sort in memory
-      if (filters?.status && (filters?.startDate || filters?.endDate || filters?.assignedToUserId)) {
+      if (filters?.status) {
+        console.log('📊 [FIRESTORE] Using status filter, fetching without orderBy to avoid index requirement');
         const snapshot = await query.get();
         let results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
         
@@ -691,7 +692,7 @@ export class FirebaseService {
         return results;
       }
 
-      // For simple queries without status filter, we can use orderBy
+      // For queries without status filter, we can use orderBy
       const snapshot = await query.orderBy('appointmentDate', 'desc').get();
       return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
