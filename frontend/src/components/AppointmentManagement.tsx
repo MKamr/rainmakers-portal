@@ -14,7 +14,7 @@ import {
 import { appointmentsAPI, adminAPI } from '../services/api';
 import { Appointment, User, AppointmentFilters, SubAccount } from '../types';
 import { SubAccountManagement } from './SubAccountManagement';
-import { formatTime } from '../utils/dateUtils';
+import { formatDate, formatTime } from '../utils/dateUtils';
 
 export const AppointmentManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -186,17 +186,6 @@ export const AppointmentManagement: React.FC = () => {
       default:
         return status;
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getEligibleUsers = () => {

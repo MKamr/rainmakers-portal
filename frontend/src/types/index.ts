@@ -250,10 +250,11 @@ export interface Appointment {
   assignedAt?: string;
   status: 'unassigned' | 'assigned' | 'called' | 'completed' | 'no-answer' | 'rescheduled' | 'cancelled';
   callNotes?: string;
-  callOutcome?: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callOutcome?: 'sat-qualified' | 'sat-unqualified' | 'no-show';
   callDuration?: number;
   followUpDate?: string;
   appointmentStatusUpdate?: string;
+  dealStatus?: 'active' | 'inactive';
   calledAt?: string;
   completedAt?: string;
   createdAt: string;
@@ -269,10 +270,11 @@ export interface TermsAcceptance {
 
 export interface CallNotesData {
   callNotes: string;
-  callOutcome: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callOutcome: 'sat-qualified' | 'sat-unqualified' | 'no-show';
   callDuration?: number;
   followUpDate?: string;
   appointmentStatusUpdate?: string;
+  dealStatus?: 'active' | 'inactive';
 }
 
 export interface AppointmentFilters {

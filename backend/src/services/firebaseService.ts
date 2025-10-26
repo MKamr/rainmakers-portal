@@ -137,10 +137,11 @@ export interface Appointment {
   assignedAt?: Timestamp;
   status: 'unassigned' | 'assigned' | 'called' | 'completed' | 'no-answer' | 'rescheduled' | 'cancelled';
   callNotes?: string;
-  callOutcome?: 'successful' | 'no-answer' | 'voicemail' | 'reschedule' | 'not-interested';
+  callOutcome?: 'sat-qualified' | 'sat-unqualified' | 'no-show';
   callDuration?: number;
   followUpDate?: Timestamp;
   appointmentStatusUpdate?: string;
+  dealStatus?: 'active' | 'inactive';
   calledAt?: Timestamp;
   completedAt?: Timestamp;
   createdAt: Timestamp;

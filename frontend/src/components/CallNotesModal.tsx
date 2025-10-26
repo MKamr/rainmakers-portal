@@ -24,18 +24,17 @@ export const CallNotesModal: React.FC<CallNotesModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CallNotesData>({
     callNotes: '',
-    callOutcome: 'successful',
+    callOutcome: 'sat-qualified',
     callDuration: undefined,
     followUpDate: '',
-    appointmentStatusUpdate: ''
+    appointmentStatusUpdate: '',
+    dealStatus: 'active'
   });
 
   const callOutcomeOptions = [
-    { value: 'successful', label: 'Successful Call' },
-    { value: 'no-answer', label: 'No Answer' },
-    { value: 'voicemail', label: 'Voicemail' },
-    { value: 'reschedule', label: 'Needs Rescheduling' },
-    { value: 'not-interested', label: 'Not Interested' }
+    { value: 'sat-qualified', label: 'Sat/Qualified' },
+    { value: 'sat-unqualified', label: 'Sat/Unqualified' },
+    { value: 'no-show', label: 'No Show' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,6 +155,25 @@ export const CallNotesModal: React.FC<CallNotesModalProps> = ({
                 ))}
               </select>
             </div>
+
+                         {/* Deal Status (Conditional) */}
+             {formData.callOutcome === 'sat-qualified' && (
+               <div>
+                 <label htmlFor="dealStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                   Deal Status *
+                 </label>
+                 <select
+                   id="dealStatus"
+                   value={formData.dealStatus}
+                   onChange={(e) => handleInputChange('dealStatus', e.target.value)}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   required
+                 >
+                   <option value="active">Active</option>
+                   <option value="inactive">Inactive</option>
+                 </select>
+               </div>
+             )}
 
             {/* Call Duration */}
             <div>

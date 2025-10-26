@@ -131,7 +131,7 @@ router.post('/:id/call-notes', async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const appointmentId = req.params.id;
-    const { callNotes, callOutcome, callDuration, followUpDate, appointmentStatusUpdate } = req.body;
+    const { callNotes, callOutcome, callDuration, followUpDate, appointmentStatusUpdate, dealStatus } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -152,6 +152,12 @@ router.post('/:id/call-notes', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Not authorized to update this appointment' });
     }
 
+    // Determine new status based on outcome
+    let newStatus: 'called' | 'completed' = 'called';
+    if (callOutcome === 'sat-qualified' || callOutcome === 'sat-unqualified') {
+      newStatus = 'completed';
+    }
+
     // Update appointment with call notes
     const updateData: Partial<Appointment> = {
       callNotes,
@@ -159,14 +165,20 @@ router.post('/:id/call-notes', async (req: Request, res: Response) => {
       callDuration: callDuration ? parseInt(callDuration) : undefined,
       appointmentStatusUpdate,
       calledAt: Timestamp.now(),
-      status: callOutcome === 'successful' ? 'completed' : 'called'
+      status: newStatus
     };
+
+    // Add dealStatus if provided
+    if (dealStatus) {
+      updateData.dealStatus = dealStatus;
+    }
 
     if (followUpDate) {
       updateData.followUpDate = Timestamp.fromDate(new Date(followUpDate));
     }
 
-    if (callOutcome === 'successful') {
+    // Set completedAt for sat/qualified and sat/unqualified
+    if (callOutcome === 'sat-qualified' || callOutcome === 'sat-unqualified') {
       updateData.completedAt = Timestamp.now();
     }
 
