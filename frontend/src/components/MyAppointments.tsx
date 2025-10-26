@@ -120,39 +120,39 @@ export const MyAppointments: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+        <div className="bg-gray-800 dark:bg-gray-800 p-4 rounded-lg border border-gray-700 dark:border-gray-700 shadow">
           <div className="flex items-center">
-            <Calendar className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <Calendar className="h-8 w-8 text-blue-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.total}</p>
+              <p className="text-sm font-medium text-gray-400">Total</p>
+              <p className="text-2xl font-semibold text-white">{stats.total}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+        <div className="bg-gray-800 dark:bg-gray-800 p-4 rounded-lg border border-gray-700 dark:border-gray-700 shadow">
           <div className="flex items-center">
-            <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+            <Clock className="h-8 w-8 text-yellow-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Assigned</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.assigned}</p>
+              <p className="text-sm font-medium text-gray-400">Assigned</p>
+              <p className="text-2xl font-semibold text-white">{stats.assigned}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+        <div className="bg-gray-800 dark:bg-gray-800 p-4 rounded-lg border border-gray-700 dark:border-gray-700 shadow">
           <div className="flex items-center">
-            <Phone className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <Phone className="h-8 w-8 text-orange-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Called</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.called}</p>
+              <p className="text-sm font-medium text-gray-400">Called</p>
+              <p className="text-2xl font-semibold text-white">{stats.called}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow">
+        <div className="bg-gray-800 dark:bg-gray-800 p-4 rounded-lg border border-gray-700 dark:border-gray-700 shadow">
           <div className="flex items-center">
-            <MessageSquare className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <MessageSquare className="h-8 w-8 text-green-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stats.completed}</p>
+              <p className="text-sm font-medium text-gray-400">Completed</p>
+              <p className="text-2xl font-semibold text-white">{stats.completed}</p>
             </div>
           </div>
         </div>
@@ -160,19 +160,19 @@ export const MyAppointments: React.FC = () => {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-400">{error}</p>
+        <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
+          <p className="text-red-400">{error}</p>
         </div>
       )}
 
       {/* Filter */}
-      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-gray-800 dark:bg-gray-800 p-4 rounded-lg border border-gray-700 dark:border-gray-700">
         <div className="flex items-center space-x-4">
-          <Filter className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <Filter className="h-5 w-5 text-gray-500" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
           >
             <option value="all">All Statuses</option>
             <option value="assigned">Assigned</option>
@@ -187,10 +187,10 @@ export const MyAppointments: React.FC = () => {
 
       {/* Appointments List */}
       {filteredAppointments.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 p-8 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
-          <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No appointments found</h3>
-          <p className="text-gray-600 dark:text-gray-400">
+        <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 text-center">
+          <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">No appointments found</h3>
+          <p className="text-gray-400">
             {statusFilter === 'all' 
               ? "You don't have any assigned appointments yet."
               : `No appointments with status "${getStatusLabel(statusFilter)}" found.`
@@ -200,73 +200,73 @@ export const MyAppointments: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {filteredAppointments.map((appointment) => (
-            <div key={appointment.id} className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {appointment.appointmentTitle}
-                    </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                      {getStatusLabel(appointment.status)}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                      <User className="h-4 w-4" />
-                      <span>{appointment.contactName}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                      <Mail className="h-4 w-4" />
-                      <span>{appointment.contactEmail}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                      <Phone className="h-4 w-4" />
-                      <span>{appointment.contactPhone}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(appointment.appointmentDate)}</span>
-                    </div>
-                    {appointment.appointmentStartTime && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                        <Clock className="h-4 w-4" />
-                        <span>Start: {formatTime(appointment.appointmentStartTime)}</span>
+            <div key={appointment.id} className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:shadow-md transition-shadow">
+                                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-semibold text-white">
+                          {appointment.appointmentTitle}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
+                          {getStatusLabel(appointment.status)}
+                        </span>
                       </div>
-                    )}
-                    {appointment.appointmentEndTime && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                        <Clock className="h-4 w-4" />
-                        <span>End: {formatTime(appointment.appointmentEndTime)}</span>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="flex items-center space-x-2 text-sm text-gray-300">
+                          <User className="h-4 w-4" />
+                          <span>{appointment.contactName}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-300">
+                          <Mail className="h-4 w-4" />
+                          <span>{appointment.contactEmail}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-300">
+                          <Phone className="h-4 w-4" />
+                          <span>{appointment.contactPhone}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-300">
+                          <Calendar className="h-4 w-4" />
+                          <span>{formatDate(appointment.appointmentDate)}</span>
+                        </div>
+                        {appointment.appointmentStartTime && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-300">
+                            <Clock className="h-4 w-4" />
+                            <span>Start: {formatTime(appointment.appointmentStartTime)}</span>
+                          </div>
+                        )}
+                        {appointment.appointmentEndTime && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-300">
+                            <Clock className="h-4 w-4" />
+                            <span>End: {formatTime(appointment.appointmentEndTime)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {appointment.appointmentNotes && (
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>Notes:</strong> {appointment.appointmentNotes}
-                      </p>
-                    </div>
-                  )}
+                      {appointment.appointmentNotes && (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-300">
+                            <strong>Notes:</strong> {appointment.appointmentNotes}
+                          </p>
+                        </div>
+                      )}
 
-                  {appointment.callNotes && (
-                    <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Call Notes:</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{appointment.callNotes}</p>
-                      {appointment.callOutcome && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          <strong>Outcome:</strong> {appointment.callOutcome}
-                        </p>
+                      {appointment.callNotes && (
+                        <div className="mb-4 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                          <p className="text-sm font-medium text-white mb-1">Call Notes:</p>
+                          <p className="text-sm text-gray-300">{appointment.callNotes}</p>
+                          {appointment.callOutcome && (
+                            <p className="text-sm text-gray-400 mt-1">
+                              <strong>Outcome:</strong> {appointment.callOutcome}
+                            </p>
+                          )}
+                          {appointment.callDuration && (
+                            <p className="text-sm text-gray-400">
+                              <strong>Duration:</strong> {appointment.callDuration} minutes
+                            </p>
+                          )}
+                        </div>
                       )}
-                      {appointment.callDuration && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          <strong>Duration:</strong> {appointment.callDuration} minutes
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex flex-col space-y-2 ml-4">
