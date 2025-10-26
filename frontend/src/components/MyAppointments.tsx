@@ -3,6 +3,7 @@ import { Phone, MessageSquare, Calendar, Clock, User, Mail, Filter, RefreshCw } 
 import { appointmentsAPI } from '../services/api';
 import { Appointment } from '../types';
 import { CallNotesModal } from './CallNotesModal';
+import { formatDate, formatTime } from '../utils/dateUtils';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -77,17 +78,6 @@ export const MyAppointments: React.FC = () => {
       default:
         return status;
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const filteredAppointments = appointments.filter(appointment => {
@@ -239,6 +229,18 @@ export const MyAppointments: React.FC = () => {
                       <Calendar className="h-4 w-4" />
                       <span>{formatDate(appointment.appointmentDate)}</span>
                     </div>
+                    {appointment.appointmentStartTime && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        <span>Start: {formatTime(appointment.appointmentStartTime)}</span>
+                      </div>
+                    )}
+                    {appointment.appointmentEndTime && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        <span>End: {formatTime(appointment.appointmentEndTime)}</span>
+                      </div>
+                    )}
                   </div>
 
                   {appointment.appointmentNotes && (

@@ -299,6 +299,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
             contact = await GHLService.getContactById(ghlAppointment.contactId);
           }
           console.log(`📞 Contact fetched: ${contact?.name || 'Unknown'} (${contact?.email || 'no email'})`);
+          console.log(`📋 Contact custom fields: ${JSON.stringify(contact?.customFields || [])}`);
         } catch (contactError: any) {
           console.warn(`⚠️ Could not fetch contact ${ghlAppointment.contactId}:`, contactError.message);
         }
@@ -313,6 +314,21 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
         const contactName = contact?.name || (contact?.firstName && contact?.lastName 
           ? `${contact.firstName} ${contact.lastName}`.trim() 
           : 'Unknown Contact');
+        
+        // Extract appointment notes from contact custom fields
+        let appointmentNotes = ghlAppointment.notes || '';
+        if (contact?.customFields && Array.isArray(contact.customFields)) {
+          // Look for the meet_hardwell_notes custom field
+          const meetHardwellField = contact.customFields.find((field: any) => 
+            field.key === 'contact.meet_hardwell_notes' || 
+            field.fieldKey === 'contact.meet_hardwell_notes'
+          );
+          if (meetHardwellField) {
+            const notesValue = meetHardwellField.field_value || meetHardwellField.fieldValue || '';
+            appointmentNotes = notesValue || appointmentNotes;
+            console.log(`📝 Found appointment notes from custom field: ${notesValue}`);
+          }
+        }
         
         console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contactName}`);
         
@@ -329,7 +345,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           appointmentStartTime: Timestamp.fromDate(startDate),
           appointmentEndTime: Timestamp.fromDate(endDate),
           appointmentTitle: ghlAppointment.title,
-          appointmentNotes: ghlAppointment.notes,
+          appointmentNotes: appointmentNotes,
           status: 'unassigned'
         });
 
