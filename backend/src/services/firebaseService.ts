@@ -630,9 +630,18 @@ export class FirebaseService {
   static async createAppointment(data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Appointment> {
     const newAppointmentRef = FirebaseService.appointmentsCollection.doc();
     const now = Timestamp.now();
+    
+    // Filter out undefined values to prevent Firestore errors
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      if (data[key as keyof typeof data] !== undefined) {
+        cleanData[key] = data[key as keyof typeof data];
+      }
+    });
+    
     const newAppointment: Appointment = {
       id: newAppointmentRef.id,
-      ...data,
+      ...cleanData,
       createdAt: now,
       updatedAt: now,
     };
