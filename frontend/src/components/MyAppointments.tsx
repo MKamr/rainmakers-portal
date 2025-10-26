@@ -45,19 +45,19 @@ export const MyAppointments: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'assigned':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-900/30 text-blue-300 border border-blue-600';
       case 'called':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-900/30 text-yellow-300 border border-yellow-600';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-900/30 text-green-300 border border-green-600';
       case 'no-answer':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-900/30 text-red-300 border border-red-600';
       case 'rescheduled':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-900/30 text-purple-300 border border-purple-600';
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-700 text-gray-300 border border-gray-600';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-700 text-gray-300 border border-gray-600';
     }
   };
 
@@ -105,13 +105,13 @@ export const MyAppointments: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Appointments</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your assigned appointments and call notes</p>
+          <h1 className="text-2xl font-bold text-white">My Appointments</h1>
+          <p className="text-gray-400">Manage your assigned appointments and call notes</p>
         </div>
         <button
           onClick={fetchAppointments}
           disabled={isLoading}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 flex items-center space-x-2"
+          className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 flex items-center space-x-2"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
