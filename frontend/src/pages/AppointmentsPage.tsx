@@ -52,17 +52,17 @@ export const AppointmentsPage: React.FC = () => {
   if (hasAcceptedTerms === false) {
     return (
       <>
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-white mb-4">
               Terms and Conditions Required
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-400 mb-6">
               You must accept the terms and conditions to access the appointment calling system.
             </p>
             <button
               onClick={() => setIsTermsModalOpen(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
             >
               Review Terms and Conditions
             </button>
@@ -80,7 +80,7 @@ export const AppointmentsPage: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <MyAppointments />
         </div>
