@@ -8,6 +8,7 @@ import { HomePage } from './pages/HomePage'
 import { DealsPage } from './pages/DealsPage'
 import { AdminPage } from './pages/AdminPage'
 import { AppointmentsPage } from './pages/AppointmentsPage'
+import { AppointmentManagementPage } from './pages/AppointmentManagementPage'
 import { LoadingSpinner } from './components/LoadingSpinner'
 
 // Join redirect component
@@ -148,6 +149,7 @@ function App() {
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/appointments" element={<AppointmentManagementPage />} />
           <Route path="/join" element={<JoinRedirect />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

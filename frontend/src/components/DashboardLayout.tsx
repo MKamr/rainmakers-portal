@@ -32,6 +32,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   ]
 
   if (user?.isAdmin) {
+    navigation.push(
+      { name: 'Appointment Management', href: '/admin/appointments', icon: Calendar }
+    )
     navigation.push({ name: 'Admin', href: '/admin', icon: Users })
   }
 
