@@ -28,21 +28,6 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     }
   );
 
-  // Upload mutation for single file
-  const uploadMutation = useMutation(
-    ({ file, tags }: { file: File; tags: string[] }) =>
-      documentsAPI.uploadDocument(dealId, file, tags),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['deal-documents', dealId]);
-      },
-      onError: (error: any) => {
-        console.error('Upload error:', error);
-        toast.error(error.response?.data?.error || 'Failed to upload document');
-      }
-    }
-  );
-
   // Upload multiple files mutation
   const uploadMultipleMutation = useMutation(
     ({ files, tags }: { files: File[]; tags: string[] }) =>
