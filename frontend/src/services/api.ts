@@ -121,12 +121,30 @@ export const documentsAPI = {
       },
     }).then(res => res.data);
   },
+
+  uploadMultipleDocuments: (dealId: string, files: File[], tags: string[] = []): Promise<{ message: string; uploaded: number; failed: number }> => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    formData.append('dealId', dealId);
+    formData.append('tags', JSON.stringify(tags));
+    
+    return api.post('/documents/upload-multiple', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }).then(res => res.data);
+  },
   
   updateDocument: (id: string, data: { tags: string[] }): Promise<Document> =>
     api.put(`/documents/${id}`, data).then(res => res.data),
   
   deleteDocument: (id: string): Promise<void> =>
     api.delete(`/documents/${id}`).then(res => res.data),
+
+  deleteMultipleDocuments: (documentIds: string[]): Promise<{ message: string; deleted: number }> =>
+    api.post('/documents/delete-multiple', { documentIds }).then(res => res.data),
 };
 
 // Admin API

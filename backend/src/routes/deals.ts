@@ -772,22 +772,20 @@ router.put('/:id', [
         let updatedBy = 'Unknown User';
         
         if (user) {
-          // Try to get the full name first
-          const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-          if (fullName && fullName !== ' ') {
-            updatedBy = fullName;
-          } else if (user.name && user.name.trim()) {
-            // Fallback to the name field
-            updatedBy = user.name.trim();
+          // Try to get the username first
+          if (user.username && user.username.trim()) {
+            updatedBy = user.username.trim();
           } else if (user.email) {
-            // Last resort: use email but extract username part
+            // Fallback: use email but extract username part
             const emailUsername = user.email.split('@')[0];
             updatedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
           }
         }
         
         // Send deal update notification with only actual changes
-        await EmailService.sendDealUpdateNotificationEmail(updatedDeal, actualChanges, updatedBy);
+        if (updatedDeal) {
+          await EmailService.sendDealUpdateNotificationEmail(updatedDeal, actualChanges, updatedBy);
+        }
       } catch (emailError) {
         // Don't fail the deal update if email fails
         console.error('❌ [EMAIL] Failed to send deal update notification:', emailError);
@@ -1365,15 +1363,11 @@ router.post('/test-email-notifications', async (req: Request, res: Response) => 
     let userName = 'Test User';
     
     if (user) {
-      // Try to get the full name first
-      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-      if (fullName && fullName !== ' ') {
-        userName = fullName;
-      } else if (user.name && user.name.trim()) {
-        // Fallback to the name field
-        userName = user.name.trim();
+      // Try to get the username first
+      if (user.username && user.username.trim()) {
+        userName = user.username.trim();
       } else if (user.email) {
-        // Last resort: use email but extract username part
+        // Fallback: use email but extract username part
         const emailUsername = user.email.split('@')[0];
         userName = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
       }
@@ -1515,7 +1509,7 @@ router.get('/list-ghl-users', async (req: Request, res: Response) => {
     res.json({
       message: 'GHL users listed successfully',
       totalUsers: users.length,
-      users: users.map(user => ({
+      users: users.map((user: any) => ({
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
