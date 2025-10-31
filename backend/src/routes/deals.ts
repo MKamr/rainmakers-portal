@@ -649,7 +649,22 @@ router.post('/', [
         }
       } catch {}
 
-      await EmailService.sendDealNotificationEmail(deal);
+      // Get user info for the notification
+      const user = await FirebaseService.getUserById(req.user!.id);
+      let createdBy = undefined;
+      
+      if (user) {
+        // Try to get the username first
+        if (user.username && user.username.trim()) {
+          createdBy = user.username.trim();
+        } else if (user.email) {
+          // Fallback: use email but extract username part
+          const emailUsername = user.email.split('@')[0];
+          createdBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+        }
+      }
+
+      await EmailService.sendDealNotificationEmail(deal, createdBy);
     } catch (emailError) {
       // Don't fail the deal creation if email fails
       console.error('❌ [EMAIL] Failed to send deal notification:', emailError);

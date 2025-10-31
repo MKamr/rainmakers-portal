@@ -38,7 +38,7 @@ export class EmailService {
     }
   }
 
-  static async sendDealNotificationEmail(deal: Deal): Promise<void> {
+  static async sendDealNotificationEmail(deal: Deal, createdBy?: string): Promise<void> {
     if (!this.transporter || !this.config) {
       console.log('⚠️ [EMAIL] Email service not configured, skipping notification');
       return;
@@ -50,14 +50,14 @@ export class EmailService {
     }
 
     try {
-      const emailHtml = this.generateDealNotificationHtml(deal);
+      const emailHtml = this.generateDealNotificationHtml(deal, createdBy);
       
       const mailOptions = {
         from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
         to: this.config.notificationEmails.join(', '),
         subject: `🎯 New Deal Created: ${deal.dealId}`,
         html: emailHtml,
-        text: this.generateDealNotificationText(deal),
+        text: this.generateDealNotificationText(deal, createdBy),
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -128,7 +128,7 @@ export class EmailService {
     }
   }
 
-  private static generateDealNotificationHtml(deal: Deal): string {
+  private static generateDealNotificationHtml(deal: Deal, createdBy?: string): string {
     const dealUrl = `${process.env.FRONTEND_URL}/deals`;
     const currentDate = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -315,6 +315,12 @@ export class EmailService {
                         <h3>Deal Type</h3>
                         <p>${deal.dealType || 'Not specified'}</p>
                     </div>
+                    ${createdBy ? `
+                    <div class="info-card">
+                        <h3>Created By</h3>
+                        <p>${createdBy}</p>
+                    </div>
+                    ` : ''}
                 </div>
 
                 <div style="text-align: center; margin: 30px 0;">
@@ -334,7 +340,7 @@ export class EmailService {
                 </div>
 
                 <p style="text-align: center; color: #6c757d; font-size: 14px; margin-top: 30px;">
-                    Created on ${currentDate}
+                    Created on ${currentDate}${createdBy ? ` by ${createdBy}` : ''}
                 </p>
             </div>
             
@@ -348,7 +354,7 @@ export class EmailService {
     `;
   }
 
-  private static generateDealNotificationText(deal: Deal): string {
+  private static generateDealNotificationText(deal: Deal, createdBy?: string): string {
     const dealUrl = `${process.env.FRONTEND_URL}/deals`;
     const currentDate = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -369,6 +375,7 @@ Contact Name: ${deal.contactName || 'Not specified'}
 Contact Email: ${deal.contactEmail || 'Not specified'}
 Loan Request: ${deal.loanRequest || 'Not specified'}
 Deal Type: ${deal.dealType || 'Not specified'}
+${createdBy ? `Created By: ${createdBy}` : ''}
 Status: ${deal.status || 'Open'}
 Stage: ${deal.stage || 'Qualification'}
 
@@ -376,7 +383,7 @@ ${deal.additionalInformation ? `Additional Information: ${deal.additionalInforma
 
 View Deal: ${dealUrl}
 
-Created on: ${currentDate}
+Created on: ${currentDate}${createdBy ? ` by ${createdBy}` : ''}
 
 ---
 This is an automated notification from Rainmakers Portal
