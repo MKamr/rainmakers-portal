@@ -19,7 +19,7 @@ router.use((req, res, next) => {
     'http://localhost:3001'
   ];
   
-  if (allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   
@@ -90,17 +90,26 @@ router.get('/test-cors', (req, res) => {
 router.get('/test-onedrive', async (req, res) => {
   try {
     console.log('🔍 [TEST] Listing OneDrive files for debugging');
+    // Note: getFiles() method doesn't exist in OneDriveService
+    // This endpoint is disabled until the method is implemented
+    res.json({
+      message: 'OneDrive test endpoint - getFiles() method not implemented',
+      count: 0,
+      files: [] as any[]
+    });
+    return;
+    /* Commented out until getFiles() is implemented
     const files = await OneDriveService.getFiles();
     res.json({
       message: 'OneDrive files retrieved',
       count: files.length,
-      files: files.map(f => ({
+      files: files.map((f: any) => ({
         id: f.id,
         name: f.name,
         size: f.size,
         webUrl: f.webUrl
       }))
-    });
+    }); */
   } catch (error: any) {
     console.error('❌ [TEST] OneDrive test error:', error);
     res.status(500).json({ 
@@ -163,46 +172,27 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Get documents from Firebase filtered by userId
+    const documents = await FirebaseService.getDocumentsByDealAndUser(dealId, req.user!.id);
     
-    try {
-      // Get documents from OneDrive
-      const documents = await OneDriveService.getDealFiles(dealId);
-      
-      // Set userId for each document
-      const documentsWithUserId = documents.map(doc => ({
-        ...doc,
-        userId: req.user!.id
-      }));
-      
-      res.json(documentsWithUserId);
-    } catch (oneDriveError: any) {
-      // If folder doesn't exist (404), only create it for non-admin users
-      if (oneDriveError.message?.includes('Failed to fetch files') || oneDriveError.response?.status === 404) {
-        if (req.user!.isAdmin) {
-          res.json([]);
-        } else {
-          try {
-            await OneDriveService.createDealFolder(dealId, deal.propertyAddress);
-            
-            // Retry getting documents
-            const documents = await OneDriveService.getDealFiles(dealId);
-            
-            // Set userId for each document
-            const documentsWithUserId = documents.map(doc => ({
-              ...doc,
-              userId: req.user!.id
-            }));
-            
-            res.json(documentsWithUserId);
-          } catch (createError) {
-            console.error('❌ [DOCUMENTS] Failed to create deal folder:', createError);
-            res.status(500).json({ error: 'Failed to create deal folder', details: createError instanceof Error ? createError.message : 'Unknown error' });
-          }
-        }
-      } else {
-        throw oneDriveError;
-      }
-    }
+    // Map Firebase documents to match frontend Document interface
+    const mappedDocuments = documents.map(doc => ({
+      id: doc.id,
+      filename: doc.filename,
+      originalName: doc.originalName,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      tags: doc.tags || [],
+      oneDriveId: doc.oneDriveId,
+      oneDriveUrl: doc.oneDriveUrl,
+      downloadUrl: doc.downloadUrl,
+      userId: doc.userId,
+      dealId: doc.dealId,
+      createdAt: doc.uploadedAt.toDate().toISOString(),
+      updatedAt: doc.uploadedAt.toDate().toISOString(),
+    }));
+    
+    res.json(mappedDocuments);
   } catch (error) {
     console.error('📄 [DOCUMENTS] Get documents error:', error);
     res.status(500).json({ error: 'Failed to fetch documents', details: error instanceof Error ? error.message : 'Unknown error' });
@@ -276,6 +266,18 @@ router.post('/upload-multiple', upload.array('files', 50), [
 
     console.log('📄 [UPLOAD MULTIPLE] Deal found, uploading to OneDrive...');
 
+    // Get user info for uploadedBy field (once before loop)
+    const user = await FirebaseService.getUserById(req.user!.id);
+    let uploadedBy = 'Unknown User';
+    if (user) {
+      if (user.username && user.username.trim()) {
+        uploadedBy = user.username.trim();
+      } else if (user.email) {
+        const emailUsername = user.email.split('@')[0];
+        uploadedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      }
+    }
+
     // Upload all files to OneDrive
     const uploadResults = [];
     let uploadedCount = 0;
@@ -291,22 +293,43 @@ router.post('/upload-multiple', upload.array('files', 50), [
           file.mimetype
         );
 
+        // Save document metadata to Firebase
+        const documentData = await FirebaseService.createDocument({
+          filename: oneDriveFile.name,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          userId: req.user!.id,
+          oneDriveId: oneDriveFile.id,
+          oneDriveUrl: oneDriveFile.webUrl,
+          downloadUrl: oneDriveFile.downloadUrl,
+          tags: tags,
+          dealId: dealId,
+          uploadedBy: uploadedBy,
+        });
+
         uploadedCount++;
         uploadResults.push({
           success: true,
           file: {
-            id: oneDriveFile.id,
-            name: oneDriveFile.name,
-            size: oneDriveFile.size,
-            webUrl: oneDriveFile.webUrl,
-            downloadUrl: oneDriveFile.downloadUrl,
-            tags,
-            dealId,
-            uploadedAt: new Date().toISOString()
+            id: documentData.id,
+            filename: documentData.filename,
+            originalName: documentData.originalName,
+            fileSize: documentData.fileSize,
+            mimeType: documentData.mimeType,
+            tags: documentData.tags,
+            oneDriveId: documentData.oneDriveId,
+            oneDriveUrl: documentData.oneDriveUrl,
+            downloadUrl: documentData.downloadUrl,
+            userId: documentData.userId,
+            dealId: documentData.dealId,
+            createdAt: documentData.uploadedAt.toDate().toISOString(),
+            updatedAt: documentData.uploadedAt.toDate().toISOString()
           }
         });
 
         console.log(`✅ [UPLOAD MULTIPLE] File ${uploadedCount}/${files.length} uploaded:`, oneDriveFile.id);
+        console.log(`✅ [UPLOAD MULTIPLE] Document metadata saved to Firebase:`, documentData.id);
 
         // Send email notification for document upload
         try {
@@ -320,25 +343,6 @@ router.post('/upload-multiple', upload.array('files', 50), [
               }
             }
           } catch {}
-
-          // Get user info for the notification
-          const user = await FirebaseService.getUserById(req.user!.id);
-          let uploadedBy = 'Unknown User';
-          
-          if (user) {
-            // Try to get the full name first
-            const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-            if (fullName && fullName !== ' ') {
-              uploadedBy = fullName;
-            } else if (user.name && user.name.trim()) {
-              // Fallback to the name field
-              uploadedBy = user.name.trim();
-            } else if (user.email) {
-              // Last resort: use email but extract username part
-              const emailUsername = user.email.split('@')[0];
-              uploadedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
-            }
-          }
           
           // Send document upload notification
           await EmailService.sendDocumentUploadNotificationEmail(deal, file.originalname, uploadedBy);
@@ -468,6 +472,35 @@ router.post('/upload', upload.single('file'), [
 
     console.log('📄 [UPLOAD] File uploaded to OneDrive:', oneDriveFile.id);
 
+    // Get user info for uploadedBy field
+    const user = await FirebaseService.getUserById(req.user!.id);
+    let uploadedBy = 'Unknown User';
+    if (user) {
+      if (user.username && user.username.trim()) {
+        uploadedBy = user.username.trim();
+      } else if (user.email) {
+        const emailUsername = user.email.split('@')[0];
+        uploadedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      }
+    }
+
+    // Save document metadata to Firebase
+    const documentData = await FirebaseService.createDocument({
+      filename: oneDriveFile.name,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      fileSize: req.file.size,
+      userId: req.user!.id,
+      oneDriveId: oneDriveFile.id,
+      oneDriveUrl: oneDriveFile.webUrl,
+      downloadUrl: oneDriveFile.downloadUrl,
+      tags: tags,
+      dealId: dealId,
+      uploadedBy: uploadedBy,
+    });
+
+    console.log('📄 [UPLOAD] Document metadata saved to Firebase:', documentData.id);
+
     // Send email notification for document upload
     try {
       // Ensure email service initialized (handles serverless cold starts)
@@ -481,26 +514,7 @@ router.post('/upload', upload.single('file'), [
         }
       } catch {}
 
-      // Get user info for the notification
-      const user = await FirebaseService.getUserById(req.user!.id);
-      let uploadedBy = 'Unknown User';
-      
-      if (user) {
-        // Try to get the full name first
-        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        if (fullName && fullName !== ' ') {
-          uploadedBy = fullName;
-        } else if (user.name && user.name.trim()) {
-          // Fallback to the name field
-          uploadedBy = user.name.trim();
-        } else if (user.email) {
-          // Last resort: use email but extract username part
-          const emailUsername = user.email.split('@')[0];
-          uploadedBy = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
-        }
-      }
-      
-      // Send document upload notification
+      // Send document upload notification (uploadedBy already set above)
       await EmailService.sendDocumentUploadNotificationEmail(deal, req.file.originalname, uploadedBy);
     } catch (emailError) {
       // Don't fail the document upload if email fails
@@ -534,14 +548,19 @@ router.post('/upload', upload.single('file'), [
     res.status(201).json({
       message: 'Document uploaded successfully',
       file: {
-        id: oneDriveFile.id,
-        name: oneDriveFile.name,
-        size: oneDriveFile.size,
-        webUrl: oneDriveFile.webUrl,
-        downloadUrl: oneDriveFile.downloadUrl,
-        tags,
-        dealId,
-        uploadedAt: new Date().toISOString()
+        id: documentData.id,
+        filename: documentData.filename,
+        originalName: documentData.originalName,
+        fileSize: documentData.fileSize,
+        mimeType: documentData.mimeType,
+        tags: documentData.tags,
+        oneDriveId: documentData.oneDriveId,
+        oneDriveUrl: documentData.oneDriveUrl,
+        downloadUrl: documentData.downloadUrl,
+        userId: documentData.userId,
+        dealId: documentData.dealId,
+        createdAt: documentData.uploadedAt.toDate().toISOString(),
+        updatedAt: documentData.uploadedAt.toDate().toISOString()
       }
     });
   } catch (error) {
@@ -589,12 +608,26 @@ router.post('/delete-multiple', [
     let failedCount = 0;
     const errors_list: string[] = [];
 
-    // Delete from OneDrive
+    // Soft delete from Firebase (keep in OneDrive)
     for (const documentId of documentIds) {
       try {
-        await OneDriveService.deleteFile(documentId);
+        // Verify document belongs to user before deleting
+        const document = await FirebaseService.getDocumentById(documentId);
+        if (!document) {
+          failedCount++;
+          errors_list.push(`${documentId}: Document not found`);
+          continue;
+        }
+        
+        if (document.userId !== req.user!.id && !req.user!.isAdmin) {
+          failedCount++;
+          errors_list.push(`${documentId}: Access denied`);
+          continue;
+        }
+
+        await FirebaseService.softDeleteDocument(documentId);
         deletedCount++;
-        console.log(`✅ [DELETE MULTIPLE] Document deleted: ${documentId} (${deletedCount}/${documentIds.length})`);
+        console.log(`✅ [DELETE MULTIPLE] Document soft deleted: ${documentId} (${deletedCount}/${documentIds.length})`);
       } catch (error: any) {
         failedCount++;
         const errorMsg = error.message || 'Failed to delete document';
@@ -638,9 +671,19 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Document ID is required' });
     }
 
-    // Delete from OneDrive
-    await OneDriveService.deleteFile(documentId);
-    console.log('✅ [DELETE] Document deleted successfully from OneDrive:', documentId);
+    // Verify document belongs to user before deleting
+    const document = await FirebaseService.getDocumentById(documentId);
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (document.userId !== req.user!.id && !req.user!.isAdmin) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Soft delete from Firebase (keep in OneDrive)
+    await FirebaseService.softDeleteDocument(documentId);
+    console.log('✅ [DELETE] Document soft deleted successfully:', documentId);
 
     res.json({ message: 'Document deleted successfully' });
   } catch (error: any) {

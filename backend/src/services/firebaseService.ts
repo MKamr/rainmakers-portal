@@ -46,6 +46,8 @@ export interface User {
   avatar?: string;
   isAdmin: boolean;
   isWhitelisted: boolean;
+  hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
+  subscriptionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -89,18 +91,31 @@ export interface Deal {
   propertyType?: string;
   dealType?: string;
   dealId?: string;
+  contactName?: string;
+  contactEmail?: string;
+  loanRequest?: string;
+  additionalInformation?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 
 export interface Document {
   id: string;
-  name: string;
-  url: string;
+  filename: string;
+  originalName: string;
+  url?: string;
   uploadedBy: string;
   uploadedAt: Timestamp;
-  fileType: string;
+  mimeType: string;
   fileSize: number;
+  userId: string;
+  oneDriveId: string;
+  oneDriveUrl?: string;
+  downloadUrl?: string;
+  deleted: boolean;
+  deletedAt?: Timestamp;
+  tags: string[];
+  dealId: string;
 }
 
 export interface Analytics {
@@ -169,6 +184,22 @@ export interface SubAccount {
   updatedAt: Timestamp;
 }
 
+export interface Subscription {
+  id: string;
+  userId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing';
+  plan: 'monthly';
+  currentPeriodStart: Timestamp;
+  currentPeriodEnd: Timestamp;
+  cancelAtPeriodEnd: boolean;
+  canceledAt?: Timestamp;
+  gracePeriodEnd?: Timestamp; // currentPeriodEnd + 2 days
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export class FirebaseService {
   private static usersCollection = db.collection('users');
   private static dealsCollection = db.collection('deals');
@@ -176,6 +207,8 @@ export class FirebaseService {
   private static appointmentsCollection = db.collection('appointments');
   private static termsAcceptanceCollection = db.collection('termsAcceptance');
   private static subAccountsCollection = db.collection('subAccounts');
+  private static subscriptionsCollection = db.collection('subscriptions');
+  private static documentsCollection = db.collection('documents');
 
   // User methods
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
@@ -927,5 +960,137 @@ export class FirebaseService {
       console.error('Error getting sub-account by name:', error);
       return null;
     }
+  }
+
+  // Subscription methods
+  static async createSubscription(subscriptionData: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>): Promise<Subscription> {
+    const newSubRef = FirebaseService.subscriptionsCollection.doc();
+    const now = Timestamp.now();
+    const newSubscription: Subscription = {
+      id: newSubRef.id,
+      ...subscriptionData,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await newSubRef.set(newSubscription);
+    
+    // Update user with subscription ID
+    await FirebaseService.updateUser(subscriptionData.userId, {
+      subscriptionId: newSubRef.id,
+    });
+    
+    return newSubscription;
+  }
+
+  static async getSubscriptionById(id: string): Promise<Subscription | null> {
+    const subDoc = await FirebaseService.subscriptionsCollection.doc(id).get();
+    return subDoc.exists ? ({ id: subDoc.id, ...subDoc.data() } as Subscription) : null;
+  }
+
+  static async getSubscriptionByUserId(userId: string): Promise<Subscription | null> {
+    try {
+      const snapshot = await FirebaseService.subscriptionsCollection
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
+      if (snapshot.empty) {
+        return null;
+      }
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Subscription;
+    } catch (error) {
+      console.error('Error getting subscription by user ID:', error);
+      return null;
+    }
+  }
+
+  static async getSubscriptionByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | null> {
+    try {
+      const snapshot = await FirebaseService.subscriptionsCollection
+        .where('stripeSubscriptionId', '==', stripeSubscriptionId)
+        .limit(1)
+        .get();
+      if (snapshot.empty) {
+        return null;
+      }
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Subscription;
+    } catch (error) {
+      console.error('Error getting subscription by Stripe subscription ID:', error);
+      return null;
+    }
+  }
+
+  static async updateSubscription(id: string, subscriptionData: Partial<Omit<Subscription, 'id' | 'createdAt'>>): Promise<Subscription | null> {
+    const subscriptionRef = FirebaseService.subscriptionsCollection.doc(id);
+    const updateData = {
+      ...subscriptionData,
+      updatedAt: Timestamp.now(),
+    };
+    await subscriptionRef.update(updateData);
+    return this.getSubscriptionById(id);
+  }
+
+  static async deleteSubscription(id: string): Promise<void> {
+    const subscription = await this.getSubscriptionById(id);
+    if (subscription) {
+      // Remove subscription ID from user
+      await FirebaseService.updateUser(subscription.userId, {
+        subscriptionId: undefined,
+      });
+    }
+    await FirebaseService.subscriptionsCollection.doc(id).delete();
+  }
+
+  // Document methods
+  static async createDocument(documentData: Omit<Document, 'id' | 'uploadedAt' | 'deleted'>): Promise<Document> {
+    const newDocumentRef = FirebaseService.documentsCollection.doc();
+    const now = Timestamp.now();
+    const newDocument: Document = {
+      id: newDocumentRef.id,
+      ...documentData,
+      deleted: false,
+      uploadedAt: now,
+    };
+    await newDocumentRef.set(newDocument);
+    return newDocument;
+  }
+
+  static async getDocumentById(id: string): Promise<Document | null> {
+    const documentDoc = await FirebaseService.documentsCollection.doc(id).get();
+    if (!documentDoc.exists) {
+      return null;
+    }
+    return { id: documentDoc.id, ...documentDoc.data() } as Document;
+  }
+
+  static async getDocumentsByDealAndUser(dealId: string, userId: string): Promise<Document[]> {
+    try {
+      const snapshot = await FirebaseService.documentsCollection
+        .where('dealId', '==', dealId)
+        .where('userId', '==', userId)
+        .where('deleted', '==', false)
+        .get();
+      
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document));
+    } catch (error) {
+      console.error('Error getting documents by deal and user:', error);
+      throw error;
+    }
+  }
+
+  static async softDeleteDocument(id: string): Promise<void> {
+    const documentRef = FirebaseService.documentsCollection.doc(id);
+    await documentRef.update({
+      deleted: true,
+      deletedAt: Timestamp.now(),
+    });
+  }
+
+  // Timestamp utility methods
+  static timestampNow(): Timestamp {
+    return Timestamp.now();
+  }
+
+  static timestampFromDate(date: Date): Timestamp {
+    return Timestamp.fromDate(date);
   }
 }

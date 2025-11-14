@@ -22,9 +22,17 @@ service cloud.firestore {
     
     // Users can read and write their own documents
     match /documents/{documentId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Users can only read documents they uploaded (userId matches)
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can create documents with their own userId
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update/delete documents they uploaded
+      allow update, delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
     }
     
     // Only admins can access configurations

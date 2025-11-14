@@ -7,6 +7,7 @@ export interface User {
   avatar?: string;
   isAdmin: boolean;
   isWhitelisted: boolean;
+  hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
   createdAt: string;
 }
 
@@ -173,6 +174,7 @@ export interface Document {
   tags: string[];
   oneDriveId?: string;
   oneDriveUrl?: string;
+  downloadUrl?: string;
   userId: string;
   dealId?: string;
   createdAt: string;
