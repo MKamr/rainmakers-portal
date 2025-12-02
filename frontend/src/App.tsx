@@ -1,8 +1,19 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LoginPage } from './pages/LoginPage'
+import { EmailLoginPage } from './pages/EmailLoginPage'
+import { SignUpPage } from './pages/SignUpPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { PaymentCheckout } from './components/PaymentCheckout'
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
+import { TermsOfServicePage } from './pages/TermsOfServicePage'
+import { CreatePasswordPage } from './pages/CreatePasswordPage'
+import { ConnectDiscordPage } from './pages/ConnectDiscordPage'
+import { IntroVideoPage } from './pages/IntroVideoPage'
+import { TermsModal } from './components/TermsModal'
 import { DashboardLayout } from './components/DashboardLayout'
 import { HomePage } from './pages/HomePage'
 import { DealsPage } from './pages/DealsPage'
@@ -10,25 +21,98 @@ import { AdminPage } from './pages/AdminPage'
 import { AppointmentsPage } from './pages/AppointmentsPage'
 import { AppointmentManagementPage } from './pages/AppointmentManagementPage'
 import { LoadingSpinner } from './components/LoadingSpinner'
+import { useQueryClient } from 'react-query'
 
-// Join redirect component
-function JoinRedirect() {
-  useEffect(() => {
-    window.location.href = 'https://whop.com/rainmakers/'
-  }, [])
+// Wrapper component to show Terms Modal
+function TermsModalWrapper({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showModal, setShowModal] = useState(true);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-300">Redirecting to Rainmakers...</p>
-      </div>
-    </div>
-  )
+  const handleAcceptTerms = async () => {
+    setShowModal(false);
+    // Invalidate user query to refresh user data
+    queryClient.invalidateQueries('user');
+  };
+
+  if (showModal && user && !user.termsAccepted) {
+    return (
+      <>
+        <TermsModal onAccept={handleAcceptTerms} />
+        {children}
+      </>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
   const { user, isLoading } = useAuth()
+  const queryClient = useQueryClient()
+  const [urlProcessed, setUrlProcessed] = useState(false)
+
+  // Check for token/user in URL params FIRST (before checking localStorage)
+  // This handles Discord OAuth callback redirects
+  useEffect(() => {
+    // Only process once
+    if (urlProcessed) return
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get("token")
+    const userParam = urlParams.get("user")
+    const error = urlParams.get("error")
+
+    // Only process if we have URL params AND they're not already saved
+    const savedToken = localStorage.getItem('token')
+    
+    console.log('App: Checking URL params for OAuth callback', {
+      hasToken: !!token,
+      hasUserParam: !!userParam,
+      hasError: !!error,
+      alreadyHasToken: !!savedToken,
+      urlProcessed
+    });
+
+    if (error) {
+      console.error("App: OAuth error in URL:", error)
+      setUrlProcessed(true)
+      // Clear URL params and redirect to login with error
+      window.history.replaceState({}, '', '/login?error=' + error)
+      return
+    }
+
+    // Only process if we have token/user params AND they're not already saved
+    if (token && userParam && !savedToken) {
+      try {
+        console.log('App: Processing OAuth token from URL params...')
+        const user = JSON.parse(decodeURIComponent(userParam))
+        localStorage.setItem("token", token)
+        localStorage.setItem("user", JSON.stringify(user))
+        console.log('App: ✅ Saved token and user to localStorage')
+        
+        // Clear URL params
+        window.history.replaceState({}, '', window.location.pathname)
+        
+        // Invalidate and refetch the user query to pick up the new token
+        queryClient.invalidateQueries('user')
+        setUrlProcessed(true)
+      } catch (error) {
+        console.error("App: Failed to parse user data from URL:", error)
+        setUrlProcessed(true)
+        // Clear URL params and redirect to login
+        window.history.replaceState({}, '', '/login?error=parse_error')
+      }
+    } else if (token && userParam && savedToken) {
+      // Token already saved, just clear URL params
+      console.log('App: Token already saved, clearing URL params')
+      window.history.replaceState({}, '', window.location.pathname)
+      setUrlProcessed(true)
+    } else {
+      // No URL params to process
+      setUrlProcessed(true)
+    }
+  }, [urlProcessed, queryClient]) // Run once, then never again
 
   console.log('🎯 App render:', { 
     user: user ? {
@@ -65,8 +149,18 @@ function App() {
     return (
       <ThemeProvider>
         <Routes>
-          <Route path="/join" element={<JoinRedirect />} />
-          <Route path="*" element={<LoginPage />} />
+          <Route path="/join" element={<SignUpPage />} />
+          <Route path="/signup" element={<Navigate to="/join" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/email" element={<EmailLoginPage />} />
+          <Route path="/payment" element={<PaymentCheckout />} />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          <Route path="/onboarding/password" element={<CreatePasswordPage />} />
+          <Route path="/onboarding/discord" element={<ConnectDiscordPage />} />
+          <Route path="/onboarding/intro" element={<IntroVideoPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="*" element={<Navigate to="/join" replace />} />
         </Routes>
       </ThemeProvider>
     )
@@ -139,6 +233,65 @@ function App() {
     )
   }
 
+  console.log('🎉 App: User is whitelisted, checking setup completion and terms')
+
+  // Check if user needs to complete setup
+  // Handle undefined values - treat undefined as false (needs setup)
+  const needsPassword = user.hasPassword !== true;
+  const needsDiscord = user.hasDiscord !== true;
+  const needsTerms = !user.termsAccepted;
+
+  // Redirect to appropriate onboarding step if setup incomplete
+  if (needsPassword) {
+    console.log('⚠️ App: User needs password, redirecting to password creation')
+    return (
+      <ThemeProvider>
+        <Routes>
+          <Route path="/onboarding/password" element={<CreatePasswordPage />} />
+          <Route path="*" element={<Navigate to="/onboarding/password" replace />} />
+        </Routes>
+      </ThemeProvider>
+    )
+  }
+
+  if (needsDiscord) {
+    console.log('⚠️ App: User needs Discord, redirecting to Discord connection')
+    return (
+      <ThemeProvider>
+        <Routes>
+          <Route path="/onboarding/discord" element={<ConnectDiscordPage />} />
+          <Route path="*" element={<Navigate to="/onboarding/discord" replace />} />
+        </Routes>
+      </ThemeProvider>
+    )
+  }
+
+  // Show Terms Modal if terms not accepted
+  if (needsTerms) {
+    console.log('⚠️ App: User needs to accept terms, showing Terms Modal')
+    return (
+      <ThemeProvider>
+        <TermsModalWrapper>
+          <DashboardLayout>
+            <Routes>
+              <Route path="/" element={<DealsPage />} />
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/deals" element={<DealsPage />} />
+              <Route path="/appointments" element={<AppointmentsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/appointments" element={<AppointmentManagementPage />} />
+              <Route path="/join" element={<SignUpPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </DashboardLayout>
+        </TermsModalWrapper>
+      </ThemeProvider>
+    )
+  }
+
   console.log('🎉 App: User is whitelisted, showing dashboard')
   return (
     <ThemeProvider>
@@ -148,9 +301,12 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/appointments" element={<AppointmentManagementPage />} />
-          <Route path="/join" element={<JoinRedirect />} />
+          <Route path="/join" element={<SignUpPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </DashboardLayout>

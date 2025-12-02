@@ -1,6 +1,6 @@
 export interface User {
   id: string;
-  discordId: string;
+  discordId?: string; // Optional - required for portal access but may not exist initially
   username: string;
   name?: string;
   email: string;
@@ -8,6 +8,12 @@ export interface User {
   isAdmin: boolean;
   isWhitelisted: boolean;
   hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
+  termsAccepted?: boolean; // Default false
+  onboardingCompleted?: boolean; // Default false
+  hasPassword?: boolean; // Indicates if user has password set
+  hasDiscord?: boolean; // Indicates if user has Discord connected
+  needsPassword?: boolean; // Flag from login response
+  needsDiscord?: boolean; // Flag from login response
   createdAt: string;
 }
 
@@ -231,6 +237,7 @@ export interface CreateDealData {
 export interface AuthResponse {
   token: string;
   user: User;
+  needsDiscordOAuth?: boolean; // Flag indicating if user needs to complete Discord OAuth to join server
 }
 
 export interface Appointment {

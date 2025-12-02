@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from 'react-query'
 import { documentsAPI } from '../services/api'
 import { Deal, Document } from '../types'
@@ -142,8 +143,8 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
@@ -151,7 +152,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
           &#8203;
         </span>
 
-        <div className="inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-5xl sm:align-middle border border-gray-700">
+        <div className="relative z-10 inline-block transform overflow-hidden rounded-xl bg-gray-800 text-left align-bottom shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-5xl sm:align-middle border border-gray-700">
           {/* Header */}
           <div className="bg-gradient-to-r from-gray-800 to-gray-700 px-8 py-6 border-b border-gray-600">
             <div className="flex items-center justify-between">
@@ -516,6 +517,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

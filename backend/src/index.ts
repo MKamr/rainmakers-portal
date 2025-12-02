@@ -1,10 +1,29 @@
+// Load environment variables FIRST, before any other imports
+// This is critical because FirebaseService and other services need env vars at module load time
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Get directory paths
+const currentDir = process.cwd();
+const backendDir = path.join(currentDir, 'backend');
+const rootDir = currentDir;
+
+// Try backend/.env first
+dotenv.config({ path: path.join(backendDir, '.env') });
+// Fallback to root .env (for monorepo setups)
+if (path.basename(currentDir) !== 'backend') {
+  dotenv.config({ path: path.join(rootDir, '.env'), override: false });
+}
+// Also try current directory (for when running from backend directory)
+dotenv.config({ override: false });
+
+// Now import everything else (they can use the env vars)
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -15,16 +34,16 @@ import adminRoutes from './routes/admin';
 import webhookRoutes from './routes/webhooks';
 import onedriveRoutes from './routes/onedrive';
 import appointmentsRoutes from './routes/appointments';
+import paymentRoutes from './routes/payments';
+import subscriptionRoutes from './routes/subscriptions';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 
-// Import services
+// Import services (these need env vars, so dotenv must be called first)
 import { EmailService } from './services/emailService';
 import { FirebaseService } from './services/firebaseService';
-
-dotenv.config();
 
 const app = express();
 
@@ -69,7 +88,8 @@ app.use(cors({
       'https://rain.club',
       'https://www.rain.club',
       'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
+      'https://rainmakers-portal-backend-production.up.railway.app'
     ];
     
     console.log('🌐 [CORS] Request origin:', origin);
@@ -121,6 +141,10 @@ app.use('/auth', authRoutes);
 app.use('/auth', adminRoutes);
 // Webhook routes (public, no authentication required)
 app.use('/api/webhooks', webhookRoutes);
+// Payment webhook (public, uses Stripe signature verification)
+app.use('/api/payments', paymentRoutes);
+// Subscription routes (public for new users, authenticated optional)
+app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
 app.use('/api/deals', authenticateToken, dealRoutes);
 app.use('/api/documents', authenticateToken, documentRoutes);

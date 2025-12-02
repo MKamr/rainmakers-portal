@@ -7,7 +7,7 @@
 }
 
 .dark .matrix-logo-section {
-  background: rgba(31, 41, 55, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid rgba(255, 215, 0, 0.3);
 }
 
@@ -170,7 +170,7 @@
 .dark .matrix-table,
 .dark .matrix-metric-card,
 .dark .matrix-analytics-card {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
@@ -187,14 +187,14 @@
 /* Navigation Styles */
 .matrix-nav {
   position: relative;
-  z-index: 1;
+  z-index: 10 !important;
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 215, 0, 0.2) !important;
 }
 
 .dark .matrix-nav {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
 }
 
@@ -215,25 +215,39 @@
 }
 
 /* Sidebar Styles */
-.matrix-mobile-sidebar,
-.matrix-desktop-sidebar {
+.matrix-mobile-sidebar {
   position: relative;
-  z-index: 1;
+  z-index: 10 !important;
   border-right: 1px solid rgba(255, 215, 0, 0.2);
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px);
 }
 
-.dark .matrix-mobile-sidebar,
+.matrix-desktop-sidebar {
+  position: relative;
+  z-index: 10 !important;
+  border-right: 1px solid rgba(255, 215, 0, 0.2);
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+}
+
+.dark .matrix-mobile-sidebar {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border-right: 1px solid rgba(255, 215, 0, 0.3);
+}
+
 .dark .matrix-desktop-sidebar {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border-right: 1px solid rgba(255, 215, 0, 0.3);
 }
 
 .matrix-nav-item {
+  position: relative;
+  z-index: 10 !important;
   transition: all 0.3s ease;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.5px;
+  pointer-events: auto !important;
 }
 
 .matrix-nav-active {
@@ -469,7 +483,7 @@
 }
 
 .dark .matrix-header {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
 }
 
@@ -522,7 +536,7 @@
 }
 
 .dark .matrix-tabs {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
 }
 
@@ -559,13 +573,7 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
-  animation: scan-line 4s linear infinite;
   z-index: 2;
-}
-
-@keyframes scan-line {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 /* Adjust scan line timing for different containers */
@@ -597,7 +605,7 @@
 }
 
 .dark .matrix-deal-item {
-  background: rgba(31, 41, 55, 0.95) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
   border: 1px solid rgba(255, 215, 0, 0.2) !important;
 }
 

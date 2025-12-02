@@ -1052,4 +1052,358 @@ This is an automated notification from Rainmakers Portal
       return false;
     }
   }
+
+  static async sendWelcomeEmail(
+    email: string, 
+    username: string, 
+    verificationCode: string
+  ): Promise<void> {
+    if (!this.transporter || !this.config) {
+      const errorMsg = '⚠️ [EMAIL] Email service not configured, skipping welcome email. Please configure EmailConfig in Firebase Admin settings.';
+      console.error(errorMsg);
+      throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
+    }
+
+    try {
+      const emailHtml = this.generateWelcomeEmailHtml(username, verificationCode);
+      
+      const mailOptions = {
+        from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
+        to: email,
+        subject: '🎉 Welcome to Rainmakers Portal!',
+        html: emailHtml,
+        text: this.generateWelcomeEmailText(username, verificationCode),
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ [EMAIL] Welcome email sent successfully:', result.messageId);
+    } catch (error) {
+      console.error('❌ [EMAIL] Failed to send welcome email:', error);
+      // Don't throw error to avoid breaking webhook
+    }
+  }
+
+  static async sendOTPEmail(email: string, otpCode: string): Promise<void> {
+    if (!this.transporter || !this.config) {
+      const errorMsg = '⚠️ [EMAIL] Email service not configured, skipping OTP email. Please configure EmailConfig in Firebase Admin settings.';
+      console.error(errorMsg);
+      throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
+    }
+
+    try {
+      const emailHtml = this.generateOTPEmailHtml(otpCode);
+      
+      const mailOptions = {
+        from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
+        to: email,
+        subject: '🔐 Your Login Code - Rainmakers Portal',
+        html: emailHtml,
+        text: this.generateOTPEmailText(otpCode),
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ [EMAIL] OTP email sent successfully:', result.messageId);
+    } catch (error) {
+      console.error('❌ [EMAIL] Failed to send OTP email:', error);
+      // Don't throw error to avoid breaking auth flow
+    }
+  }
+
+  static async resendVerificationCodeEmail(
+    email: string, 
+    username: string, 
+    verificationCode: string
+  ): Promise<void> {
+    if (!this.transporter || !this.config) {
+      console.log('⚠️ [EMAIL] Email service not configured, skipping verification code email');
+      return;
+    }
+
+    try {
+      const emailHtml = this.generateWelcomeEmailHtml(username, verificationCode);
+      
+      const mailOptions = {
+        from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
+        to: email,
+        subject: '🔑 Your Verification Code - Rainmakers Portal',
+        html: emailHtml,
+        text: this.generateWelcomeEmailText(username, verificationCode),
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ [EMAIL] Verification code email resent successfully:', result.messageId);
+    } catch (error) {
+      console.error('❌ [EMAIL] Failed to resend verification code email:', error);
+      throw error; // Throw here since this is user-initiated
+    }
+  }
+
+  private static generateWelcomeEmailHtml(username: string, verificationCode: string): string {
+    const portalUrl = process.env.FRONTEND_URL || 'https://www.rain.club';
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light">
+    <title>Welcome to Rainmakers Portal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            color: #000 !important;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 18px;
+            color: #000 !important;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333;
+        }
+        .code-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .code-box {
+                font-size: 24px;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Welcome to Rainmakers!</h1>
+            <p>Your journey starts here</p>
+        </div>
+        <div class="content">
+            <p>Hi ${username || 'there'},</p>
+            <p>Welcome to the Rainmakers Portal! We're excited to have you on board.</p>
+            <p><strong>Your Verification Code:</strong></p>
+            <div class="code-box">${verificationCode}</div>
+            <p>Use this code to link your Discord account if your Discord email is different from your payment email.</p>
+            <p style="margin-top: 30px; text-align: center;">
+                <a href="${portalUrl}/login" class="button">Get Started</a>
+            </p>
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                This code will expire in 7 days. Keep it safe!
+            </p>
+        </div>
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} Rainmakers Portal. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+  }
+
+  private static generateWelcomeEmailText(username: string, verificationCode: string): string {
+    const portalUrl = process.env.FRONTEND_URL || 'https://www.rain.club';
+    return `
+Welcome to Rainmakers Portal!
+
+Hi ${username || 'there'},
+
+Welcome to the Rainmakers Portal! We're excited to have you on board.
+
+Your Verification Code: ${verificationCode}
+
+Use this code to link your Discord account if your Discord email is different from your payment email.
+
+This code will expire in 7 days. Keep it safe!
+
+Get started: ${portalUrl}/login
+
+© ${new Date().getFullYear()} Rainmakers Portal. All rights reserved.
+    `;
+  }
+
+  private static generateOTPEmailHtml(otpCode: string): string {
+    const portalUrl = process.env.FRONTEND_URL || 'https://www.rain.club';
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light">
+    <title>Your Login Code</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            color: white !important;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333;
+        }
+        .code-box {
+            background: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #856404;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .code-box {
+                font-size: 28px;
+                letter-spacing: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Your Login Code</h1>
+        </div>
+        <div class="content">
+            <p>You requested a login code for your Rainmakers Portal account.</p>
+            <p><strong>Your Login Code:</strong></p>
+            <div class="code-box">${otpCode}</div>
+            <p>Enter this code on the login page to access your account.</p>
+            <div class="warning">
+                <strong>⚠️ Security Notice:</strong> This code will expire in 10 minutes. Never share this code with anyone.
+            </div>
+        </div>
+        <div class="footer">
+            <p>If you didn't request this code, please ignore this email.</p>
+            <p>© ${new Date().getFullYear()} Rainmakers Portal. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+  }
+
+  private static generateOTPEmailText(otpCode: string): string {
+    return `
+Your Login Code - Rainmakers Portal
+
+You requested a login code for your Rainmakers Portal account.
+
+Your Login Code: ${otpCode}
+
+Enter this code on the login page to access your account.
+
+⚠️ Security Notice: This code will expire in 10 minutes. Never share this code with anyone.
+
+If you didn't request this code, please ignore this email.
+
+© ${new Date().getFullYear()} Rainmakers Portal. All rights reserved.
+    `;
+  }
 }

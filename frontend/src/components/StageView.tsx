@@ -316,7 +316,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
 
   if (deals.length === 0) {
     return (
-      <div className="bg-gray-900 min-h-screen -mx-4 sm:-mx-6 lg:-mx-8">
+      <div className="bg-gray-900 min-h-screen rounded-lg overflow-hidden">
         <div className="bg-gray-800 p-12">
           <div className="text-center">
             <div className="mx-auto h-16 w-16 text-yellow-400 mb-6">
@@ -342,7 +342,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   }
 
   return (
-    <div className="bg-gray-900 min-h-screen -mx-4 sm:-mx-6 lg:-mx-8">
+    <div className="bg-gray-900 min-h-screen rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-6">
         <div className="flex items-center justify-between">
@@ -573,17 +573,6 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
           )
         })}
 
-        {/* Add New Group Button */}
-        <div className="pt-6 border-t border-gray-700">
-          <div className="text-center">
-            <p className="text-sm text-gray-400 mb-3">🚀 Expand Your Pipeline</p>
-            <button className="flex items-center space-x-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300 mx-auto">
-            <Plus className="h-4 w-4" />
-              <span className="text-sm font-medium">Create Custom Stage</span>
-          </button>
-            <p className="text-xs text-gray-500 mt-2">Customize your workflow to match your investment strategy</p>
-          </div>
-        </div>
       </div>
     </div>
   )

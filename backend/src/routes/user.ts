@@ -20,6 +20,7 @@ router.get('/profile', async (req: Request, res: Response) => {
       avatar: user.avatar,
       isAdmin: user.isAdmin,
       isWhitelisted: user.isWhitelisted,
+      hasManualSubscription: user.hasManualSubscription || false,
       createdAt: user.createdAt
     });
   } catch (error) {
@@ -49,6 +50,7 @@ router.put('/profile', async (req: Request, res: Response) => {
       avatar: updatedUser.avatar,
       isAdmin: updatedUser.isAdmin,
       isWhitelisted: updatedUser.isWhitelisted,
+      hasManualSubscription: updatedUser.hasManualSubscription || false,
       updatedAt: updatedUser.updatedAt
     });
   } catch (error) {

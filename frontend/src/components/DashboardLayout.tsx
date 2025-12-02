@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../contexts/ThemeContext'
 import { ThemeToggle } from './ThemeToggle'
+import { UserProfileModal } from './UserProfileModal'
 import { cn } from '../utils/cn'
 import {
   Home,
@@ -12,7 +13,8 @@ import {
   X,
   LogOut,
   User,
-  Calendar
+  Calendar,
+  CreditCard
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
@@ -21,6 +23,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const { user, logout } = useAuth()
   const { theme } = useTheme()
   const location = useLocation()
@@ -29,6 +32,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'Deals', href: '/', icon: FileText },
     { name: 'Home', href: '/home', icon: Home },
     { name: 'My Appointments', href: '/appointments', icon: Calendar },
+    { name: 'Subscription & Billing', href: '/settings', icon: CreditCard }
   ]
 
   if (user?.isAdmin) {
@@ -117,27 +121,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4 mt-auto matrix-user-section">
             <div className="group block w-full flex-shrink-0">
               <div className="flex items-center">
-                <div>
-                  {user?.avatar ? (
-                    <img
-                      className="inline-block h-8 w-8 rounded-full matrix-user-avatar"
-                      src={user.avatar}
-                      alt={user.username}
-                    />
-                  ) : (
-                    <div className="inline-block h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
-                      <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                    </div>
-                  )}
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white matrix-username">
-                    {user?.username}
-                  </p>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 matrix-user-role">
-                    {user?.isAdmin ? 'ADMIN' : 'USER'}
-                  </p>
-                </div>
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <div>
+                    {user?.avatar ? (
+                      <img
+                        className="inline-block h-8 w-8 rounded-full matrix-user-avatar"
+                        src={user.avatar}
+                        alt={user.username}
+                      />
+                    ) : (
+                      <div className="inline-block h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
+                        <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white matrix-username">
+                      {user?.username}
+                    </p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 matrix-user-role">
+                      {user?.isAdmin ? 'ADMIN' : 'USER'}
+                    </p>
+                  </div>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="ml-auto p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 matrix-logout-btn"
@@ -151,7 +160,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:z-10">
         <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-gray-700 matrix-desktop-sidebar">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 matrix-logo-section">
@@ -195,27 +204,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4 matrix-user-section">
             <div className="group block w-full flex-shrink-0">
               <div className="flex items-center">
-                <div>
-                  {user?.avatar ? (
-                    <img
-                      className="inline-block h-9 w-9 rounded-full matrix-user-avatar"
-                      src={user.avatar}
-                      alt={user.username}
-                    />
-                  ) : (
-                    <div className="inline-block h-9 w-9 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
-                      <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                    </div>
-                  )}
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white matrix-username">
-                    {user?.username}
-                  </p>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 matrix-user-role">
-                    {user?.isAdmin ? 'ADMIN' : 'USER'}
-                  </p>
-                </div>
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <div>
+                    {user?.avatar ? (
+                      <img
+                        className="inline-block h-9 w-9 rounded-full matrix-user-avatar"
+                        src={user.avatar}
+                        alt={user.username}
+                      />
+                    ) : (
+                      <div className="inline-block h-9 w-9 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center matrix-user-avatar">
+                        <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white matrix-username">
+                      {user?.username}
+                    </p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 matrix-user-role">
+                      {user?.isAdmin ? 'ADMIN' : 'USER'}
+                    </p>
+                  </div>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="ml-auto p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 matrix-logout-btn"
@@ -267,6 +281,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
       </div>
       
+      {/* User Profile Modal */}
+      {showProfileModal && (
+        <UserProfileModal
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   )
 }

@@ -4,9 +4,9 @@
   "description": "Rainmakers Portal Frontend - React + TypeScript + Tailwind",
   "type": "module",
   "scripts": {
-    "dev": "node ../node_modules/vite/bin/vite.js",
-    "build": "node ../node_modules/typescript/bin/tsc --noEmit && node ../node_modules/vite/bin/vite.js build",
-    "preview": "node ../node_modules/vite/bin/vite.js preview --port $PORT --host 0.0.0.0",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port $PORT --host 0.0.0.0",
     "start": "npm run build && npx serve -s dist -l $PORT",
     "serve": "npx serve -s dist -l $PORT",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
@@ -24,7 +24,9 @@
     "react-query": "^3.39.3",
     "react-router-dom": "^6.20.1",
     "serve": "^14.2.1",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "@stripe/stripe-js": "^2.4.0",
+    "@stripe/react-stripe-js": "^2.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

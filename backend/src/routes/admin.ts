@@ -392,7 +392,8 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
       username: user.username,
       email: user.email,
       isAdmin: user.isAdmin,
-      isWhitelisted: user.isWhitelisted
+      isWhitelisted: user.isWhitelisted,
+      hasManualSubscription: user.hasManualSubscription || false
     }));
     
     res.json(userList);
@@ -413,10 +414,14 @@ router.get('/users/:id', requireAdmin, async (req: Request, res: Response) => {
     
     res.json({
       id: user.id,
+      discordId: user.discordId,
       username: user.username,
       email: user.email,
+      avatar: user.avatar,
       isAdmin: user.isAdmin,
-      isWhitelisted: user.isWhitelisted
+      isWhitelisted: user.isWhitelisted,
+      hasManualSubscription: user.hasManualSubscription || false,
+      createdAt: user.createdAt
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -680,10 +685,11 @@ router.get('/users', async (req: Request, res: Response) => {
   }
 });
 
-// Update user (whitelist/admin status)
+// Update user (whitelist/admin/manual subscription status)
 router.put('/users/:id', [
   body('isWhitelisted').optional().isBoolean().withMessage('isWhitelisted must be a boolean'),
   body('isAdmin').optional().isBoolean().withMessage('isAdmin must be a boolean'),
+  body('hasManualSubscription').optional().isBoolean().withMessage('hasManualSubscription must be a boolean'),
 ], async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -692,7 +698,7 @@ router.put('/users/:id', [
     }
 
     const { id } = req.params;
-    const { isWhitelisted, isAdmin } = req.body;
+    const { isWhitelisted, isAdmin, hasManualSubscription } = req.body;
 
     // Prevent user from removing their own admin status
     if (id === req.user!.id && isAdmin === false) {
@@ -702,6 +708,7 @@ router.put('/users/:id', [
     const updates: any = {};
     if (isWhitelisted !== undefined) updates.isWhitelisted = isWhitelisted;
     if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+    if (hasManualSubscription !== undefined) updates.hasManualSubscription = hasManualSubscription;
 
     const updatedUser = await FirebaseService.updateUser(id, updates);
     if (!updatedUser) {
@@ -712,6 +719,39 @@ router.put('/users/:id', [
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Grant/revoke manual subscription access (for users who paid via other methods)
+router.post('/users/:id/manual-subscription', [
+  body('grant').isBoolean().withMessage('grant must be a boolean (true to grant, false to revoke)'),
+], async (req: Request, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { grant } = req.body;
+
+    const user = await FirebaseService.getUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const updatedUser = await FirebaseService.updateUser(id, { hasManualSubscription: grant });
+    
+    console.log(`Admin ${req.user!.id} ${grant ? 'granted' : 'revoked'} manual subscription access for user ${id}`);
+    
+    res.json({
+      success: true,
+      message: `Manual subscription access ${grant ? 'granted' : 'revoked'} successfully`,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating manual subscription access:', error);
+    res.status(500).json({ error: 'Failed to update manual subscription access' });
   }
 });
 

@@ -40,16 +40,33 @@ const db = getFirestore();
 
 export interface User {
   id: string;
-  discordId: string;
-  username: string;
-  email: string;
+  discordId?: string; // Make optional since users can pay without Discord
+  username: string; // Required, must be unique
+  email: string; // Payment email (primary)
+  discordEmail?: string; // Discord email (if different from payment email)
+  passwordHash?: string; // bcrypt hashed password
   avatar?: string;
+  verificationCode?: string; // 8-character code sent after payment
+  verificationCodeExpiresAt?: Timestamp; // 7-day expiration
+  termsAccepted: boolean; // Default false
+  termsAcceptedAt?: Timestamp;
+  onboardingCompleted: boolean; // Default false
+  onboardingStep?: number; // 1=payment, 2=password, 3=discord, 4=intro, 5=complete
   isAdmin: boolean;
   isWhitelisted: boolean;
   hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
   subscriptionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export interface OTPCode {
+  id: string;
+  email: string;
+  code: string;
+  expiresAt: Timestamp;
+  used: boolean;
+  createdAt: Timestamp;
 }
 
 export interface DiscordAutoAccessUser {
@@ -209,6 +226,7 @@ export class FirebaseService {
   private static subAccountsCollection = db.collection('subAccounts');
   private static subscriptionsCollection = db.collection('subscriptions');
   private static documentsCollection = db.collection('documents');
+  private static otpCodesCollection = db.collection('otpCodes');
 
   // User methods
   static async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
@@ -1083,6 +1101,92 @@ export class FirebaseService {
       deleted: true,
       deletedAt: Timestamp.now(),
     });
+  }
+
+  // Verification Code and OTP Methods
+  static async generateVerificationCode(): Promise<string> {
+    // Generate 8-character alphanumeric code (format: RAIN-XXXX)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars (0, O, I, 1)
+    let code = 'RAIN-';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
+  static async generateOTPCode(): Promise<string> {
+    // Generate 6-digit numeric code
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  static async saveOTPCode(email: string, code: string): Promise<string> {
+    const otpData: Omit<OTPCode, 'id'> = {
+      email,
+      code,
+      expiresAt: this.timestampFromDate(new Date(Date.now() + 10 * 60 * 1000)), // 10 minutes
+      used: false,
+      createdAt: this.timestampNow(),
+    };
+    
+    const docRef = await FirebaseService.otpCodesCollection.add(otpData);
+    return docRef.id;
+  }
+
+  static async verifyOTPCode(email: string, code: string): Promise<boolean> {
+    try {
+      const snapshot = await FirebaseService.otpCodesCollection
+        .where('email', '==', email)
+        .where('code', '==', code)
+        .where('used', '==', false)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
+        return false;
+      }
+      
+      const otpDoc = snapshot.docs[0];
+      const otpData = otpDoc.data() as OTPCode;
+      
+      // Check expiration
+      if (otpData.expiresAt.toMillis() < Date.now()) {
+        return false;
+      }
+      
+      // Mark as used
+      await otpDoc.ref.update({ used: true });
+      return true;
+    } catch (error) {
+      console.error('Error verifying OTP code:', error);
+      return false;
+    }
+  }
+
+  static async getUserByVerificationCode(code: string): Promise<User | null> {
+    try {
+      const snapshot = await FirebaseService.usersCollection
+        .where('verificationCode', '==', code)
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const userDoc = snapshot.docs[0];
+      const user = userDoc.data() as User;
+      
+      // Check expiration
+      if (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt.toMillis() < Date.now()) {
+        return null;
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('Error getting user by verification code:', error);
+      return null;
+    }
   }
 
   // Timestamp utility methods

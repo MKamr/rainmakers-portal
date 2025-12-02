@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { adminAPI } from '../services/api'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { DealDetailsModal } from '../components/DealDetailsModal'
+import { UserProfileModal } from '../components/UserProfileModal'
 import { StageView } from '../components/StageView'
 import { Users, FileText, Settings, BarChart3, CheckCircle, XCircle, Download, Copy, Eye, Grid3X3, List, Import, Shield, Mail, Database, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -540,6 +541,8 @@ function GHLImportTab() {
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const pendingManualSubscriptions = useRef<Set<string>>(new Set())
   
   // Handle OneDrive callback
   useEffect(() => {
@@ -674,7 +677,7 @@ export function AdminPage() {
   }, [ghlConfig.apiKey])
 
   const updateUserMutation = useMutation(
-    ({ id, data }: { id: string; data: { isWhitelisted?: boolean; isAdmin?: boolean } }) => 
+    ({ id, data }: { id: string; data: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean } }) => 
       adminAPI.updateUser(id, data),
     {
       onSuccess: () => {
@@ -683,6 +686,24 @@ export function AdminPage() {
       },
       onError: () => {
         toast.error('Failed to update user')
+      }
+    }
+  )
+
+  const grantManualSubscriptionMutation = useMutation(
+    ({ id, grant }: { id: string; grant: boolean }) => 
+      adminAPI.grantManualSubscription(id, grant),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('admin-users')
+        toast.success('Manual subscription access updated successfully')
+      },
+      onError: (error: any) => {
+        if (error?.response?.status === 429) {
+          toast.error('Too many requests. Please wait a moment and try again.')
+        } else {
+          toast.error('Failed to update manual subscription access')
+        }
       }
     }
   )
@@ -780,8 +801,36 @@ export function AdminPage() {
     }
   }
 
-  const handleUpdateUser = async (userId: string, updates: { isWhitelisted?: boolean; isAdmin?: boolean }) => {
+  const handleUpdateUser = async (userId: string, updates: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean }) => {
+    // Prevent duplicate calls
+    if (updateUserMutation.isLoading) {
+      return
+    }
     await updateUserMutation.mutateAsync({ id: userId, data: updates })
+  }
+
+  const handleManualSubscription = async (userId: string, grant: boolean) => {
+    // Prevent duplicate calls for the same user
+    if (pendingManualSubscriptions.current.has(userId)) {
+      return
+    }
+    
+    // Prevent duplicate calls globally
+    if (grantManualSubscriptionMutation.isLoading || grantManualSubscriptionMutation.isPending) {
+      return
+    }
+    
+    try {
+      pendingManualSubscriptions.current.add(userId)
+      await grantManualSubscriptionMutation.mutateAsync({ id: userId, grant })
+    } catch (error: any) {
+      // Handle rate limiting error specifically
+      if (error?.response?.status === 429) {
+        toast.error('Too many requests. Please wait a moment and try again.')
+      }
+    } finally {
+      pendingManualSubscriptions.current.delete(userId)
+    }
   }
 
   const handleGHLConfigChange = (field: string, value: string) => {
@@ -824,7 +873,8 @@ export function AdminPage() {
       
       // Build authorization URL for Web app flow (no PKCE needed)
       const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
-      const redirectUri = encodeURIComponent('https://rainmakers-portal-backend.vercel.app/auth/onedrive/callback')
+      const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.DEV ? 'http://localhost:3001' : 'https://rainmakers-portal-backend.vercel.app');
+      const redirectUri = encodeURIComponent(`${backendUrl}/auth/onedrive/callback`)
       const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&state=onedrive_auth`
       
@@ -1118,7 +1168,10 @@ export function AdminPage() {
               <li key={user.id}>
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                    <button
+                      onClick={() => setSelectedUserId(user.id)}
+                      className="flex items-center flex-1 cursor-pointer hover:opacity-80 transition-opacity text-left"
+                    >
                       <div className="flex-shrink-0 h-10 w-10">
                         {user.avatar ? (
                           <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.username} />
@@ -1134,13 +1187,13 @@ export function AdminPage() {
                         <div className="text-sm font-medium text-white">{user.username}</div>
                         <div className="text-sm text-gray-400">{user.email}</div>
                       </div>
-                    </div>
+                    </button>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
                         <label className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={user.isWhitelisted}
+                            checked={user.isWhitelisted || false}
                             onChange={(e) => handleUpdateUser(user.id, { isWhitelisted: e.target.checked })}
                             className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                           />
@@ -1149,11 +1202,21 @@ export function AdminPage() {
                         <label className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={user.isAdmin}
+                            checked={user.isAdmin || false}
                             onChange={(e) => handleUpdateUser(user.id, { isAdmin: e.target.checked })}
                             className="rounded border-gray-600 bg-gray-700 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                           />
                           <span className="ml-2 text-sm text-gray-300">Admin</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={user.hasManualSubscription || false}
+                            onChange={(e) => handleManualSubscription(user.id, e.target.checked)}
+                            disabled={grantManualSubscriptionMutation.isLoading || grantManualSubscriptionMutation.isPending || pendingManualSubscriptions.current.has(user.id)}
+                            className="rounded border-gray-600 bg-gray-700 text-yellow-600 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          <span className="ml-2 text-sm text-gray-300" title="Manual subscription access (for users who paid via other methods)">Manual Subscription</span>
                         </label>
                       </div>
                     </div>
@@ -1787,6 +1850,15 @@ export function AdminPage() {
         <DealDetailsModal
           deal={selectedDeal}
           onClose={() => setSelectedDeal(null)}
+        />
+      )}
+      
+      {/* User Profile Modal */}
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          isAdminView={true}
+          onClose={() => setSelectedUserId(null)}
         />
       )}
     </div>

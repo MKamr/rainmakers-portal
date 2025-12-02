@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { User, Deal, Document, Analytics, AuthResponse, Appointment, CallNotesData, AppointmentFilters, SubAccount } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://rain.club/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://rain.club/api');
 
 // Create axios instance
 const api = axios.create({
@@ -64,14 +64,47 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
+  login: (email: string, password: string): Promise<AuthResponse> =>
+    api.post('/auth/login', { email, password }).then(res => res.data),
+  
   loginWithDiscord: (code: string): Promise<AuthResponse> =>
     api.post('/auth/discord', { code }).then(res => res.data),
+  
+  loginAfterPayment: (discordId?: string, email?: string, username?: string): Promise<AuthResponse> =>
+    api.post('/auth/login-after-payment', { discordId, email, username }).then(res => res.data),
+  
+  createPassword: (password: string, confirmPassword: string, username?: string): Promise<{ success: boolean; message: string }> =>
+    api.post('/auth/create-password', { password, confirmPassword, username }).then(res => res.data),
+  
+  checkUsername: (username: string): Promise<{ available: boolean }> =>
+    api.get('/auth/username/check', { params: { username } }).then(res => res.data),
+  
+  acceptTerms: (): Promise<{ success: boolean; message: string }> =>
+    api.post('/auth/accept-terms').then(res => res.data),
   
   getMe: (): Promise<User> =>
     api.get('/auth/me').then(res => res.data),
   
   logout: (): Promise<void> =>
     api.post('/auth/logout').then(res => res.data),
+  
+  requestOTP: (email: string): Promise<{ success: boolean; message: string }> =>
+    api.post('/auth/otp/request', { email }).then(res => res.data),
+  
+  verifyOTP: (email: string, code: string): Promise<AuthResponse> =>
+    api.post('/auth/otp/verify', { email, code }).then(res => res.data),
+  
+  linkDiscord: (discordCode: string, verificationCode: string): Promise<AuthResponse> =>
+    api.post('/auth/discord/link', { code: discordCode, verificationCode }).then(res => res.data),
+  
+  resendVerificationCode: (): Promise<{ success: boolean; message: string }> =>
+    api.post('/auth/verification/resend').then(res => res.data),
+  
+  getDiscordStatus: (): Promise<{ connected: boolean; discordId?: string; discordEmail?: string }> =>
+    api.get('/auth/discord/status').then(res => res.data),
+  
+  disconnectDiscord: (): Promise<{ success: boolean; message: string }> =>
+    api.post('/auth/discord/disconnect').then(res => res.data),
 };
 
 // User API
@@ -155,8 +188,11 @@ export const adminAPI = {
   getUserById: (id: string): Promise<User> =>
     api.get(`/admin/users/${id}`).then(res => res.data),
   
-  updateUser: (id: string, data: { isWhitelisted?: boolean; isAdmin?: boolean }): Promise<User> =>
+  updateUser: (id: string, data: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean }): Promise<User> =>
     api.put(`/admin/users/${id}`, data).then(res => res.data),
+  
+  grantManualSubscription: (id: string, grant: boolean): Promise<{ success: boolean; message: string; user: User }> =>
+    api.post(`/admin/users/${id}/manual-subscription`, { grant }).then(res => res.data),
   
   getOneDriveStatus: (): Promise<{ connected: boolean; expired?: boolean; expiresAt?: string }> =>
     api.get('/admin/onedrive/status').then(res => res.data),
@@ -349,6 +385,57 @@ export const appointmentsAPI = {
 
   testSubAccount: (id: string): Promise<{ success: boolean; message: string; testResult?: any; statusCode?: number; details?: any }> =>
     api.post(`/appointments/admin/sub-accounts/${id}/test`).then(res => res.data),
+};
+
+// Payment API
+export const paymentAPI = {
+  createCheckoutSession: (plan: 'monthly', email?: string, discordId?: string): Promise<{ sessionId: string; url: string }> => {
+    const body: any = { plan }
+    if (email) body.email = email
+    if (discordId) body.discordId = discordId
+    return api.post('/payments/create-checkout-session', body).then(res => res.data)
+  },
+  
+  createSetupIntent: (customerEmail: string, discordId?: string, discordUsername?: string): Promise<{ clientSecret: string; customerId: string }> => {
+    const body: any = { customerEmail }
+    if (discordId) body.discordId = discordId
+    if (discordUsername) body.discordUsername = discordUsername
+    return api.post('/subscriptions/create-setup-intent', body).then(res => res.data)
+  },
+  
+  createSubscription: (paymentMethodId: string, customerId: string, customerEmail: string, plan: 'monthly', discordId?: string, discordUsername?: string): Promise<{
+    subscriptionId: string;
+    clientSecret: string | null;
+    status: string;
+    customerId: string;
+  }> => {
+    const body: any = { paymentMethodId, customerId, customerEmail, plan }
+    if (discordId) body.discordId = discordId
+    if (discordUsername) body.discordUsername = discordUsername
+    return api.post('/subscriptions/create-subscription', body).then(res => res.data)
+  },
+  
+  getSubscriptionStatus: (): Promise<{
+    hasSubscription: boolean;
+    canAccess: boolean;
+    subscription?: {
+      id: string;
+      status: string;
+      plan: 'monthly';
+      currentPeriodStart: any;
+      currentPeriodEnd: any;
+      cancelAtPeriodEnd: boolean;
+      canceledAt?: any;
+      gracePeriodEnd?: any;
+    };
+  }> =>
+    api.get('/payments/subscription').then(res => res.data),
+  
+  cancelSubscription: (cancelAtPeriodEnd: boolean = true): Promise<{ success: boolean; message: string }> =>
+    api.post('/payments/cancel', { cancelAtPeriodEnd }).then(res => res.data),
+  
+  getCustomerPortalUrl: (): Promise<{ url: string }> =>
+    api.get('/payments/customer-portal').then(res => res.data),
 };
 
 export default api;

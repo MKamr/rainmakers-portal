@@ -1,0 +1,53 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+env.example
+**/.env
+**/env.example
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Dependencies
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+*.log
+*.log.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Firebase
+firebase-service-account.json
+**/firebase-service-account.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Testing
+.jest/
+
