@@ -183,10 +183,25 @@ export interface Appointment {
 export interface TermsAcceptance {
   id: string;
   userId: string;
+  // User identifiers (at least one required)
+  email?: string;
+  username?: string;
+  accountId: string; // Same as userId, stored for clarity
+  // Timestamp (UTC)
   acceptedAt: Timestamp;
-  ipAddress?: string;
-  userAgent?: string;
+  // TOS Version information
   termsVersion: string;
+  termsVersionDate: string; // e.g., "2025-11-28"
+  // Full hash of terms (SHA-256)
+  termsHash: string;
+  // IP Address
+  ipAddress?: string;
+  // Device fingerprint
+  userAgent?: string;
+  // Acceptance method
+  acceptanceMethod: string; // e.g., "clickwrap-checkbox"
+  // Additional metadata
+  createdAt: Timestamp;
 }
 
 export interface SubAccount {
@@ -862,22 +877,48 @@ export class FirebaseService {
     }
   }
 
-  static async recordTermsAcceptance(userId: string, metadata?: {
-    ipAddress?: string;
-    userAgent?: string;
-  }): Promise<void> {
+  static async recordTermsAcceptance(
+    userId: string,
+    metadata: {
+      email?: string;
+      username?: string;
+      ipAddress?: string;
+      userAgent?: string;
+      termsVersion?: string;
+      termsVersionDate?: string;
+      termsHash?: string;
+      acceptanceMethod?: string;
+    }
+  ): Promise<TermsAcceptance> {
     try {
       const newTermsRef = FirebaseService.termsAcceptanceCollection.doc();
       const now = Timestamp.now();
+      
+      // Default values
+      const termsVersion = metadata.termsVersion || '1.0';
+      const termsVersionDate = metadata.termsVersionDate || '2025-11-28';
+      const termsHash = metadata.termsHash || ''; // Should be provided by caller
+      const acceptanceMethod = metadata.acceptanceMethod || 'clickwrap-checkbox';
+      
       const termsAcceptance: TermsAcceptance = {
         id: newTermsRef.id,
         userId,
+        email: metadata.email,
+        username: metadata.username,
+        accountId: userId,
         acceptedAt: now,
-        ipAddress: metadata?.ipAddress,
-        userAgent: metadata?.userAgent,
-        termsVersion: 'v1.0'
+        termsVersion,
+        termsVersionDate,
+        termsHash,
+        ipAddress: metadata.ipAddress,
+        userAgent: metadata.userAgent,
+        acceptanceMethod,
+        createdAt: now
       };
+      
       await newTermsRef.set(termsAcceptance);
+      console.log(`✅ Terms acceptance recorded for user ${userId} (Version: ${termsVersion})`);
+      return termsAcceptance;
     } catch (error) {
       console.error('Error recording terms acceptance:', error);
       throw error;

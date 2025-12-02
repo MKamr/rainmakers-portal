@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
 import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 import { DiscordService } from '../services/discordService';
 import { FirebaseService } from '../services/firebaseService';
 import { DiscordBotService } from '../services/discordBotService';
@@ -1613,13 +1614,56 @@ router.post('/accept-terms', authenticateToken, async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Get user data for audit log
+    const user = await FirebaseService.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Extract IP address (handle proxies)
+    const ipAddress = 
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket.remoteAddress ||
+      'unknown';
+
+    // Extract user agent
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // TOS Version information
+    const TOS_VERSION = '1.0';
+    const TOS_VERSION_DATE = '2025-11-28';
+    
+    // Generate SHA-256 hash of the terms (using a canonical representation)
+    // In production, you might want to hash the actual terms text from a file
+    const termsText = `RAIN.CLUB TERMS OF SERVICE v${TOS_VERSION} Effective Date: ${TOS_VERSION_DATE}`;
+    const termsHash = crypto.createHash('sha256').update(termsText).digest('hex');
+
+    // Record terms acceptance with full audit log (LEGALLY REQUIRED)
+    await FirebaseService.recordTermsAcceptance(userId, {
+      email: user.email,
+      username: user.username,
+      ipAddress,
+      userAgent,
+      termsVersion: TOS_VERSION,
+      termsVersionDate: TOS_VERSION_DATE,
+      termsHash,
+      acceptanceMethod: 'clickwrap-checkbox'
+    });
+
+    // Update user record
     await FirebaseService.updateUser(userId, {
       termsAccepted: true,
       termsAcceptedAt: FirebaseService.timestampNow(),
       updatedAt: FirebaseService.timestampNow()
     });
 
-    res.json({ success: true, message: 'Terms accepted successfully' });
+    res.json({ 
+      success: true, 
+      message: 'Terms accepted successfully',
+      version: TOS_VERSION,
+      acceptedAt: new Date().toISOString()
+    });
   } catch (error: any) {
     console.error('Accept terms error:', error);
     res.status(500).json({ error: 'Failed to accept terms' });

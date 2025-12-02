@@ -6,12 +6,23 @@ interface TermsModalProps {
   onAccept: () => void;
 }
 
+// TOS Version - Update this when Terms change
+const TOS_VERSION = '1.0';
+const TOS_EFFECTIVE_DATE = '2025-11-28';
+
 export function TermsModal({ onAccept }: TermsModalProps) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false); // Clickwrap checkbox - MUST be unchecked by default
 
   const handleAccept = async () => {
+    // Legal requirement: User MUST check the box
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service to continue.');
+      return;
+    }
+
     setIsAccepting(true);
     setError(null);
 
@@ -89,16 +100,57 @@ export function TermsModal({ onAccept }: TermsModalProps) {
             </div>
           )}
 
+          {/* Clickwrap Agreement - LEGALLY REQUIRED */}
+          <div className="mb-4 p-4 bg-gray-800 border border-yellow-500/50 rounded-lg">
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer flex-shrink-0"
+                required
+              />
+              <span className="text-gray-300 text-sm leading-relaxed">
+                I have read and agree to the{' '}
+                <a
+                  href="/terms-of-service.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-400 hover:text-yellow-300 underline font-medium"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Terms of Service
+                </a>
+                {' '}and{' '}
+                <a
+                  href="/privacy-policy.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-400 hover:text-yellow-300 underline font-medium"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Privacy Policy
+                </a>
+                .
+              </span>
+            </label>
+            {!agreedToTerms && (
+              <p className="mt-2 text-red-400 text-xs">
+                You must check this box to continue.
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <p className="text-gray-400 text-sm text-center sm:text-left">
-              By clicking "I Accept", you agree to be bound by these Terms & Conditions
+            <p className="text-gray-400 text-xs text-center sm:text-left">
+              Version {TOS_VERSION} | Effective {TOS_EFFECTIVE_DATE}
             </p>
             <button
               onClick={handleAccept}
-              disabled={isAccepting || !hasScrolled}
+              disabled={isAccepting || !hasScrolled || !agreedToTerms}
               className="matrix-button-secondary px-6 py-3 text-base font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {isAccepting ? 'Accepting...' : 'I Accept'}
+              {isAccepting ? 'Accepting...' : 'I Agree'}
             </button>
           </div>
         </div>
