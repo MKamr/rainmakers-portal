@@ -9,8 +9,16 @@ const fs = require('fs');
 const possiblePaths = [
   path.join(__dirname, 'node_modules', 'vite', 'bin', 'vite.js'),
   path.join(__dirname, '..', 'node_modules', 'vite', 'bin', 'vite.js'),
-  require.resolve('vite/bin/vite.js')
+  path.join(__dirname, 'node_modules', '.bin', 'vite'),
+  path.join(__dirname, '..', 'node_modules', '.bin', 'vite')
 ];
+
+// Try require.resolve as fallback
+try {
+  possiblePaths.push(require.resolve('vite/bin/vite.js'));
+} catch (e) {
+  // Ignore if require.resolve fails
+}
 
 let vitePath = null;
 for (const possiblePath of possiblePaths) {
@@ -25,8 +33,23 @@ for (const possiblePath of possiblePaths) {
 }
 
 if (!vitePath) {
-  console.error('Could not find vite. Make sure vite is installed.');
-  process.exit(1);
+  // Last resort: try using npx
+  console.log('Vite not found in node_modules, trying npx...');
+  const vite = spawn('npx', ['--yes', 'vite', 'build'], {
+    stdio: 'inherit',
+    cwd: __dirname,
+    shell: true
+  });
+
+  vite.on('close', (code) => {
+    process.exit(code || 0);
+  });
+
+  vite.on('error', (err) => {
+    console.error('Error running vite:', err);
+    process.exit(1);
+  });
+  return;
 }
 
 // Run vite build
