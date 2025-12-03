@@ -379,8 +379,8 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
               defaultCollapsed: false,
             },
             wallets: {
-              applePay: 'auto',
-              googlePay: 'auto',
+              applePay: 'auto', // Shows automatically when domain is verified and device supports it
+              googlePay: 'auto', // Shows automatically when device/browser supports it
             },
             fields: {
               billingDetails: {

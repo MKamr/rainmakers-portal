@@ -8,6 +8,7 @@ interface StageViewProps {
   deals: Deal[]
   onCreateDeal?: () => void
   isLoading?: boolean
+  initialStatusFilter?: string
 }
 
 interface StageGroup {
@@ -19,9 +20,10 @@ interface StageGroup {
   stage?: string // Keep original stage name for referenc
 }
 
-export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewProps) {
+export function StageView({ deals, onCreateDeal, isLoading = false, initialStatusFilter = 'Open' }: StageViewProps) {
   const { user } = useAuth()
   const [userCache, setUserCache] = useState<Record<string, User>>({})
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter)
   
   // Define all possible stages in order with colors
   const stageConfig = [
@@ -43,6 +45,9 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     'Qualification': true
   })
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set())
+
+  // Filter deals by status
+  const filteredDeals = statusFilter ? deals.filter(deal => deal.status === statusFilter) : deals
 
   // Fetch user information for deals
   useEffect(() => {
@@ -114,7 +119,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
   }
 
   // Group deals by stage
-  const stageGroups: StageGroup[] = deals.reduce((groups: StageGroup[], deal) => {
+  const stageGroups: StageGroup[] = filteredDeals.reduce((groups: StageGroup[], deal) => {
     const normalizedStage = normalizeStageName(deal.stage || 'No Stage')
     const existingGroup = groups.find(group => group.stage === normalizedStage)
     
@@ -314,7 +319,7 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
     return isNaN(parsed) ? 'N/A' : formatCurrency(parsed)
   }
 
-  if (deals.length === 0) {
+  if (filteredDeals.length === 0) {
     return (
       <div className="bg-gray-900 min-h-screen rounded-lg overflow-hidden">
         <div className="bg-gray-800 p-12">
@@ -352,7 +357,24 @@ export function StageView({ deals, onCreateDeal, isLoading = false }: StageViewP
             <p className="text-xs text-gray-400">Monitor progress, identify bottlenecks, and accelerate your real estate investment pipeline</p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="inline-flex items-center px-4 py-2 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-300">Status:</label>
+              <select
+                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+                <option value="Abandon">Abandon</option>
+              </select>
+            </div>
+            <button 
+              onClick={onCreateDeal}
+              className="inline-flex items-center px-4 py-2 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Launch New Deal
             </button>

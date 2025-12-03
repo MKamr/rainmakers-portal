@@ -19,16 +19,17 @@ export function DealsPage() {
   const [dealsViewMode, setDealsViewMode] = useState<'list' | 'stages'>('stages')
   const [dealFilters, setDealFilters] = useState({
     userId: '',
-    status: '',
+    status: 'Open',
     propertyType: '',
     startDate: '',
     endDate: ''
   })
+  const [userStatusFilter, setUserStatusFilter] = useState('Open')
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
   // Use different API based on user role
-  const { data: deals, isLoading, error } = useQuery(
+  const { data: allDeals, isLoading, error } = useQuery(
     ['deals', user?.isAdmin, dealFilters], 
     async () => {
       if (user?.isAdmin) {
@@ -46,6 +47,11 @@ export function DealsPage() {
     }
     }
   )
+
+  // Filter deals for regular users based on status
+  const deals = user?.isAdmin 
+    ? allDeals 
+    : (allDeals?.filter(deal => !userStatusFilter || deal.status === userStatusFilter) || [])
 
   // Fetch users for admin filter
   const { data: users } = useQuery('users', adminAPI.getUsers, {
@@ -76,7 +82,7 @@ export function DealsPage() {
   const clearDealFilters = () => {
     setDealFilters({
       userId: '',
-      status: '',
+      status: 'Open',
       propertyType: '',
       startDate: '',
       endDate: ''
@@ -213,9 +219,9 @@ export function DealsPage() {
               >
                 <option value="">All Statuses</option>
                 <option value="Open">Open</option>
-                <option value="Closed">Closed</option>
-                <option value="Under Review">Under Review</option>
-                <option value="In Underwriting">In Underwriting</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+                <option value="Abandon">Abandon</option>
               </select>
             </div>
             
@@ -268,30 +274,49 @@ export function DealsPage() {
 
       {/* Regular User Tab Navigation */}
       {!user?.isAdmin && (
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4 matrix-nav">
-          <div className="flex space-x-4 sm:space-x-8">
-          <button
-            onClick={() => setActiveTab('list')}
-              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
-              activeTab === 'list'
-                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            Deal List
-          </button>
-          <button
-            onClick={() => setActiveTab('pipeline')}
-              className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
-              activeTab === 'pipeline'
-                ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            Deal Pipeline
-          </button>
+        <>
+          <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4 matrix-nav">
+            <div className="flex space-x-4 sm:space-x-8">
+            <button
+              onClick={() => setActiveTab('list')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
+                activeTab === 'list'
+                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Deal List
+            </button>
+            <button
+              onClick={() => setActiveTab('pipeline')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm matrix-tab ${
+                activeTab === 'pipeline'
+                  ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              Deal Pipeline
+            </button>
+          </div>
         </div>
-      </div>
+        {/* Regular User Status Filter */}
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Status:</label>
+            <select
+              className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              value={userStatusFilter}
+              onChange={(e) => setUserStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="Open">Open</option>
+              <option value="Won">Won</option>
+              <option value="Lost">Lost</option>
+              <option value="Abandon">Abandon</option>
+            </select>
+          </div>
+        </div>
+        </>
       )}
 
       {/* Content */}
@@ -365,6 +390,7 @@ export function DealsPage() {
                 deals={deals || []} 
                 onCreateDeal={() => setShowCreateModal(true)} 
                 isLoading={isLoading}
+                initialStatusFilter={dealFilters.status || 'Open'}
               />
             </div>
           )}
@@ -487,6 +513,7 @@ export function DealsPage() {
             deals={deals || []} 
             onCreateDeal={() => setShowCreateModal(true)} 
             isLoading={isLoading}
+            initialStatusFilter={userStatusFilter}
           />
         </div>
         )

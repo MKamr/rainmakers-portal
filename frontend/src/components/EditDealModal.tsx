@@ -31,6 +31,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
     sponsorLiquidity?: string;
     loanRequest?: string;
     anyAdditionalInformation?: string;
+    status?: string;
   }>({
     defaultValues: (() => {
       // Split the contact name properly
@@ -51,6 +52,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         sponsorLiquidity: deal.sponsorLiquidity || '',
         loanRequest: deal.loanRequest || '',
         anyAdditionalInformation: deal.additionalInformation || '',
+        status: deal.status || 'Open',
       };
     })()
   })
@@ -87,6 +89,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         sponsorLiquidity: data.sponsorLiquidity,
         loanRequest: data.loanRequest,
         anyAdditionalInformation: data.anyAdditionalInformation,
+        status: data.status,
       })
       console.log('✅ Deal updated successfully!')
     } catch (error) {
@@ -330,6 +333,19 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
                           <option value="Limited Partner Equity">Limited Partner Equity</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Status</label>
+                      <select
+                        {...register('status')}
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                      >
+                        <option value="Open">Open</option>
+                        <option value="Won">Won</option>
+                        <option value="Lost">Lost</option>
+                        <option value="Abandon">Abandon</option>
+                      </select>
                     </div>
                   </div>
                 </div>

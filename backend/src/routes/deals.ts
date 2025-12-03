@@ -691,6 +691,7 @@ router.put('/:id', [
   body('sponsorLiquidity').optional(),
   body('loanRequest').optional(),
   body('anyAdditionalInformation').optional(),
+  body('status').optional(),
 ], async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -718,6 +719,11 @@ router.put('/:id', [
       loanRequest: normalized.loanRequest,
       additionalInformation: normalized.additionalInformation
     };
+
+    // Add status if provided
+    if (req.body.status !== undefined) {
+      updates.status = req.body.status;
+    }
 
     // Verify deal belongs to user or user is admin
     const deal = await FirebaseService.getDealById(id);
