@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../contexts/ThemeContext'
 import { ThemeToggle } from './ThemeToggle'
@@ -27,6 +27,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth()
   const { theme } = useTheme()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const navigation = [
     { name: 'Deals', href: '/', icon: FileText },
@@ -98,20 +99,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
-                  <Link
+                  <button
                     key={item.name}
-                    to={item.href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setSidebarOpen(false)
+                      navigate(item.href)
+                    }}
                     className={cn(
-                      'group flex items-center px-3 py-3 text-base font-medium rounded-md matrix-nav-item',
+                      'group flex items-center w-full px-3 py-3 text-base font-medium rounded-md matrix-nav-item text-left',
                       isActive
                         ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 matrix-nav-active'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
                     )}
-                    onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon className="mr-4 h-6 w-6 flex-shrink-0 matrix-nav-icon" />
                     {item.name}
-                  </Link>
+                  </button>
                 )
               })}
             </nav>
@@ -184,11 +188,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
-                  <Link
+                  <button
                     key={item.name}
-                    to={item.href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate(item.href)
+                    }}
                     className={cn(
-                      'group flex items-center px-2 py-2 text-sm font-medium rounded-md matrix-nav-item',
+                      'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md matrix-nav-item text-left',
                       isActive
                         ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 matrix-nav-active'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white matrix-nav-inactive'
@@ -196,7 +203,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <item.icon className="mr-3 h-5 w-5 flex-shrink-0 matrix-nav-icon" />
                     {item.name}
-                  </Link>
+                  </button>
                 )
               })}
             </nav>

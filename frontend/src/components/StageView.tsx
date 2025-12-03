@@ -25,6 +25,11 @@ export function StageView({ deals, onCreateDeal, isLoading = false, initialStatu
   const [userCache, setUserCache] = useState<Record<string, User>>({})
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter)
   
+  // Sync statusFilter with initialStatusFilter prop changes
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter)
+  }, [initialStatusFilter])
+  
   // Define all possible stages in order with colors
   const stageConfig = [
     { name: 'Underwriting', color: 'bg-green-500', shortName: 'Underwriting' },
@@ -357,20 +362,6 @@ export function StageView({ deals, onCreateDeal, isLoading = false, initialStatu
             <p className="text-xs text-gray-400">Monitor progress, identify bottlenecks, and accelerate your real estate investment pipeline</p>
           </div>
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-300">Status:</label>
-              <select
-                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="Won">Won</option>
-                <option value="Lost">Lost</option>
-                <option value="Abandon">Abandon</option>
-              </select>
-            </div>
             <button 
               onClick={onCreateDeal}
               className="inline-flex items-center px-4 py-2 border border-yellow-500 shadow-sm text-sm leading-4 font-medium rounded-md text-yellow-400 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/25"
