@@ -525,7 +525,9 @@ export const AppointmentManagement: React.FC = () => {
                     <div className="flex flex-col space-y-2 ml-4">
                       {activeTab === 'unassigned' ? (
                         <div className="flex items-center space-x-2">
+                          <label htmlFor={`assign-${appointment.id}`} className="sr-only">Assign appointment</label>
                           <select
+                            id={`assign-${appointment.id}`}
                             onChange={(e) => {
                               if (e.target.value) {
                                 handleAssignAppointment(appointment.id, e.target.value);
@@ -533,6 +535,7 @@ export const AppointmentManagement: React.FC = () => {
                               }
                             }}
                             className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                            aria-label={`Assign appointment ${appointment.id} to user`}
                           >
                             <option value="">Assign to...</option>
                             {getEligibleUsers().map(user => (

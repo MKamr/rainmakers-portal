@@ -389,6 +389,7 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
                   type="button"
                   className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
                   title="Delete document"
+                  aria-label={`Delete document ${doc.name || doc.id}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

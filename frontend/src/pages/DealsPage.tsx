@@ -192,14 +192,16 @@ export function DealsPage() {
       {/* Admin Deals Filters */}
       {user?.isAdmin && (
         <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-medium text-white mb-4">Filter Deals</h3>
+          <h2 className="text-lg font-medium text-white mb-4">Filter Deals</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">User</label>
+            <div className="flex flex-col">
+              <label htmlFor="filter-user" className="block text-sm font-medium text-gray-300 mb-1">User</label>
               <select
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="filter-user"
+                className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={dealFilters.userId}
                 onChange={(e) => handleDealFilterChange('userId', e.target.value)}
+                aria-label="Filter by user"
               >
                 <option value="">All Users</option>
                 {users?.map((user) => (
@@ -210,12 +212,14 @@ export function DealsPage() {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+            <div className="flex flex-col">
+              <label htmlFor="filter-status" className="block text-sm font-medium text-gray-300 mb-1">Status</label>
               <select
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="filter-status"
+                className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={dealFilters.status}
                 onChange={(e) => handleDealFilterChange('status', e.target.value)}
+                aria-label="Filter by status"
               >
                 <option value="">All Statuses</option>
                 <option value="Open">Open</option>
@@ -225,12 +229,14 @@ export function DealsPage() {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Property Type</label>
+            <div className="flex flex-col">
+              <label htmlFor="filter-property-type" className="block text-sm font-medium text-gray-300 mb-1">Property Type</label>
               <select
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="filter-property-type"
+                className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={dealFilters.propertyType}
                 onChange={(e) => handleDealFilterChange('propertyType', e.target.value)}
+                aria-label="Filter by property type"
               >
                 <option value="">All Types</option>
                 <option value="Residential">Residential</option>
@@ -240,23 +246,27 @@ export function DealsPage() {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
+            <div className="flex flex-col">
+              <label htmlFor="filter-start-date" className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
               <input
+                id="filter-start-date"
                 type="date"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={dealFilters.startDate}
                 onChange={(e) => handleDealFilterChange('startDate', e.target.value)}
+                aria-label="Filter by start date"
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
+            <div className="flex flex-col">
+              <label htmlFor="filter-end-date" className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
               <input
+                id="filter-end-date"
                 type="date"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={dealFilters.endDate}
                 onChange={(e) => handleDealFilterChange('endDate', e.target.value)}
+                aria-label="Filter by end date"
               />
             </div>
           </div>
@@ -302,11 +312,13 @@ export function DealsPage() {
         {/* Regular User Status Filter */}
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center space-x-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Status:</label>
+            <label htmlFor="user-status-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Status:</label>
             <select
+              id="user-status-filter"
               className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               value={userStatusFilter}
               onChange={(e) => setUserStatusFilter(e.target.value)}
+              aria-label="Filter deals by status"
             >
               <option value="">All Statuses</option>
               <option value="Open">Open</option>

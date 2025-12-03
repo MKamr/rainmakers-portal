@@ -240,6 +240,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <button
                   onClick={handleLogout}
                   className="ml-auto p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 matrix-logout-btn"
+                  aria-label="Logout"
                 >
                   <LogOut className="h-5 w-5" />
                 </button>

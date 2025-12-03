@@ -92,6 +92,7 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
               <button
                 onClick={onClose}
                 className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-orange-500/20 transition-all duration-200 hover:rotate-90"
+                aria-label="Close profile modal"
               >
                 <X className="h-5 w-5" />
               </button>

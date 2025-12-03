@@ -369,7 +369,10 @@ export function StageView({ deals, onCreateDeal, isLoading = false, initialStatu
               <Plus className="h-4 w-4 mr-2" />
               Launch New Deal
             </button>
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300">
+            <button 
+              className="p-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300"
+              aria-label="More options"
+            >
               <MoreHorizontal className="h-5 w-5" />
             </button>
           </div>

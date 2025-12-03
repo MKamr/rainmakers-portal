@@ -106,6 +106,7 @@ export function CreateDealModal({ onClose, onSuccess }: CreateDealModalProps) {
                 type="button" 
                 onClick={onClose} 
                 className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
+                aria-label="Close create deal modal"
               >
                 <X className="h-5 w-5" />
               </button>

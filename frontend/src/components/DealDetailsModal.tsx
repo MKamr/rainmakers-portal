@@ -168,6 +168,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                   <button
                     onClick={onClose}
                 className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-lg transition-all duration-200"
+                aria-label="Close deal details modal"
                   >
                 <X className="h-5 w-5" />
                   </button>
@@ -491,6 +492,7 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
                                 onClick={() => handleDeleteDocument(document.id)}
                                 className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-600 rounded-lg transition-all duration-200"
                                 title="Delete"
+                                aria-label={`Delete document ${document.name || document.id}`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
