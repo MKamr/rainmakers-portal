@@ -223,7 +223,7 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/appointments" element={<AppointmentManagementPage />} />
-              <Route path="/join" element={<SignUpPage />} />
+              <Route path="/join" element={<Navigate to="/" replace />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -245,7 +245,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/appointments" element={<AppointmentManagementPage />} />
-          <Route path="/join" element={<SignUpPage />} />
+          <Route path="/join" element={<Navigate to="/" replace />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service" element={<TermsOfServicePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

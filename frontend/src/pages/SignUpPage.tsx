@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { paymentAPI } from '../services/api'
+import { useAuth } from '../hooks/useAuth'
 
 export function SignUpPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState<string>('')
   const [discordId, setDiscordId] = useState<string>('')
   const [discordUsername, setDiscordUsername] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
+
+  // Redirect to home if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true })
+      return
+    }
+  }, [user, navigate])
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
