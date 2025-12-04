@@ -54,14 +54,6 @@ export class DiscordService {
     params.append('code', code);
     params.append('redirect_uri', finalRedirectUri);
 
-    console.log('DiscordService: Exchanging code for token', {
-      hasCode: !!code,
-      redirectUri: finalRedirectUri,
-      clientId: clientId ? `${clientId.substring(0, 8)}...` : 'missing',
-      clientIdLength: clientId.length,
-      clientSecretLength: clientSecret.length
-    });
-
     try {
     const response = await axios.post(`${this.DISCORD_API_BASE}/oauth2/token`, params, {
       headers: {
@@ -70,64 +62,35 @@ export class DiscordService {
     });
 
       // Log the raw response to see what Discord actually returns
-      console.log('DiscordService: Raw token exchange response status:', response.status);
-      console.log('DiscordService: Raw token exchange response keys:', Object.keys(response.data || {}));
-      
+
       // Log the actual access_token value (first 50 chars for security)
       if (response.data?.access_token) {
         const token = response.data.access_token;
-        console.log('DiscordService: Raw access_token from Discord:');
-        console.log('DiscordService:   - Length:', token.length);
-        console.log('DiscordService:   - First 50 chars:', token.substring(0, 50));
-        console.log('DiscordService:   - Last 10 chars:', token.substring(token.length - 10));
-        console.log('DiscordService:   - Contains dots:', token.includes('.'));
-        console.log('DiscordService:   - Token type from response:', response.data.token_type);
-        
-        // Check if token starts with base64-encoded client ID
+
+
+
+                // Check if token starts with base64-encoded client ID
         const clientIdBase64 = Buffer.from(process.env.DISCORD_CLIENT_ID || '').toString('base64');
         if (token.startsWith(clientIdBase64.substring(0, 20))) {
-          console.error('DiscordService: ⚠️ Token appears to start with base64-encoded client ID!');
-          console.error('DiscordService: This is unusual - Discord tokens should be random strings');
-        }
+                            }
       } else {
-        console.error('DiscordService: ❌ NO access_token in response!');
-        console.error('DiscordService: Full response:', JSON.stringify(response.data, null, 2));
+
       }
-      
-      console.log('DiscordService: Full token exchange response (safely logged):', {
-        hasAccessToken: !!response.data?.access_token,
-        accessTokenLength: response.data?.access_token?.length || 0,
-        tokenType: response.data?.token_type,
-        expiresIn: response.data?.expires_in,
-        scope: response.data?.scope,
-        hasRefreshToken: !!response.data?.refresh_token
-      });
 
       const tokenData = response.data;
       
       // Debug logging to see what Discord actually returns
-      console.log('DiscordService: FULL token exchange response:', JSON.stringify(response.data, null, 2));
-      console.log('DiscordService: access_token value:', response.data?.access_token);
-      console.log('DiscordService: access_token type:', typeof response.data?.access_token);
-      console.log('DiscordService: access_token length:', response.data?.access_token?.length);
-      console.log('DiscordService: All response keys:', Object.keys(response.data || {}));
-      
+
+
       // Validate token response structure
       if (!tokenData.access_token) {
-        console.error('DiscordService: ❌ CRITICAL - No access_token in response!');
-        console.error('DiscordService: Response data:', JSON.stringify(tokenData, null, 2));
+
         throw new Error('Discord OAuth response missing access_token');
       }
       
       // Verify guilds.join scope is present
       const scopes = tokenData.scope?.split(' ') || [];
-      console.log('DiscordService: Token exchange successful');
-      console.log('DiscordService: Granted scopes from token exchange:', scopes);
-      console.log('DiscordService: Token type:', tokenData.token_type);
-      console.log('DiscordService: Expires in:', tokenData.expires_in, 'seconds');
-      console.log('DiscordService: Access token length:', tokenData.access_token?.length || 0);
-      console.log('DiscordService: Access token preview (first 50 chars):', tokenData.access_token ? `${tokenData.access_token.substring(0, 50)}...` : 'missing');
-      
+
       // Validate token format - Discord OAuth tokens are typically 70+ character random strings
       // They should NOT be JWT tokens (which have dots and are base64 encoded)
       const token = tokenData.access_token;
@@ -135,52 +98,28 @@ export class DiscordService {
       const startsWithClientId = token.startsWith('MTQxMzY1MDY0NjU1NjQ3') || token.startsWith('1413650646556479490');
       
       if (token.length < 50) {
-        console.error('DiscordService: ⚠️ WARNING - Access token seems too short!');
-        console.error('DiscordService: Token length:', token.length);
-        console.error('DiscordService: Expected length: 70+ characters');
-      }
+                              }
       
       if (isJWT) {
-        console.error('DiscordService: ⚠️ WARNING - Token appears to be a JWT (has dots)!');
-        console.error('DiscordService: Discord OAuth access tokens are NOT JWTs - they are random strings');
-        console.error('DiscordService: This suggests the wrong token is being used');
-      }
+
+                      }
       
       if (startsWithClientId) {
-        console.error('DiscordService: ⚠️ WARNING - Token starts with client ID!');
-        console.error('DiscordService: This is unusual - Discord tokens are typically random strings');
-        console.error('DiscordService: However, Discord API returned this token, so it might be valid');
-        console.error('DiscordService: Token preview:', token.substring(0, 50));
-        console.error('DiscordService: Will attempt to use token, but it may be rejected by Discord API');
-        // Don't throw - let's see if Discord accepts it despite the format
+
+                // Don't throw - let's see if Discord accepts it despite the format
         // The API call will reveal if it's actually invalid
       }
       
       if (!scopes.includes('guilds.join')) {
-        console.error('DiscordService: ⚠️ WARNING - guilds.join scope not granted!');
-        console.error('DiscordService: Granted scopes:', scopes);
-        console.error('DiscordService: User may need to re-authorize with prompt=consent');
-        console.error('DiscordService: This will prevent adding user to Discord server');
-        // Still return the token, but log the warning
+                                        // Still return the token, but log the warning
       } else {
-        console.log('DiscordService: ✅ guilds.join scope verified in token exchange');
-      }
+              }
 
       return tokenData;
     } catch (error: any) {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || error.message;
-      
-      console.error('DiscordService: Failed to exchange code for token', {
-        error: errorMessage,
-        errorDescription: errorData.error_description,
-        status: error.response?.status,
-        redirectUri: finalRedirectUri,
-        clientId: clientId ? `${clientId.substring(0, 8)}...` : 'missing',
-        clientIdLength: clientId.length,
-        clientSecretLength: clientSecret.length
-      });
-      
+
       // Provide more helpful error messages
       if (errorMessage === 'invalid_client') {
         const errorMsg = [
@@ -232,7 +171,6 @@ export class DiscordService {
     });
 
       // Log token validity check
-      console.log('DiscordService.getUserInfo: ✅ Token is valid (able to fetch user info)');
 
     return {
       id: response.data.id,
@@ -243,13 +181,9 @@ export class DiscordService {
         null
     };
     } catch (error: any) {
-      console.error('DiscordService.getUserInfo: ❌ Failed to fetch user info with token');
-      if (error.response) {
-        console.error('DiscordService.getUserInfo: HTTP Status:', error.response.status);
-        console.error('DiscordService.getUserInfo: Error data:', error.response.data);
-        if (error.response.status === 401) {
-          console.error('DiscordService.getUserInfo: Token is invalid or expired');
-        }
+            if (error.response) {
+                        if (error.response.status === 401) {
+                  }
       }
       throw error;
     }
@@ -282,19 +216,16 @@ export class DiscordService {
       );
 
       if (response.status === 200) {
-        console.log(`DiscordService: ✅ Bot has access to guild ${guildId} (${response.data.name})`);
+
         return true;
       }
 
       return false;
     } catch (error: any) {
       if (error.response?.status === 404) {
-        console.error(`DiscordService.verifyBotAccessToGuild: ❌ Bot cannot access guild ${guildId}`);
-        console.error(`DiscordService: Bot is not in this server or guild ID is incorrect`);
-        return false;
+                        return false;
       }
-      console.error('DiscordService.verifyBotAccessToGuild: Error checking bot access', error.message);
-      return false;
+            return false;
     }
   }
 
@@ -330,8 +261,7 @@ export class DiscordService {
       );
 
       if (response.status === 200) {
-        console.log(`DiscordService: User ${discordUserId} is already in guild ${guildId}`);
-        return true;
+                return true;
       }
 
       return false;
@@ -339,13 +269,11 @@ export class DiscordService {
       if (error.response?.status === 404) {
         if (error.response?.data?.code === 10004) {
           // 10004 = Unknown Guild - bot not in server
-          console.warn(`DiscordService.isUserInGuild: Bot cannot access guild ${guildId} - bot may not be in server`);
-        }
+                  }
         // User not in server (or guild unknown)
         return false;
       }
-      console.error('DiscordService.isUserInGuild: Error checking guild membership', error.message);
-      return false;
+            return false;
     }
   }
 
@@ -366,36 +294,24 @@ export class DiscordService {
     const botToken = process.env.DISCORD_BOT_TOKEN || '';
 
     if (!guildId) {
-      console.warn('DiscordService.addUserToGuild: Missing DISCORD_GUILD_ID configuration');
-      return false;
+            return false;
     }
 
     // First check if user is already in server
     const alreadyInServer = await this.isUserInGuild(discordUserId);
     if (alreadyInServer) {
-      console.log(`DiscordService: User ${discordUserId} is already in guild ${guildId}`);
-      return true;
+            return true;
     }
 
     // Bot token is REQUIRED - Discord API needs it in Authorization header
     if (!botToken) {
-      console.error('DiscordService.addUserToGuild: ❌ Missing DISCORD_BOT_TOKEN configuration');
-      console.error('DiscordService: Discord API requires Bot token in Authorization header to add users to server');
-      console.error('DiscordService: Even with OAuth guilds.join scope, Bot token is required');
-      return false;
+                        return false;
     }
 
     // Verify bot has access to the guild before attempting to add user
     const botHasAccess = await this.verifyBotAccessToGuild();
     if (!botHasAccess) {
-      console.error(`DiscordService.addUserToGuild: ❌ Cannot add user - bot cannot access guild ${guildId}`);
-      console.error(`DiscordService: Possible causes:`);
-      console.error(`DiscordService:   1. Bot is NOT in the Discord server - invite it first`);
-      console.error(`DiscordService:   2. DISCORD_GUILD_ID is incorrect - verify Server ID`);
-      console.error(`DiscordService:   3. DISCORD_BOT_TOKEN is for a different bot`);
-      console.error(`DiscordService: Fix: Invite bot to server using Discord Developer Portal → OAuth2 → URL Generator`);
-      console.error(`DiscordService:   Make sure to select "bot" scope and "Create Instant Invite" permission`);
-      return false;
+                                                return false;
     }
     
     // Verify bot has required permissions by checking bot's member info
@@ -413,8 +329,7 @@ export class DiscordService {
       
       // Get bot's roles and permissions
       const botRoles = botMemberResponse.data.roles || [];
-      console.log(`DiscordService: Bot roles in server: ${botRoles.length} role(s)`);
-      
+
       // Check if bot has required permissions via GET /guilds/{guild.id}
       const guildResponse = await axios.get(
         `${this.DISCORD_API_BASE}/guilds/${guildId}`,
@@ -428,9 +343,8 @@ export class DiscordService {
       
       // The guild response doesn't include bot permissions directly, but we can check if bot is admin
       // For more detailed permission checking, we'd need to fetch role permissions
-      console.log(`DiscordService: Bot is in guild and can access guild info`);
-    } catch (permError: any) {
-      console.warn(`DiscordService: Could not verify bot permissions (non-critical):`, permError.message);
+          } catch (permError: any) {
+
       // Continue anyway - the actual API call will reveal permission issues
     }
 
@@ -438,11 +352,8 @@ export class DiscordService {
     // Discord API requires user's OAuth token (with guilds.join scope) in request body
     // Even though Bot token is required in header, the user's OAuth token is still needed in body
     if (!userAccessToken || userAccessToken.trim() === '') {
-      console.warn('DiscordService.addUserToGuild: ⚠️ Cannot add user without OAuth token');
-      console.warn('DiscordService: Discord API requires user\'s OAuth token (with guilds.join scope) in request body');
-      console.warn('DiscordService: User must complete Discord OAuth login to be added to server automatically');
-      console.warn('DiscordService: Or user can join server manually via invite link');
-      return false;
+
+                  return false;
     }
 
     // Verify token has guilds.join scope by checking token info
@@ -454,24 +365,14 @@ export class DiscordService {
       });
       
       const scopes = tokenInfo.data.scopes || [];
-      console.log('DiscordService.addUserToGuild: Token info check - scopes:', scopes);
-      console.log('DiscordService.addUserToGuild: Token info - application:', tokenInfo.data.application);
-      
-      if (!scopes.includes('guilds.join')) {
-        console.error('DiscordService.addUserToGuild: ❌ Token missing guilds.join scope!');
-        console.error('DiscordService: Available scopes:', scopes);
-        console.error('DiscordService: User must re-authorize with guilds.join scope');
-        console.error('DiscordService: Ensure OAuth URL includes prompt=consent and guilds.join scope');
-        return false;
+                  if (!scopes.includes('guilds.join')) {
+                                        return false;
       } else {
-        console.log('DiscordService.addUserToGuild: ✅ Token has guilds.join scope (verified via /oauth2/@me)');
+
       }
     } catch (error: any) {
-      console.warn('DiscordService: Could not verify token scopes via /oauth2/@me:', error.message);
-      if (error.response) {
-        console.warn('DiscordService: Token info check HTTP status:', error.response.status);
-        console.warn('DiscordService: Token info check error data:', error.response.data);
-      }
+            if (error.response) {
+                      }
       // Continue anyway - the API call will reveal if scope is missing
       // This check might fail if the token endpoint is not available, but we'll still try
     }
@@ -482,23 +383,16 @@ export class DiscordService {
       // - Authorization header MUST be Bot token (required for this endpoint)
       // - access_token in body can be user's OAuth token (with guilds.join scope) - this allows adding the user
       // The guilds.join scope gives permission to add users, but Bot token is still required in header
-      console.log(`DiscordService: Attempting to add user ${discordUserId} to guild ${guildId}...`);
-      console.log(`DiscordService: Using Bot token for authorization + OAuth token (guilds.join scope) in request body`);
-      console.log(`DiscordService: Bot token present: ${!!botToken}`);
-      console.log(`DiscordService: Bot token preview: ${botToken ? `${botToken.substring(0, 20)}...` : 'missing'}`);
-      console.log(`DiscordService: User OAuth token present: ${!!userAccessToken}`);
-      console.log(`DiscordService: User OAuth token length: ${userAccessToken?.length || 0}`);
-      console.log(`DiscordService: User OAuth token preview (first 50 chars): ${userAccessToken ? `${userAccessToken.substring(0, 50)}...` : 'missing'}`);
-      
+
+
+
       // Validate token format - Discord OAuth tokens should be long random strings
       // They should NOT start with client ID or be too short
       if (userAccessToken && userAccessToken.length < 50) {
-        console.error(`DiscordService: ⚠️ WARNING - OAuth token seems too short (${userAccessToken.length} chars). Expected ~70+ chars.`);
+
       }
       if (userAccessToken && userAccessToken.startsWith('MTQxMzY1MDY0NjU1NjQ3')) {
-        console.error(`DiscordService: ⚠️ WARNING - OAuth token appears to start with client ID! This is wrong.`);
-        console.error(`DiscordService: Token might be corrupted or wrong value is being used.`);
-      }
+                      }
       
       // Build request body - include roles array if roleId is provided
       const requestBody: any = {
@@ -509,8 +403,7 @@ export class DiscordService {
       const roleIdToAssign = roleId || process.env.DISCORD_PAID_MEMBER_ROLE_ID || '';
       if (roleIdToAssign) {
         requestBody.roles = [roleIdToAssign];
-        console.log(`DiscordService: Will assign role ${roleIdToAssign} when adding user to server`);
-      }
+              }
       
       const response = await axios.put(
         `${this.DISCORD_API_BASE}/guilds/${guildId}/members/${discordUserId}`,
@@ -524,25 +417,20 @@ export class DiscordService {
         }
       );
 
-      console.log(`DiscordService: ✅ Successfully added user ${discordUserId} to guild ${guildId}`);
-      
-      // Verify user was actually added
+            // Verify user was actually added
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for Discord to process
       const verified = await this.isUserInGuild(discordUserId);
       if (verified) {
-        console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId}`);
-        return true;
+                return true;
       } else {
         // Retry verification after another wait
-        console.log(`DiscordService: User not found immediately, waiting and retrying verification...`);
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Wait another 1.5 seconds
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Wait another 1.5 seconds
         const retryVerified = await this.isUserInGuild(discordUserId);
         if (retryVerified) {
-          console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId} (after retry)`);
+
           return true;
         } else {
-          console.warn(`DiscordService: ⚠️ User ${discordUserId} still not found in guild after adding`);
-          return false;
+                    return false;
         }
       }
     } catch (error: any) {
@@ -551,84 +439,42 @@ export class DiscordService {
         await new Promise(resolve => setTimeout(resolve, 1500));
         const verified = await this.isUserInGuild(discordUserId);
         if (verified) {
-          console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId}`);
-          return true;
+                    return true;
         }
-        console.warn(`DiscordService: ⚠️ User ${discordUserId} not found in guild after 204 response`);
-        return false;
+                return false;
       }
 
       // Check for invalid OAuth token error (50025) - can occur with any status code
       if (error.response?.data?.code === 50025) {
-        console.error(`DiscordService.addUserToGuild: ❌ Invalid OAuth2 access token (code 50025)`);
-        console.error(`DiscordService: Full error response:`, JSON.stringify(error.response.data, null, 2));
-        console.error(`DiscordService: HTTP Status: ${error.response.status}`);
-        console.error(`DiscordService: This means the user's access token is invalid or missing guilds.join scope`);
-        console.error(`DiscordService: Possible causes:`);
-        console.error(`DiscordService:   1. User didn't authorize with guilds.join scope (most likely)`);
-        console.error(`DiscordService:   2. Access token expired (Discord tokens expire after ~1 hour)`);
-        console.error(`DiscordService:   3. Wrong token type (using bot token instead of user token)`);
-        console.error(`DiscordService:   4. Token is for a different Discord application/client_id`);
-        console.error(`DiscordService:   5. Token was revoked or invalidated`);
-        console.error(`DiscordService: Fix: Ensure OAuth URL includes prompt=consent and guilds.join scope`);
-        console.error(`DiscordService: User must re-authorize with proper scopes`);
-        console.error(`DiscordService: Token used (first 30 chars): ${userAccessToken ? userAccessToken.substring(0, 30) : 'missing'}...`);
+
+
+
+
+
+
         return false;
       }
 
       if (error.response?.status === 404) {
         // 404 Not Found - Guild not found or bot not in server
         if (error.response?.data?.code === 10004) {
-          console.error(`DiscordService.addUserToGuild: ❌ Unknown Guild (404 - code 10004)`);
-          console.error(`DiscordService: Guild ID used: ${guildId}`);
-          console.error(`DiscordService: Possible causes:`);
-          console.error(`DiscordService:   1. DISCORD_GUILD_ID is incorrect - verify the Server ID`);
-          console.error(`DiscordService:   2. Bot is NOT in this Discord server - invite the bot to the server first`);
-          console.error(`DiscordService:   3. Bot token is for a different bot/application`);
-          console.error(`DiscordService: How to fix:`);
-          console.error(`DiscordService:   1. Verify Server ID: Enable Developer Mode → Right-click server → Copy Server ID`);
-          console.error(`DiscordService:   2. Invite bot to server: Go to Discord Developer Portal → OAuth2 → URL Generator`);
-          console.error(`DiscordService:   3. Select bot permissions and use the generated invite URL`);
-          console.error(`DiscordService:   4. Make sure DISCORD_BOT_TOKEN matches the bot in the server`);
-        } else {
-          console.error(`DiscordService.addUserToGuild: ❌ 404 Not Found - Guild or endpoint not found`);
-          console.error(`DiscordService: Guild ID: ${guildId}`);
-          console.error(`DiscordService: Error response:`, error.response.data);
-        }
+
+                                                                                                            } else {
+                                      }
         return false;
       }
 
       if (error.response?.status === 401 || error.response?.status === 403) {
-        console.error(`DiscordService.addUserToGuild: ❌ Bot authentication/permission failed (${error.response.status})`);
-        console.error(`DiscordService: Guild ID: ${guildId}`);
-        console.error(`DiscordService: User ID: ${discordUserId}`);
-        
-        if (error.response?.status === 401) {
-          console.error(`DiscordService: ❌ 401 Unauthorized - Bot token is invalid or expired`);
-          console.error(`DiscordService: Fix: Check that DISCORD_BOT_TOKEN is correct in your .env file`);
-          console.error(`DiscordService: Get a new token from: https://discord.com/developers/applications → Your App → Bot → Reset Token`);
-        } else if (error.response?.status === 403) {
-          console.error(`DiscordService: ❌ 403 Forbidden - Bot lacks required permissions`);
-          console.error(`DiscordService: Required permissions for adding members:`);
-          console.error(`DiscordService:   1. "Create Instant Invite" - REQUIRED`);
-          console.error(`DiscordService:   2. Bot must be in the Discord server`);
-          console.error(`DiscordService:   3. Bot's role must have appropriate permissions`);
-          console.error(`DiscordService: Fix steps:`);
-          console.error(`DiscordService:   1. Go to Discord Developer Portal: https://discord.com/developers/applications`);
-          console.error(`DiscordService:   2. Select your application → OAuth2 → URL Generator`);
-          console.error(`DiscordService:   3. Select "bot" scope and these permissions:`);
-          console.error(`DiscordService:      - Create Instant Invite`);
-          console.error(`DiscordService:      - Manage Roles (if assigning roles)`);
-          console.error(`DiscordService:   4. Copy the generated URL and invite bot to server`);
-          console.error(`DiscordService:   5. In Discord server: Server Settings → Roles → Make sure bot role is positioned high enough`);
-          
-          // Log the actual error response for more details
+
+                        if (error.response?.status === 401) {
+                                      } else if (error.response?.status === 403) {
+
+                              // Log the actual error response for more details
           if (error.response?.data) {
-            console.error(`DiscordService: Discord API error details:`, JSON.stringify(error.response.data, null, 2));
+
             if (error.response.data.code === 50013) {
-              console.error(`DiscordService: Error code 50013 = Missing Permissions`);
-            } else if (error.response.data.code === 50001) {
-              console.error(`DiscordService: Error code 50001 = Missing Access (bot not in server)`);
+                          } else if (error.response.data.code === 50001) {
+
             }
           }
         }
@@ -640,18 +486,13 @@ export class DiscordService {
         // 400 Bad Request usually means user is already in the server or invalid request
         if (error.response?.data?.message?.includes('already') || 
             error.response?.data?.code === 50004) {
-          console.log(`DiscordService: User ${discordUserId} is already in guild ${guildId}`);
-          return true; // User already in server is considered success
+                    return true; // User already in server is considered success
         }
-        console.error('DiscordService.addUserToGuild: Invalid request to add member', error.response.data);
-        return false;
+                return false;
       }
 
-      console.error('DiscordService.addUserToGuild: Failed to add user to guild', error.message);
-      if (error.response) {
-        console.error(`DiscordService: HTTP Status: ${error.response.status}`);
-        console.error(`DiscordService: Error response:`, error.response.data);
-      }
+            if (error.response) {
+                      }
       return false;
     }
   }
@@ -675,30 +516,19 @@ export class DiscordService {
       const missing: string[] = [];
       if (!guildId) missing.push('DISCORD_GUILD_ID');
       if (!botToken) missing.push('DISCORD_BOT_TOKEN');
-      
-      console.error(`DiscordService.addUserToGuildWithBot: ❌ Missing required configuration: ${missing.join(', ')}`);
-      console.error(`DiscordService: Cannot add user ${discordUserId} to Discord server without these environment variables.`);
-      console.error(`DiscordService: Please add to backend/.env:`);
-      if (!guildId) console.error(`DiscordService:   DISCORD_GUILD_ID=your_server_id_here`);
-      if (!botToken) console.error(`DiscordService:   DISCORD_BOT_TOKEN=your_bot_token_here`);
-      console.error(`DiscordService: ⚠️ User ${discordUserId} must join the Discord server manually or configure these variables.`);
-      return false;
+
+                  if (!guildId)       if (!botToken)             return false;
     }
 
     // Without user's OAuth token, we cannot add them via Discord API
     // Discord requires the user's OAuth token (with guilds.join scope) in the request body
     if (!userAccessToken || userAccessToken.trim() === '') {
-      console.warn(`DiscordService.addUserToGuildWithBot: ⚠️ Cannot add user ${discordUserId} without OAuth token`);
-      console.warn(`DiscordService: Discord API requires user's OAuth token (with guilds.join scope) in request body`);
-      console.warn(`DiscordService: User must complete Discord OAuth login to be added to server automatically`);
-      console.warn(`DiscordService: Or user can join server manually via invite link`);
-      return false;
+
+                  return false;
     }
 
     try {
-      console.log(`DiscordService: Attempting to add user ${discordUserId} to guild ${guildId} using bot token + OAuth token...`);
-      
-      // Discord API: PUT /guilds/{guild.id}/members/{user.id}
+            // Discord API: PUT /guilds/{guild.id}/members/{user.id}
       // This endpoint REQUIRES:
       // - Bot token in Authorization header
       // - User's OAuth token (with guilds.join scope) in body as access_token
@@ -716,28 +546,22 @@ export class DiscordService {
         }
       );
 
-      console.log(`DiscordService: ✅ API call successful - verifying user ${discordUserId} is in guild ${guildId}...`);
-      
-      // Wait a moment for Discord to process
+            // Wait a moment for Discord to process
       await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5 seconds
       
       // Verify user was actually added
       const verified = await this.isUserInGuild(discordUserId);
       if (verified) {
-        console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId}`);
-        return true;
+                return true;
       } else {
         // Retry check once more after another short wait
-        console.log(`DiscordService: User not found immediately, waiting and retrying verification...`);
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Wait another 1.5 seconds
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Wait another 1.5 seconds
         const retryVerified = await this.isUserInGuild(discordUserId);
         if (retryVerified) {
-          console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId} (after retry)`);
+
           return true;
         } else {
-          console.warn(`DiscordService: ⚠️ User ${discordUserId} still not found in guild ${guildId} after adding`);
-          console.warn(`DiscordService: ⚠️ This may indicate the bot doesn't have proper permissions or the user declined the invite`);
-          return false;
+                              return false;
         }
       }
     } catch (error: any) {
@@ -746,52 +570,37 @@ export class DiscordService {
         await new Promise(resolve => setTimeout(resolve, 1500));
         const verified = await this.isUserInGuild(discordUserId);
         if (verified) {
-          console.log(`DiscordService: ✅ Verified user ${discordUserId} is now in guild ${guildId}`);
-          return true;
+                    return true;
         }
-        console.warn(`DiscordService: ⚠️ User ${discordUserId} not found in guild after 204 response`);
-        return false;
+                return false;
       }
 
       if (error.response?.status === 401 || error.response?.status === 403) {
-        console.error(`DiscordService.addUserToGuildWithBot: ❌ Bot authentication/permission failed (${error.response.status})`);
-        console.error(`DiscordService: Status ${error.response.status} - Check bot permissions in Discord server`);
-        console.error(`DiscordService: Bot needs these permissions:`);
-        console.error(`DiscordService:   ✅ "Create Instant Invite" - Required to add users`);
-        console.error(`DiscordService:   ✅ Bot must be in the server`);
-        console.error(`DiscordService:   ✅ Bot role must be above roles it assigns`);
-        if (error.response?.data) {
-          console.error(`DiscordService: Error details:`, error.response.data);
-        }
+
+                                                if (error.response?.data) {
+                  }
         return false;
       }
 
       if (error.response?.status === 400) {
         if (error.response?.data?.message?.includes('already') || 
             error.response?.data?.code === 50004) {
-          console.log(`DiscordService: User ${discordUserId} is already in guild ${guildId}`);
-          return true;
+                    return true;
         }
         
         // Check for Invalid Form Body error (50035) - usually means access_token is invalid/missing
         if (error.response?.data?.code === 50035) {
-          console.error(`DiscordService.addUserToGuildWithBot: ❌ Invalid request body (code 50035)`);
-          console.error(`DiscordService: This usually means the OAuth token is invalid or missing guilds.join scope`);
-          if (error.response?.data?.errors?.access_token) {
-            console.error(`DiscordService: access_token errors:`, error.response.data.errors.access_token);
-          }
+
+                    if (error.response?.data?.errors?.access_token) {
+                      }
           return false;
         }
         
-        console.error('DiscordService.addUserToGuildWithBot: Invalid request to add member', error.response.data);
-        return false;
+                return false;
       }
 
-      console.error('DiscordService.addUserToGuildWithBot: Failed to add user to guild', error.message);
-      if (error.response) {
-        console.error(`DiscordService: HTTP Status: ${error.response.status}`);
-        console.error(`DiscordService: Error response:`, error.response.data);
-      }
+            if (error.response) {
+                      }
       return false;
     }
   }
@@ -815,8 +624,7 @@ export class DiscordService {
       let user = await FirebaseService.getUserByDiscordId(discordUser.id);
 
       if (user) {
-        console.log(`DiscordService.findUser: Found user by Discord ID: ${discordUser.id}`);
-        // Update user info - preserve payment email, store Discord email separately
+                // Update user info - preserve payment email, store Discord email separately
         const updateData: Partial<User> = {
           username: discordUser.username,
           discordId: discordUser.id
@@ -827,8 +635,7 @@ export class DiscordService {
           if (user.email && user.email !== discordUser.email) {
             // Payment email exists and differs from Discord email - keep payment email, store Discord email separately
             updateData.discordEmail = discordUser.email;
-            console.log(`DiscordService.findUser: Preserving payment email ${user.email}, storing Discord email ${discordUser.email} separately`);
-          } else if (!user.email) {
+                      } else if (!user.email) {
             // No payment email yet, use Discord email as primary
             updateData.email = discordUser.email;
           } else {
@@ -850,9 +657,7 @@ export class DiscordService {
         try {
           user = await FirebaseService.getUserByEmail(discordUser.email);
           if (user) {
-            console.log(`DiscordService.findUser: Found user by email: ${discordUser.email}`);
-            
-            // Update user with Discord ID if missing (link the accounts)
+                        // Update user with Discord ID if missing (link the accounts)
             // Preserve existing email as payment email, store Discord email separately
             const updateData: Partial<User> = {
               discordId: discordUser.id, // Link Discord ID to existing user
@@ -867,21 +672,17 @@ export class DiscordService {
             // Keep existing email as payment email (don't overwrite)
             // Discord email is already stored in discordEmail field above
             
-            console.log(`DiscordService.findUser: Linking Discord ID ${discordUser.id} to existing user ${user.id}`);
-            console.log(`DiscordService.findUser: Payment email: ${user.email}, Discord email: ${discordUser.email}`);
-            return await FirebaseService.updateUser(user.id, updateData) || user;
+                                    return await FirebaseService.updateUser(user.id, updateData) || user;
           }
         } catch (error) {
-          console.warn(`DiscordService.findUser: Error searching by email:`, error);
-          // Continue - user not found
+                    // Continue - user not found
         }
       }
       
       return null;
     } catch (error) {
       // User doesn't exist
-      console.warn(`DiscordService.findUser: Error finding user:`, error);
-      return null;
+            return null;
     }
   }
 
@@ -901,9 +702,7 @@ export class DiscordService {
       
       // If user exists, update and return
       if (existingUser) {
-        console.log(`DiscordService.createUserFromDiscord: User already exists: ${existingUser.id}, updating...`);
-        
-        const updateData: Partial<User> = {
+                const updateData: Partial<User> = {
           username: discordUser.username,
         };
         
@@ -946,8 +745,6 @@ export class DiscordService {
       }
 
     const user = await FirebaseService.createUser(userData);
-    console.log(`DiscordService.createUserFromDiscord: Created new user: ${user.id}`);
-
-    return user;
+        return user;
   }
 }

@@ -80,7 +80,6 @@ export function PaymentSuccessPage() {
   useEffect(() => {
     // Prevent duplicate calls (React StrictMode or double render)
     if (hasCalled) {
-      console.log('PaymentSuccessPage: Already called loginAfterPayment, skipping...');
       return;
     }
 
@@ -91,8 +90,6 @@ export function PaymentSuccessPage() {
       const discordId = urlParams.get('discordId');
       const username = urlParams.get('username');
       const email = urlParams.get('email');
-      
-      console.log('PaymentSuccessPage: Attempting direct login after payment', { discordId, username, email });
       
       // Wait 2 seconds for Stripe webhook to process (may not be needed, but safer)
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -110,11 +107,8 @@ export function PaymentSuccessPage() {
           localStorage.setItem('token', response.token);
           localStorage.setItem('user', JSON.stringify(response.user));
           
-          console.log('PaymentSuccessPage: ✅ Successfully logged in, updating auth state...');
-          
           // After payment, user needs to create password first (step 2 of onboarding)
           // Redirect to password creation page
-          console.log('PaymentSuccessPage: ✅ Payment successful, redirecting to password creation...');
           setStatus('success');
           setTimeout(() => {
             const params = new URLSearchParams();
@@ -131,15 +125,11 @@ export function PaymentSuccessPage() {
             
             // Then refetch all 'user' queries to get fresh data
             await queryClient.refetchQueries('user', { active: true });
-            
-            console.log('PaymentSuccessPage: ✅ Auth state updated successfully');
           } catch (refetchError: any) {
-            console.warn('PaymentSuccessPage: ⚠️ User query refetch failed:', refetchError?.message);
             // Continue anyway since we have the token in localStorage
             // The useAuth hook will pick it up on next render
           }
           
-          console.log('PaymentSuccessPage: ✅ Redirecting to portal');
           setStatus('success');
           
           // Use window.location instead of navigate to force a full page reload
@@ -152,15 +142,12 @@ export function PaymentSuccessPage() {
           throw new Error('Invalid response from login endpoint');
         }
       } catch (error: any) {
-        console.error('PaymentSuccessPage: Failed to log in after payment:', error);
-        
         const errorMsg = error.response?.data?.message || error.message || 'Failed to log in after payment';
         setErrorMessage(errorMsg);
         setStatus('error');
         
         // If we have Discord ID, fall back to Discord OAuth as backup
         if (discordId) {
-          console.log('PaymentSuccessPage: Falling back to Discord OAuth');
           setTimeout(() => {
             const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || '1413650646556479490';
             const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.DEV ? 'http://localhost:3001' : 'https://rainmakers-portal-backend.vercel.app');

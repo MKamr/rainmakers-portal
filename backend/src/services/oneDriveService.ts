@@ -260,13 +260,10 @@ export class OneDriveService {
           }
         );
 
-        console.log('✅ [ONEDRIVE] Deal folder created successfully:', response.data.name);
-        return response.data.id;
+                return response.data.id;
       } catch (createError: any) {
         // If we get a 409 conflict, try to find the renamed folder
         if (createError.response?.status === 409) {
-          console.log('📁 [ONEDRIVE] Folder creation conflict (409), searching for renamed folder...');
-          
               try {
                 const searchResponse = await axios.get(
                   `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
@@ -284,14 +281,12 @@ export class OneDriveService {
               );
               
               if (matchingFolder) {
-                console.log('✅ [ONEDRIVE] Found renamed deal folder:', matchingFolder.name);
-                return matchingFolder.id;
+                                return matchingFolder.id;
               }
             }
             
             // If still not found, create with timestamp
-            console.log('⚠️ [ONEDRIVE] Creating folder with unique timestamp...');
-            const uniqueFolderName = `${folderName} - ${Date.now()}`;
+                        const uniqueFolderName = `${folderName} - ${Date.now()}`;
                 const uniqueResponse = await axios.post(
                   `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`,
               {
@@ -306,19 +301,16 @@ export class OneDriveService {
           }
         }
       );
-            console.log('✅ [ONEDRIVE] Created unique deal folder:', uniqueResponse.data.name);
-            return uniqueResponse.data.id;
+                        return uniqueResponse.data.id;
           } catch (finalError: any) {
-            console.error('❌ [ONEDRIVE] Final error creating folder:', finalError);
-            throw finalError;
+                        throw finalError;
           }
         } else {
           throw createError;
         }
       }
     } catch (error) {
-      console.error('❌ [ONEDRIVE] Error creating OneDrive folder:', error);
-      throw new Error('Failed to create deal folder');
+            throw new Error('Failed to create deal folder');
     }
   }
 
@@ -362,20 +354,13 @@ export class OneDriveService {
       const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const filePath = `${folderPath}/${dealFolderName}/${sanitizedFilename}`;
       
-      console.log('📤 [ONEDRIVE] Uploading file to:', filePath);
-      console.log('📤 [ONEDRIVE] File size:', fileBuffer.length, 'bytes');
-      console.log('📤 [ONEDRIVE] Original MIME type:', mimeType);
-      
-      // Get optimal MIME type for Graph API
+                        // Get optimal MIME type for Graph API
       const optimalMimeType = this.getOptimalMimeType(mimeType);
-      console.log('📤 [ONEDRIVE] Using MIME type:', optimalMimeType);
-      
-      // Check if file is larger than 4MB and needs upload session
+            // Check if file is larger than 4MB and needs upload session
       const FILE_SIZE_THRESHOLD = 4 * 1024 * 1024; // 4MB
       
       if (fileBuffer.length > FILE_SIZE_THRESHOLD) {
-        console.log('📤 [ONEDRIVE] Large file detected, using upload session...');
-        return await this.uploadLargeFile(accessToken, filePath, fileBuffer, optimalMimeType, sanitizedFilename);
+                return await this.uploadLargeFile(accessToken, filePath, fileBuffer, optimalMimeType, sanitizedFilename);
       }
       
       // Note: Deal folder should already exist from deal creation or document check
@@ -384,9 +369,7 @@ export class OneDriveService {
       // Find the SharePoint site for the upload
       let sharePointSiteId = null;
       try {
-        console.log('🔍 [ONEDRIVE] Getting SharePoint site for upload: hardwellcapital.sharepoint.com/sites/HardwellCapital');
-        
-        const siteResponse = await axios.get(
+                const siteResponse = await axios.get(
           `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
           {
             headers: {
@@ -397,11 +380,9 @@ export class OneDriveService {
         
         if (siteResponse.data && siteResponse.data.id) {
           sharePointSiteId = siteResponse.data.id;
-          console.log('✅ [ONEDRIVE] Found SharePoint site for upload:', siteResponse.data.displayName);
-        }
+                  }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for upload, using OneDrive...');
-      }
+              }
       
       const baseUrl = sharePointSiteId 
         ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
@@ -423,8 +404,7 @@ export class OneDriveService {
         }
       );
 
-      console.log('✅ [ONEDRIVE] File uploaded successfully:', sanitizedFilename || filename);
-      return {
+            return {
         id: response.data.id,
         name: response.data.name,
         size: response.data.size,
@@ -434,8 +414,7 @@ export class OneDriveService {
         downloadUrl: response.data['@microsoft.graph.downloadUrl']
       };
     } catch (error) {
-      console.error('❌ [ONEDRIVE] Error uploading file to OneDrive:', error);
-      throw new Error('Failed to upload file');
+            throw new Error('Failed to upload file');
     }
   }
 
@@ -458,8 +437,7 @@ export class OneDriveService {
           sharePointSiteId = siteResponse.data.id;
         }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for large file upload, using OneDrive...');
-      }
+              }
       
       const baseUrl = sharePointSiteId 
         ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
@@ -484,18 +462,13 @@ export class OneDriveService {
       );
       
       const uploadUrl = sessionResponse.data.uploadUrl;
-      console.log('📤 [ONEDRIVE] Created upload session for large file');
-      
-      // Step 2: Upload file in chunks
+            // Step 2: Upload file in chunks
       const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
       const totalSize = fileBuffer.length;
       
       for (let start = 0; start < totalSize; start += CHUNK_SIZE) {
         const end = Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
         const chunk = fileBuffer.slice(start, end + 1);
-        
-        console.log(`📤 [ONEDRIVE] Uploading chunk ${Math.floor(start / CHUNK_SIZE) + 1}/${Math.ceil(totalSize / CHUNK_SIZE)}`);
-        
         await axios.put(
           uploadUrl,
           chunk,
@@ -508,9 +481,7 @@ export class OneDriveService {
         );
       }
       
-      console.log('✅ [ONEDRIVE] Large file uploaded successfully:', filename);
-      
-      // Step 3: Get file metadata
+            // Step 3: Get file metadata
       const fileUrl = `${baseUrl}/root:/${encodeURIComponent(filePath)}`;
       const fileResponse = await axios.get(fileUrl, {
         headers: {
@@ -529,8 +500,7 @@ export class OneDriveService {
       };
       
     } catch (error) {
-      console.error('❌ [ONEDRIVE] Error uploading large file:', error);
-      throw new Error('Failed to upload large file');
+            throw new Error('Failed to upload large file');
     }
   }
 
@@ -545,14 +515,10 @@ export class OneDriveService {
       const folderPath = 'Hardwell Capital/Hardwell Capital Origination/Prospects/Pre-Approved Property';
       const dealFolderPath = `${folderPath}/${dealFolderName}`;
       
-      console.log('📁 [ONEDRIVE] Getting files from:', dealFolderPath);
-      
-      // Find the SharePoint site for the file retrieval
+            // Find the SharePoint site for the file retrieval
       let sharePointSiteId = null;
       try {
-        console.log('🔍 [ONEDRIVE] Getting SharePoint site for file retrieval: hardwellcapital.sharepoint.com/sites/HardwellCapital');
-        
-        const siteResponse = await axios.get(
+                const siteResponse = await axios.get(
           `${this.GRAPH_BASE_URL}/sites/hardwellcapital.sharepoint.com:/sites/HardwellCapital`,
           {
             headers: {
@@ -563,11 +529,9 @@ export class OneDriveService {
         
         if (siteResponse.data && siteResponse.data.id) {
           sharePointSiteId = siteResponse.data.id;
-          console.log('✅ [ONEDRIVE] Found SharePoint site for file retrieval:', siteResponse.data.displayName);
-        }
+                  }
       } catch (siteError: any) {
-        console.log('⚠️ [ONEDRIVE] Could not access SharePoint site for file retrieval, using OneDrive...');
-      }
+              }
       
       const baseUrl = sharePointSiteId 
         ? `${this.GRAPH_BASE_URL}/sites/${sharePointSiteId}/drive`
@@ -582,8 +546,7 @@ export class OneDriveService {
         }
       );
 
-      console.log('📄 [ONEDRIVE] Files retrieved:', response.data.value.length);
-      return response.data.value.map((file: any) => ({
+            return response.data.value.map((file: any) => ({
         id: file.id,
         name: file.name,
         originalName: file.name,
@@ -603,15 +566,13 @@ export class OneDriveService {
         dealId: dealId
       }));
     } catch (error) {
-      console.error('❌ [ONEDRIVE] Error fetching OneDrive files:', error);
-      throw new Error('Failed to fetch files');
+            throw new Error('Failed to fetch files');
     }
   }
 
   static async deleteFile(fileId: string): Promise<void> {
     try {
-      console.log('🗑️ [ONEDRIVE] Attempting to delete file:', fileId);
-      const accessToken = await this.getAccessToken();
+            const accessToken = await this.getAccessToken();
       
       const response = await axios.delete(
         `${this.GRAPH_BASE_URL}/me/drive/items/${fileId}`,
@@ -622,16 +583,8 @@ export class OneDriveService {
         }
       );
       
-      console.log('✅ [ONEDRIVE] File deleted successfully:', fileId, 'Status:', response.status);
-    } catch (error: any) {
-      console.error('❌ [ONEDRIVE] Error deleting file:', fileId);
-      console.error('❌ [ONEDRIVE] Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-      throw new Error(`Failed to delete file: ${error.response?.data?.error?.message || error.message}`);
+          } catch (error: any) {
+                  throw new Error(`Failed to delete file: ${error.response?.data?.error?.message || error.message}`);
     }
   }
 }

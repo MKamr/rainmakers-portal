@@ -13,8 +13,7 @@ import {
   X,
   LogOut,
   User,
-  Calendar,
-  CreditCard
+  Calendar
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
@@ -32,8 +31,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: 'Deals', href: '/', icon: FileText },
     { name: 'Home', href: '/home', icon: Home },
-    { name: 'My Appointments', href: '/appointments', icon: Calendar },
-    { name: 'Subscription & Billing', href: '/settings', icon: CreditCard }
+    { name: 'My Appointments', href: '/appointments', icon: Calendar }
   ]
 
   if (user?.isAdmin) {
@@ -48,7 +46,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       await logout()
       // The logout function will handle the redirect
     } catch (error) {
-      console.error('Logout failed:', error)
       // Even if logout fails, clear local storage and redirect
       localStorage.removeItem('token')
       localStorage.removeItem('user')
@@ -86,7 +83,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               alt="Rainmakers Logo" 
               className="h-16 w-auto"
               onError={(e) => {
-                console.error('Mobile logo failed to load:', e.currentTarget.src);
                 // Fallback to the external logo if local fails
                 if (e.currentTarget.src.includes('/logo_for_lighttheme.png')) {
                   e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png";
@@ -176,7 +172,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 alt="Rainmakers Logo" 
                 className="h-20 w-auto"
                 onError={(e) => {
-                  console.error('Logo failed to load:', e.currentTarget.src);
                   // Fallback to the external logo if local fails
                   if (e.currentTarget.src.includes('/logo_for_lighttheme.png')) {
                     e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/rainmakers-logo-large-removebg-preview-p0gcjZeMhKuX7apjSsIKO50dynyjx4.png";

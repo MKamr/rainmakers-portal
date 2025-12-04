@@ -60,7 +60,6 @@ export const AppointmentManagement: React.FC = () => {
         fetchSubAccounts()
       ]);
     } catch (error) {
-      console.error('Error fetching data:', error);
       setError('Failed to load data');
     } finally {
       setIsLoading(false);
@@ -76,7 +75,6 @@ export const AppointmentManagement: React.FC = () => {
       const response = await appointmentsAPI.listAllAppointments(currentFilters);
       setAppointments(response.appointments);
     } catch (error: any) {
-      console.error('Error fetching appointments:', error);
       setError(error.response?.data?.error || 'Failed to fetch appointments');
     }
   };
@@ -86,7 +84,7 @@ export const AppointmentManagement: React.FC = () => {
       const response = await adminAPI.getUsers();
       setUsers(response);
     } catch (error: any) {
-      console.error('Error fetching users:', error);
+      // Error fetching users
     }
   };
 
@@ -95,7 +93,7 @@ export const AppointmentManagement: React.FC = () => {
       const response = await appointmentsAPI.getAppointmentStats();
       setStats(response.stats);
     } catch (error: any) {
-      console.error('Error fetching stats:', error);
+      // Error fetching stats
     }
   };
 
@@ -104,7 +102,7 @@ export const AppointmentManagement: React.FC = () => {
       const response = await appointmentsAPI.getSubAccounts();
       setSubAccounts(response.subAccounts);
     } catch (error) {
-      console.error('Error fetching sub-accounts:', error);
+      // Error fetching sub-accounts
     }
   };
 
@@ -117,7 +115,6 @@ export const AppointmentManagement: React.FC = () => {
       await fetchStats();
       alert(`Sync completed! ${response.syncedCount} appointments synced, ${response.skippedCount} skipped.${response.subAccountName ? ` From: ${response.subAccountName}` : ''}`);
     } catch (error: any) {
-      console.error('Error syncing appointments:', error);
       setError(error.response?.data?.error || 'Failed to sync appointments from GHL');
     } finally {
       setIsSyncing(false);
@@ -130,7 +127,6 @@ export const AppointmentManagement: React.FC = () => {
       await fetchAppointments();
       await fetchStats();
     } catch (error: any) {
-      console.error('Error assigning appointment:', error);
       setError(error.response?.data?.error || 'Failed to assign appointment');
     }
   };
@@ -141,7 +137,6 @@ export const AppointmentManagement: React.FC = () => {
       await fetchAppointments();
       await fetchStats();
     } catch (error: any) {
-      console.error('Error unassigning appointment:', error);
       setError(error.response?.data?.error || 'Failed to unassign appointment');
     }
   };

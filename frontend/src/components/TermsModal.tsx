@@ -30,7 +30,6 @@ export function TermsModal({ onAccept }: TermsModalProps) {
       await authAPI.acceptTerms();
       onAccept();
     } catch (err: any) {
-      console.error('Error accepting terms:', err);
       setError(err.response?.data?.error || 'Failed to accept terms. Please try again.');
       setIsAccepting(false);
     }

@@ -24,7 +24,6 @@ export const MyAppointments: React.FC = () => {
       const response = await appointmentsAPI.getMyAssignments();
       setAppointments(response.appointments);
     } catch (error: any) {
-      console.error('Error fetching appointments:', error);
       setError(error.response?.data?.error || 'Failed to fetch appointments');
     } finally {
       setIsLoading(false);

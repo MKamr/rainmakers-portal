@@ -57,7 +57,6 @@ export function CreatePasswordPage() {
       // Force a page reload to ensure App.tsx picks up the updated user state
       window.location.href = `/onboarding/discord?${params.toString()}`;
     } catch (err: any) {
-      console.error('Create password error:', err);
       setError(err.response?.data?.error || 'Failed to create password. Please try again.');
       setIsSubmitting(false);
     }

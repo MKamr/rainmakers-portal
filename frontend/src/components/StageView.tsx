@@ -68,7 +68,6 @@ export function StageView({ deals, onCreateDeal, isLoading = false, initialStatu
             const userData = await adminAPI.getUserById(userId)
             newUserCache[userId] = userData
           } catch (error) {
-            console.error(`Failed to fetch user ${userId}:`, error)
             // Set a fallback user object
             newUserCache[userId] = {
               id: userId,

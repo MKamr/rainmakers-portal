@@ -74,6 +74,5 @@ export class MockOneDriveService {
   // Helper method to clear all mock data (for testing)
   static clearAllMockData(): void {
     this.mockFiles.clear();
-    console.log('[MOCK] All mock data cleared');
-  }
+      }
 }

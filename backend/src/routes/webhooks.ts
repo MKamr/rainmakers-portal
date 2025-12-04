@@ -91,9 +91,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
       });
     }
     
-    console.log('✅ [GHL WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
-    
-    // Prepare updates from GHL opportunity
+        // Prepare updates from GHL opportunity
     const updates: any = {};
     
     // Update GHL opportunity ID if not already set
@@ -111,8 +109,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
       if (currentStage !== normalizedStage) {
         updates.stage = normalizedStage;
         updates.stageLastUpdated = new Date().toISOString();
-        console.log('🎯 [GHL WEBHOOK] Stage changed from:', currentStage, 'to:', normalizedStage);
-      }
+              }
     }
     
     // Update other fields from GHL data
@@ -137,8 +134,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
     // Update the deal in Firebase
     if (Object.keys(updates).length > 0) {
       await FirebaseService.updateDeal(deal.id, updates);
-      console.log('✅ [GHL WEBHOOK] Deal updated successfully');
-    }
+          }
     
     res.json({ 
       success: true, 
@@ -147,8 +143,7 @@ router.post('/ghl', async (req: Request, res: Response) => {
       updates: updates
     });
   } catch (error) {
-    console.error('❌ [GHL WEBHOOK] Error processing webhook:', error);
-    res.status(500).json({ error: 'Failed to process webhook' });
+        res.status(500).json({ error: 'Failed to process webhook' });
   }
 });
 
@@ -165,21 +160,15 @@ router.get('/test', (req: Request, res: Response) => {
 // Test webhook endpoint (POST) - for GHL testing
 router.post('/test', async (req: Request, res: Response) => {
   try {
-    console.log('🧪 [TEST WEBHOOK] Received POST request:', JSON.stringify(req.body, null, 2));
-    
     // Get the opportunity data from the webhook
     let opportunity = req.body.opportunity || req.body;
     
     if (!opportunity) {
-      console.log('❌ [TEST WEBHOOK] No opportunity data received');
-      return res.status(400).json({ error: 'No opportunity data received' });
+            return res.status(400).json({ error: 'No opportunity data received' });
     }
     
     // Get all deals and find the matching one
     const deals = await FirebaseService.getAllDeals();
-    console.log('🔍 [TEST WEBHOOK] Looking for deal with opportunity name:', opportunity.opportunity_name);
-    console.log('🔍 [TEST WEBHOOK] Available dealIds in database:', deals.map(d => d.dealId).filter(Boolean));
-    
     // Find deal by opportunity name (property address) or dealId
     const deal = deals.find(d => 
       d.propertyAddress === opportunity.opportunity_name || 
@@ -188,8 +177,6 @@ router.post('/test', async (req: Request, res: Response) => {
     );
     
     if (!deal) {
-      console.log('⚠️ [TEST WEBHOOK] No deal found with opportunity name:', opportunity.opportunity_name);
-      console.log('⚠️ [TEST WEBHOOK] Available deals:', deals.map(d => ({ id: d.id, dealId: d.dealId, title: d.title })));
       return res.json({ 
         success: true, 
         message: 'Webhook received but no matching deal found',
@@ -202,9 +189,7 @@ router.post('/test', async (req: Request, res: Response) => {
       });
     }
     
-    console.log('✅ [TEST WEBHOOK] Found deal:', deal.id, 'Current stage:', deal.stage);
-    
-    // Prepare updates from GHL opportunity
+        // Prepare updates from GHL opportunity
     const updates: any = {};
     
     // Update GHL opportunity ID if not already set
@@ -222,8 +207,7 @@ router.post('/test', async (req: Request, res: Response) => {
       if (currentStage !== normalizedStage) {
         updates.stage = normalizedStage;
         updates.stageLastUpdated = new Date().toISOString();
-        console.log('🎯 [TEST WEBHOOK] Stage changed from:', currentStage, 'to:', normalizedStage);
-      }
+              }
     }
     
     // Update other fields from GHL data
@@ -248,8 +232,7 @@ router.post('/test', async (req: Request, res: Response) => {
     // Update the deal in Firebase
     if (Object.keys(updates).length > 0) {
       await FirebaseService.updateDeal(deal.id, updates);
-      console.log('✅ [TEST WEBHOOK] Deal updated successfully');
-    }
+          }
     
     res.json({ 
       success: true, 
@@ -262,16 +245,14 @@ router.post('/test', async (req: Request, res: Response) => {
       body: req.body
     });
   } catch (error) {
-    console.error('❌ [TEST WEBHOOK] Error processing webhook:', error);
-    res.status(500).json({ error: 'Failed to process webhook' });
+        res.status(500).json({ error: 'Failed to process webhook' });
   }
 });
 
 // Diagnostic endpoint to check deals and their GHL IDs
 router.get('/diagnose', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [DIAGNOSE] Getting all deals for diagnosis...');
-    const deals = await FirebaseService.getAllDeals();
+        const deals = await FirebaseService.getAllDeals();
     
     const dealInfo = deals.map(deal => ({
       id: deal.id,
@@ -299,8 +280,7 @@ router.get('/diagnose', async (req: Request, res: Response) => {
       ghlOpportunityIds: dealsWithGhl.map(d => d.ghlOpportunityId).filter(Boolean)
     });
   } catch (error) {
-    console.error('❌ [DIAGNOSE] Error getting deals:', error);
-    res.status(500).json({ error: 'Failed to get deals for diagnosis' });
+        res.status(500).json({ error: 'Failed to get deals for diagnosis' });
   }
 });
 

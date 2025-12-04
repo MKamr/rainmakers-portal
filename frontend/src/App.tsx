@@ -66,16 +66,7 @@ function App() {
     // Only process if we have URL params AND they're not already saved
     const savedToken = localStorage.getItem('token')
     
-    console.log('App: Checking URL params for OAuth callback', {
-      hasToken: !!token,
-      hasUserParam: !!userParam,
-      hasError: !!error,
-      alreadyHasToken: !!savedToken,
-      urlProcessed
-    });
-
     if (error) {
-      console.error("App: OAuth error in URL:", error)
       setUrlProcessed(true)
       // Clear URL params and redirect to login with error
       window.history.replaceState({}, '', '/login?error=' + error)
@@ -85,11 +76,9 @@ function App() {
     // Only process if we have token/user params AND they're not already saved
     if (token && userParam && !savedToken) {
       try {
-        console.log('App: Processing OAuth token from URL params...')
         const user = JSON.parse(decodeURIComponent(userParam))
         localStorage.setItem("token", token)
         localStorage.setItem("user", JSON.stringify(user))
-        console.log('App: ✅ Saved token and user to localStorage')
         
         // Clear URL params
         window.history.replaceState({}, '', window.location.pathname)
@@ -98,14 +87,12 @@ function App() {
         queryClient.invalidateQueries('user')
         setUrlProcessed(true)
       } catch (error) {
-        console.error("App: Failed to parse user data from URL:", error)
         setUrlProcessed(true)
         // Clear URL params and redirect to login
         window.history.replaceState({}, '', '/login?error=parse_error')
       }
     } else if (token && userParam && savedToken) {
       // Token already saved, just clear URL params
-      console.log('App: Token already saved, clearing URL params')
       window.history.replaceState({}, '', window.location.pathname)
       setUrlProcessed(true)
     } else {
@@ -114,20 +101,7 @@ function App() {
     }
   }, [urlProcessed, queryClient]) // Run once, then never again
 
-  console.log('🎯 App render:', { 
-    user: user ? {
-      id: user.id,
-      username: user.username,
-      isAdmin: user.isAdmin,
-      isWhitelisted: user.isWhitelisted,
-      typeOfIsAdmin: typeof user.isAdmin,
-      typeOfIsWhitelisted: typeof user.isWhitelisted
-    } : null,
-    isLoading 
-  })
-
   if (isLoading) {
-    console.log('⏳ App: Still loading, showing spinner')
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
         <LoadingSpinner size="lg" />
@@ -137,15 +111,8 @@ function App() {
 
   // Check if user is logged in - if no token or no user, show login
   const token = localStorage.getItem('token')
-  console.log('🔑 App: Token check:', { 
-    hasToken: !!token,
-    hasUser: !!user,
-    userIsWhitelisted: user?.isWhitelisted,
-    userIsAdmin: user?.isAdmin
-  })
   
   if (!user || !token) {
-    console.log('❌ App: No user or token, showing login')
     return (
       <ThemeProvider>
         <Routes>
@@ -166,26 +133,7 @@ function App() {
     )
   }
 
-  console.log('✅ App: User authenticated, checking whitelist status')
-  console.log('📊 App: User analysis:', {
-    id: user.id,
-    username: user.username,
-    isAdmin: user.isAdmin,
-    isWhitelisted: user.isWhitelisted,
-    typeOfIsAdmin: typeof user.isAdmin,
-    typeOfIsWhitelisted: typeof user.isWhitelisted,
-    isWhitelistedStrict: user.isWhitelisted === true,
-    isAdminStrict: user.isAdmin === true
-  })
-
   if (!user.isWhitelisted) {
-    console.log('⚠️ App: User not whitelisted, showing pending modal')
-    console.log('🔍 App: Debug info for modal:', {
-      isWhitelisted: user.isWhitelisted,
-      isAdmin: user.isAdmin,
-      isWhitelistedUndefined: user.isWhitelisted === undefined,
-      isAdminUndefined: user.isAdmin === undefined
-    })
     return (
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -217,7 +165,6 @@ function App() {
               {/* Sign Out Button */}
               <button
                 onClick={() => {
-                  console.log('🚪 App: Sign out clicked')
                   localStorage.removeItem('token')
                   localStorage.removeItem('user')
                   window.location.href = '/'
@@ -233,8 +180,6 @@ function App() {
     )
   }
 
-  console.log('🎉 App: User is whitelisted, checking setup completion and terms')
-
   // Check if user needs to complete setup
   // Handle undefined values - treat undefined as false (needs setup)
   const needsPassword = user.hasPassword !== true;
@@ -243,7 +188,6 @@ function App() {
 
   // Redirect to appropriate onboarding step if setup incomplete
   if (needsPassword) {
-    console.log('⚠️ App: User needs password, redirecting to password creation')
     return (
       <ThemeProvider>
         <Routes>
@@ -255,7 +199,6 @@ function App() {
   }
 
   if (needsDiscord) {
-    console.log('⚠️ App: User needs Discord, redirecting to Discord connection')
     return (
       <ThemeProvider>
         <Routes>
@@ -268,7 +211,6 @@ function App() {
 
   // Show Terms Modal if terms not accepted
   if (needsTerms) {
-    console.log('⚠️ App: User needs to accept terms, showing Terms Modal')
     return (
       <ThemeProvider>
         <TermsModalWrapper>
@@ -292,7 +234,6 @@ function App() {
     )
   }
 
-  console.log('🎉 App: User is whitelisted, showing dashboard')
   return (
     <ThemeProvider>
       <DashboardLayout>

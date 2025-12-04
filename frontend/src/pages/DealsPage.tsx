@@ -30,21 +30,13 @@ export function DealsPage() {
 
   // Use different API based on user role
   const { data: allDeals, isLoading, error } = useQuery(
-    ['deals', user?.isAdmin, dealFilters], 
+    ['deals', user?.isAdmin, dealFilters],
     async () => {
       if (user?.isAdmin) {
-        return await adminAPI.getAllDeals(dealFilters);
+        return await adminAPI.getAllDeals(dealFilters)
       } else {
-        return await dealsAPI.getDeals();
+        return await dealsAPI.getDeals()
       }
-    },
-    {
-    onSuccess: (data) => {
-      console.log('📋 [DEALS PAGE] Deals loaded successfully:', data);
-    },
-    onError: (error) => {
-      console.error('❌ [DEALS PAGE] Failed to load deals:', error);
-    }
     }
   )
 
@@ -98,7 +90,6 @@ export function DealsPage() {
   }
 
   if (error) {
-    console.error('❌ [DEALS PAGE] Error state:', error);
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -114,14 +105,6 @@ export function DealsPage() {
       </div>
     )
   }
-
-  console.log('📋 [DEALS PAGE] Render state:', { 
-    deals: deals, 
-    dealsLength: deals?.length, 
-    isLoading, 
-    error,
-    user: user?.id 
-  });
 
   return (
     <div className="space-y-6 matrix-deals-container">

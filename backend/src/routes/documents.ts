@@ -37,8 +37,7 @@ router.use((req, res, next) => {
 
 // Handle CORS preflight requests for file uploads
 router.options('/upload', (req, res) => {
-  console.log('🌐 [CORS] Preflight request for /upload');
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -47,8 +46,7 @@ router.options('/upload', (req, res) => {
 
 // Handle CORS preflight requests for file deletion
 router.options('/:id', (req, res) => {
-  console.log('🌐 [CORS] Preflight request for DELETE /:id');
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -57,8 +55,7 @@ router.options('/:id', (req, res) => {
 
 // Handle CORS preflight requests for multiple file uploads
 router.options('/upload-multiple', (req, res) => {
-  console.log('🌐 [CORS] Preflight request for /upload-multiple');
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -67,8 +64,7 @@ router.options('/upload-multiple', (req, res) => {
 
 // Handle CORS preflight requests for multiple file deletion
 router.options('/delete-multiple', (req, res) => {
-  console.log('🌐 [CORS] Preflight request for /delete-multiple');
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -77,9 +73,7 @@ router.options('/delete-multiple', (req, res) => {
 
 // Test endpoint to verify CORS is working
 router.get('/test-cors', (req, res) => {
-  console.log('🌐 [CORS] Test endpoint called');
-  console.log('🌐 [CORS] Request origin:', req.headers.origin);
-  res.json({ 
+      res.json({ 
     message: 'CORS test successful', 
     origin: req.headers.origin,
     timestamp: new Date().toISOString()
@@ -89,8 +83,7 @@ router.get('/test-cors', (req, res) => {
 // Test endpoint to list OneDrive files for debugging
 router.get('/test-onedrive', async (req, res) => {
   try {
-    console.log('🔍 [TEST] Listing OneDrive files for debugging');
-    // Note: getFiles() method doesn't exist in OneDriveService
+        // Note: getFiles() method doesn't exist in OneDriveService
     // This endpoint is disabled until the method is implemented
     res.json({
       message: 'OneDrive test endpoint - getFiles() method not implemented',
@@ -111,8 +104,7 @@ router.get('/test-onedrive', async (req, res) => {
       }))
     }); */
   } catch (error: any) {
-    console.error('❌ [TEST] OneDrive test error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to list OneDrive files', 
       details: error.message 
     });
@@ -194,8 +186,7 @@ router.get('/deal/:dealId', async (req: Request, res: Response) => {
     
     res.json(mappedDocuments);
   } catch (error) {
-    console.error('📄 [DOCUMENTS] Get documents error:', error);
-    res.status(500).json({ error: 'Failed to fetch documents', details: error instanceof Error ? error.message : 'Unknown error' });
+        res.status(500).json({ error: 'Failed to fetch documents', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -217,21 +208,15 @@ router.post('/upload-multiple', upload.array('files', 50), [
   }).withMessage('Tags must be an array or valid JSON string'),
 ], async (req: Request, res: Response) => {
   try {
-    console.log('📄 [UPLOAD MULTIPLE] Upload request received');
-    console.log('📄 [UPLOAD MULTIPLE] Request origin:', req.headers.origin);
-    console.log('📄 [UPLOAD MULTIPLE] User ID:', req.user?.id);
-    console.log('📄 [UPLOAD MULTIPLE] Files count:', req.files?.length || 0);
-
-    const errors = validationResult(req);
+                    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('📄 [UPLOAD MULTIPLE] Validation errors:', errors.array());
+
       return res.status(400).json({ errors: errors.array() });
     }
 
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
-      console.log('📄 [UPLOAD MULTIPLE] No files uploaded');
-      return res.status(400).json({ error: 'No files uploaded' });
+            return res.status(400).json({ error: 'No files uploaded' });
     }
 
     const { dealId, tags: tagsString } = req.body;
@@ -242,31 +227,22 @@ router.post('/upload-multiple', upload.array('files', 50), [
       try {
         tags = typeof tagsString === 'string' ? JSON.parse(tagsString) : tagsString;
       } catch (error) {
-        console.log('📄 [UPLOAD MULTIPLE] Invalid tags format, using empty array:', tagsString);
-        tags = [];
+                tags = [];
       }
     }
     
-    console.log('📄 [UPLOAD MULTIPLE] Deal ID:', dealId);
-    console.log('📄 [UPLOAD MULTIPLE] Tags:', tags);
-    console.log('📄 [UPLOAD MULTIPLE] Files to upload:', files.length);
-
-    // Verify deal belongs to user
+                // Verify deal belongs to user
     const deal = await FirebaseService.getDealById(dealId);
     if (!deal) {
-      console.log('📄 [UPLOAD MULTIPLE] Deal not found:', dealId);
-      return res.status(404).json({ error: 'Deal not found' });
+            return res.status(404).json({ error: 'Deal not found' });
     }
     
     // Allow access if user owns the deal OR if user is admin
     if (deal.userId !== req.user!.id && !req.user!.isAdmin) {
-      console.log('📄 [UPLOAD MULTIPLE] Deal does not belong to user and user is not admin. Deal userId:', deal.userId, 'Request userId:', req.user!.id, 'Is Admin:', req.user!.isAdmin);
-      return res.status(403).json({ error: 'Access denied' });
+            return res.status(403).json({ error: 'Access denied' });
     }
 
-    console.log('📄 [UPLOAD MULTIPLE] Deal found, uploading to OneDrive...');
-
-    // Get user info for uploadedBy field (once before loop)
+        // Get user info for uploadedBy field (once before loop)
     const user = await FirebaseService.getUserById(req.user!.id);
     let uploadedBy = 'Unknown User';
     if (user) {
@@ -328,10 +304,7 @@ router.post('/upload-multiple', upload.array('files', 50), [
           }
         });
 
-        console.log(`✅ [UPLOAD MULTIPLE] File ${uploadedCount}/${files.length} uploaded:`, oneDriveFile.id);
-        console.log(`✅ [UPLOAD MULTIPLE] Document metadata saved to Firebase:`, documentData.id);
-
-        // Send email notification for document upload
+                        // Send email notification for document upload
         try {
           // Ensure email service initialized (handles serverless cold starts)
           try {
@@ -348,14 +321,13 @@ router.post('/upload-multiple', upload.array('files', 50), [
           await EmailService.sendDocumentUploadNotificationEmail(deal, file.originalname, uploadedBy);
         } catch (emailError) {
           // Don't fail the document upload if email fails
-          console.error('❌ [EMAIL] Failed to send document upload notification:', emailError);
-        }
+                  }
 
         // Sync to GHL if configured
         try {
           const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
           if (ghlApiKey && (deal as any).ghlContactId) {
-            console.log('📄 [UPLOAD MULTIPLE] Syncing document to GHL contact:', (deal as any).ghlContactId);
+
             // Upload document to GHL contact
             await GHLService.uploadDocumentToContact(
               (deal as any).ghlContactId,
@@ -364,16 +336,14 @@ router.post('/upload-multiple', upload.array('files', 50), [
               file.mimetype,
               ghlApiKey
             );
-            console.log('✅ [UPLOAD MULTIPLE] Document synced to GHL contact:', (deal as any).ghlContactId);
+
           }
         } catch (error) {
-          console.warn('⚠️ [UPLOAD MULTIPLE] Failed to sync document to GHL:', error);
-          // Don't fail the upload if GHL sync fails
+                    // Don't fail the upload if GHL sync fails
         }
       } catch (error: any) {
         failedCount++;
-        console.error(`❌ [UPLOAD MULTIPLE] Failed to upload file ${file.originalname}:`, error);
-        uploadResults.push({
+                uploadResults.push({
           success: false,
           fileName: file.originalname,
           error: error.message || 'Failed to upload file'
@@ -381,17 +351,14 @@ router.post('/upload-multiple', upload.array('files', 50), [
       }
     }
 
-    console.log(`✅ [UPLOAD MULTIPLE] Upload complete. Uploaded: ${uploadedCount}, Failed: ${failedCount}`);
-
-    res.status(201).json({
+        res.status(201).json({
       message: `Successfully uploaded ${uploadedCount} file(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
       uploaded: uploadedCount,
       failed: failedCount,
       results: uploadResults
     });
   } catch (error) {
-    console.error('📄 [UPLOAD MULTIPLE] Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload documents', details: error instanceof Error ? error.message : 'Unknown error' });
+        res.status(500).json({ error: 'Failed to upload documents', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -413,22 +380,14 @@ router.post('/upload', upload.single('file'), [
   }).withMessage('Tags must be an array or valid JSON string'),
 ], async (req: Request, res: Response) => {
   try {
-    console.log('📄 [UPLOAD] Upload request received');
-    console.log('📄 [UPLOAD] Request origin:', req.headers.origin);
-    console.log('📄 [UPLOAD] Request headers:', req.headers);
-    console.log('📄 [UPLOAD] User ID:', req.user?.id);
-    console.log('📄 [UPLOAD] Request body:', req.body);
-    console.log('📄 [UPLOAD] File:', req.file ? { name: req.file.originalname, size: req.file.size, type: req.file.mimetype } : 'No file');
-
-    const errors = validationResult(req);
+                            const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('📄 [UPLOAD] Validation errors:', errors.array());
+
       return res.status(400).json({ errors: errors.array() });
     }
 
     if (!req.file) {
-      console.log('📄 [UPLOAD] No file uploaded');
-      return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const { dealId, tags: tagsString } = req.body;
@@ -439,30 +398,22 @@ router.post('/upload', upload.single('file'), [
       try {
         tags = typeof tagsString === 'string' ? JSON.parse(tagsString) : tagsString;
       } catch (error) {
-        console.log('📄 [UPLOAD] Invalid tags format, using empty array:', tagsString);
-        tags = [];
+                tags = [];
       }
     }
     
-    console.log('📄 [UPLOAD] Deal ID:', dealId);
-    console.log('📄 [UPLOAD] Tags:', tags);
-
-    // Verify deal belongs to user
+            // Verify deal belongs to user
     const deal = await FirebaseService.getDealById(dealId);
     if (!deal) {
-      console.log('📄 [UPLOAD] Deal not found:', dealId);
-      return res.status(404).json({ error: 'Deal not found' });
+            return res.status(404).json({ error: 'Deal not found' });
     }
     
     // Allow access if user owns the deal OR if user is admin
     if (deal.userId !== req.user!.id && !req.user!.isAdmin) {
-      console.log('📄 [UPLOAD] Deal does not belong to user and user is not admin. Deal userId:', deal.userId, 'Request userId:', req.user!.id, 'Is Admin:', req.user!.isAdmin);
-      return res.status(403).json({ error: 'Access denied' });
+            return res.status(403).json({ error: 'Access denied' });
     }
 
-    console.log('📄 [UPLOAD] Deal found, uploading to OneDrive...');
-
-    // Upload to OneDrive
+        // Upload to OneDrive
     const oneDriveFile = await OneDriveService.uploadFile(
       dealId,
       req.file.originalname,
@@ -470,9 +421,7 @@ router.post('/upload', upload.single('file'), [
       req.file.mimetype
     );
 
-    console.log('📄 [UPLOAD] File uploaded to OneDrive:', oneDriveFile.id);
-
-    // Get user info for uploadedBy field
+        // Get user info for uploadedBy field
     const user = await FirebaseService.getUserById(req.user!.id);
     let uploadedBy = 'Unknown User';
     if (user) {
@@ -499,9 +448,7 @@ router.post('/upload', upload.single('file'), [
       uploadedBy: uploadedBy,
     });
 
-    console.log('📄 [UPLOAD] Document metadata saved to Firebase:', documentData.id);
-
-    // Send email notification for document upload
+        // Send email notification for document upload
     try {
       // Ensure email service initialized (handles serverless cold starts)
       try {
@@ -518,14 +465,13 @@ router.post('/upload', upload.single('file'), [
       await EmailService.sendDocumentUploadNotificationEmail(deal, req.file.originalname, uploadedBy);
     } catch (emailError) {
       // Don't fail the document upload if email fails
-      console.error('❌ [EMAIL] Failed to send document upload notification:', emailError);
-    }
+          }
 
     // Sync to GHL if configured
     try {
       const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
       if (ghlApiKey && (deal as any).ghlContactId) {
-        console.log('📄 [UPLOAD] Syncing document to GHL contact:', (deal as any).ghlContactId);
+
         // Upload document to GHL contact
         await GHLService.uploadDocumentToContact(
           (deal as any).ghlContactId,
@@ -534,15 +480,11 @@ router.post('/upload', upload.single('file'), [
           req.file.mimetype,
           ghlApiKey
         );
-        console.log('✅ [UPLOAD] Document synced to GHL contact:', (deal as any).ghlContactId);
+
       } else {
-        console.log('⚠️ [UPLOAD] GHL not configured or missing contactId, skipping sync...');
-        if (!ghlApiKey) console.log('  - Missing GHL API key');
-        if (!(deal as any).ghlContactId) console.log('  - Missing deal ghlContactId');
-      }
+                if (!ghlApiKey)         if (!(deal as any).ghlContactId)       }
     } catch (error) {
-      console.warn('⚠️ [UPLOAD] Failed to sync document to GHL:', error);
-      // Don't fail the upload if GHL sync fails
+            // Don't fail the upload if GHL sync fails
     }
 
     res.status(201).json({
@@ -564,8 +506,7 @@ router.post('/upload', upload.single('file'), [
       }
     });
   } catch (error) {
-    console.error('📄 [UPLOAD] Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload document', details: error instanceof Error ? error.message : 'Unknown error' });
+        res.status(500).json({ error: 'Failed to upload document', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -582,8 +523,7 @@ router.put('/:id', [
     // Document operations are disabled
     res.status(404).json({ error: 'Document not found' });
   } catch (error) {
-    console.error('Update document error:', error);
-    res.status(500).json({ error: 'Failed to update document' });
+        res.status(500).json({ error: 'Failed to update document' });
   }
 });
 
@@ -598,9 +538,7 @@ router.post('/delete-multiple', [
     }
 
     const { documentIds } = req.body;
-    console.log('🗑️ [DELETE MULTIPLE] Delete documents request:', documentIds.length, 'documents');
-    
-    if (!Array.isArray(documentIds) || documentIds.length === 0) {
+        if (!Array.isArray(documentIds) || documentIds.length === 0) {
       return res.status(400).json({ error: 'Document IDs array is required and must not be empty' });
     }
 
@@ -627,18 +565,15 @@ router.post('/delete-multiple', [
 
         await FirebaseService.softDeleteDocument(documentId);
         deletedCount++;
-        console.log(`✅ [DELETE MULTIPLE] Document soft deleted: ${documentId} (${deletedCount}/${documentIds.length})`);
+
       } catch (error: any) {
         failedCount++;
         const errorMsg = error.message || 'Failed to delete document';
         errors_list.push(`${documentId}: ${errorMsg}`);
-        console.error(`❌ [DELETE MULTIPLE] Failed to delete document ${documentId}:`, error);
-      }
+              }
     }
 
-    console.log(`✅ [DELETE MULTIPLE] Delete complete. Deleted: ${deletedCount}, Failed: ${failedCount}`);
-
-    if (failedCount === 0) {
+        if (failedCount === 0) {
       res.json({ 
         message: `Successfully deleted ${deletedCount} document(s)`,
         deleted: deletedCount,
@@ -653,8 +588,7 @@ router.post('/delete-multiple', [
       });
     }
   } catch (error: any) {
-    console.error('❌ [DELETE MULTIPLE] Delete documents error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to delete documents', 
       details: error.message 
     });
@@ -664,9 +598,7 @@ router.post('/delete-multiple', [
 // Delete document (single - kept for backward compatibility)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    console.log('🗑️ [DELETE] Delete document request:', req.params.id);
-    
-    const documentId = req.params.id;
+        const documentId = req.params.id;
     if (!documentId) {
       return res.status(400).json({ error: 'Document ID is required' });
     }
@@ -683,12 +615,9 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     // Soft delete from Firebase (keep in OneDrive)
     await FirebaseService.softDeleteDocument(documentId);
-    console.log('✅ [DELETE] Document soft deleted successfully:', documentId);
-
-    res.json({ message: 'Document deleted successfully' });
+        res.json({ message: 'Document deleted successfully' });
   } catch (error: any) {
-    console.error('❌ [DELETE] Delete document error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to delete document', 
       details: error.message 
     });
@@ -701,8 +630,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Return empty array - documents are not stored in Firebase
     res.json([]);
   } catch (error) {
-    console.error('Get user documents error:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+        res.status(500).json({ error: 'Failed to fetch documents' });
   }
 });
 

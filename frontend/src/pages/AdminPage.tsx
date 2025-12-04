@@ -304,7 +304,6 @@ function GHLImportTab() {
       const response = await adminAPI.getGHLPipelines()
       setPipelines(response.pipelines || [])
     } catch (error) {
-      console.error('Error fetching pipelines:', error)
       toast.error('Failed to fetch pipelines')
     }
   }
@@ -322,7 +321,6 @@ function GHLImportTab() {
       const response = await adminAPI.getGHLPipelineOpportunities(targetPipelineId)
       setOpportunities(response.opportunities || [])
     } catch (error) {
-      console.error('Error fetching opportunities:', error)
       toast.error('Failed to fetch opportunities')
     } finally {
       setIsLoading(false)
@@ -335,7 +333,6 @@ function GHLImportTab() {
       const response = await adminAPI.getUsers()
       setUsers(response)
     } catch (error) {
-      console.error('Error fetching users:', error)
       toast.error('Failed to fetch users')
     }
   }
@@ -359,7 +356,6 @@ function GHLImportTab() {
       setSelectedOpportunity(null)
       setSelectedUserId('')
     } catch (error) {
-      console.error('Error importing opportunity:', error)
       toast.error('Failed to import opportunity')
     } finally {
       setIsImporting(false)
@@ -615,13 +611,10 @@ export function AdminPage() {
     if (!keyToUse.trim()) return
     
     try {
-      console.log('Fetching pipelines with API key:', keyToUse.substring(0, 10) + '...')
       const response = await adminAPI.getGHLPipelinesWithKey(keyToUse)
-      console.log('Pipelines response:', response)
       setAvailablePipelines(response.pipelines || [])
       toast.success(`Loaded ${response.pipelines?.length || 0} pipelines`)
     } catch (error) {
-      console.error('Failed to fetch GHL pipelines:', error)
       toast.error('Failed to fetch GHL pipelines. Please check your API key.')
     }
   }
@@ -631,7 +624,6 @@ export function AdminPage() {
     const loadGHLConfig = async () => {
       try {
         const config = await adminAPI.getGHLConfig()
-        console.log('Loaded GHL config:', config)
         
         if (config.apiKey) {
           setGhlConfig(prev => ({
@@ -652,7 +644,7 @@ export function AdminPage() {
           }
         }
       } catch (error) {
-        console.error('Failed to load GHL config:', error)
+        // Failed to load GHL config
       }
     }
     
@@ -722,10 +714,8 @@ export function AdminPage() {
   const fetchCustomFieldsMutation = useMutation(adminAPI.fetchGHLCustomFields, {
     onSuccess: (data) => {
       toast.success(`Custom fields fetched successfully! Found ${data.summary.totalFields} total fields.`)
-      console.log('Custom fields data:', data)
     },
     onError: (error: any) => {
-      console.error('Custom fields fetch failed:', error)
       toast.error(`Failed to fetch custom fields: ${error?.response?.data?.error || (error instanceof Error ? error.message : 'Unknown error')}`)
     }
   })
@@ -796,7 +786,6 @@ export function AdminPage() {
       await navigator.clipboard.writeText(generatedWebhookUrl)
       toast.success('Webhook URL copied to clipboard!')
     } catch (error) {
-      console.error('Failed to copy:', error)
       toast.error('Failed to copy URL to clipboard')
     }
   }
@@ -869,7 +858,6 @@ export function AdminPage() {
 
   const handleOneDriveConnect = async () => {
     try {
-      console.log('🔑 [FRONTEND] Starting OneDrive connection (Web app flow)...');
       
       // Build authorization URL for Web app flow (no PKCE needed)
       const clientId = (import.meta as any).env.VITE_MICROSOFT_CLIENT_ID
@@ -878,13 +866,10 @@ export function AdminPage() {
       const scope = encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read')
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&state=onedrive_auth`
       
-      console.log('🔑 [FRONTEND] Redirecting to Microsoft OAuth (Web app flow)...');
-      console.log('🔑 [FRONTEND] Auth URL:', authUrl);
       
       // Redirect to Microsoft OAuth
       window.location.href = authUrl;
     } catch (error) {
-      console.error('❌ [FRONTEND] OneDrive connection failed:', error);
       toast.error('Failed to connect OneDrive. Please try again.');
     }
   }

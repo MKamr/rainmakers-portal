@@ -42,7 +42,6 @@ export function SettingsPage() {
       const date = new Date(timestamp)
       return isNaN(date.getTime()) ? null : date
     } catch (error) {
-      console.error('Error converting timestamp to date:', error, timestamp)
       return null
     }
   }

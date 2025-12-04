@@ -53,7 +53,6 @@ export const CallNotesModal: React.FC<CallNotesModalProps> = ({
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error submitting call notes:', error);
       setError(error.response?.data?.error || 'Failed to submit call notes');
     } finally {
       setIsLoading(false);

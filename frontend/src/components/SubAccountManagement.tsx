@@ -38,7 +38,6 @@ export const SubAccountManagement: React.FC = () => {
       const response = await appointmentsAPI.getSubAccounts();
       setSubAccounts(response.subAccounts);
     } catch (error: any) {
-      console.error('Error fetching sub-accounts:', error);
       setError(error.response?.data?.error || 'Failed to fetch sub-accounts');
     } finally {
       setIsLoading(false);
@@ -53,7 +52,6 @@ export const SubAccountManagement: React.FC = () => {
       await fetchSubAccounts();
       setFormData({ name: '', apiKey: '', v2Token: '', locationId: '', ghlUserId: '' });
     } catch (error: any) {
-      console.error('Error creating sub-account:', error);
       setError(error.response?.data?.error || 'Failed to create sub-account');
     } finally {
       setIsCreating(false);
@@ -68,7 +66,6 @@ export const SubAccountManagement: React.FC = () => {
       setEditingId(null);
       setFormData({ name: '', apiKey: '', v2Token: '', locationId: '', ghlUserId: '' });
     } catch (error: any) {
-      console.error('Error updating sub-account:', error);
       setError(error.response?.data?.error || 'Failed to update sub-account');
     }
   };
@@ -83,7 +80,6 @@ export const SubAccountManagement: React.FC = () => {
       await appointmentsAPI.deleteSubAccount(id);
       await fetchSubAccounts();
     } catch (error: any) {
-      console.error('Error deleting sub-account:', error);
       setError(error.response?.data?.error || 'Failed to delete sub-account');
     }
   };
@@ -107,7 +103,6 @@ export const SubAccountManagement: React.FC = () => {
         alert(`❌ ${errorMsg}`);
       }
     } catch (error: any) {
-      console.error('Error testing sub-account:', error);
       setError(error.response?.data?.error || 'Failed to test sub-account');
     } finally {
       setTestingId(null);

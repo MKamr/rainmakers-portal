@@ -38,7 +38,6 @@ const DiscordAutoAccess: React.FC = () => {
       const response = await api.get('/admin/discord-auto-access');
       setUsers(response.data.users || []);
     } catch (err: any) {
-      console.error('Error fetching Discord auto-access users:', err);
       setError(err.response?.data?.error || 'Failed to fetch users');
     } finally {
       setLoading(false);
@@ -63,7 +62,6 @@ const DiscordAutoAccess: React.FC = () => {
       setShowAddForm(false);
       await fetchUsers();
     } catch (err: any) {
-      console.error('Error adding Discord auto-access user:', err);
       setError(err.response?.data?.error || 'Failed to add user');
     } finally {
       setSubmitting(false);
@@ -110,7 +108,6 @@ const DiscordAutoAccess: React.FC = () => {
       setShowBulkForm(false);
       await fetchUsers();
     } catch (err: any) {
-      console.error('Error bulk adding Discord auto-access users:', err);
       setError(err.response?.data?.error || 'Failed to bulk add users');
     } finally {
       setBulkSubmitting(false);
@@ -130,7 +127,6 @@ const DiscordAutoAccess: React.FC = () => {
       setSuccess(`Discord username "${username}" removed from auto-access list successfully`);
       await fetchUsers();
     } catch (err: any) {
-      console.error('Error removing Discord auto-access user:', err);
       setError(err.response?.data?.error || 'Failed to remove user');
     } finally {
       setDeleting(null);

@@ -22,7 +22,6 @@ export const AppointmentsPage: React.FC = () => {
         setIsTermsModalOpen(true);
       }
     } catch (error) {
-      console.error('Error checking terms status:', error);
       // If there's an error, assume terms need to be accepted
       setHasAcceptedTerms(false);
       setIsTermsModalOpen(true);

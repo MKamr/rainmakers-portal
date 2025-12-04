@@ -84,9 +84,7 @@ export class GHLService {
       throw new Error('GHL v2 private integration token not configured. V2 API requires a different token than V1 API.');
     }
     
-    console.log('🔑 [GHL V2] Using V2 private integration token');
-    
-    return {
+        return {
       'Authorization': `Bearer ${v2Token}`,
       'Version': '2021-07-28', // Required for v2 API
       'Content-Type': 'application/json',
@@ -198,8 +196,7 @@ export class GHLService {
       const response = await axios.get(`${this.GHL_BASE_URL}/contacts/${contactId}`, { headers });
       return response.data.contact;
     } catch (error) {
-      console.error('Error fetching contact:', error);
-      return null;
+            return null;
     }
   }
 
@@ -516,28 +513,18 @@ export class GHLService {
 
   static async listOpportunities(): Promise<any> {
     try {
-      console.log('🔍 [GHL LIST] Starting to list opportunities from specific pipeline...');
-      
-      const targetPipelineId = '97i1G88fYPwGw5Hyiv0Y';
-      console.log(`🎯 [GHL LIST] Target pipeline ID: ${targetPipelineId}`);
-      
-      // Try V2 API first (only if V2 token is available)
+            const targetPipelineId = '97i1G88fYPwGw5Hyiv0Y';
+            // Try V2 API first (only if V2 token is available)
       try {
-        console.log('🔍 [GHL LIST] Checking for V2 token...');
-        const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+                const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         
         if (v2Token) {
-          console.log('🔍 [GHL LIST] V2 token found, trying V2 API for all opportunities...');
-          const allV2Opportunities = await this.getAllOpportunitiesV2();
-          console.log(`✅ [GHL LIST] V2 API success: Found ${allV2Opportunities.length} total opportunities`);
-          
-          // Filter opportunities by target pipeline
+                    const allV2Opportunities = await this.getAllOpportunitiesV2();
+                    // Filter opportunities by target pipeline
           const v2Opportunities = allV2Opportunities.filter((opp: any) => 
             opp.pipelineId === targetPipelineId
           );
-          console.log(`✅ [GHL LIST] Filtered to ${v2Opportunities.length} opportunities from pipeline ${targetPipelineId}`);
-          
-          // Get pipeline info to add to opportunities
+                    // Get pipeline info to add to opportunities
           const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
           
           const opportunitiesWithPipeline = v2Opportunities.map((opp: any) => ({
@@ -548,16 +535,12 @@ export class GHLService {
           
           return { opportunities: opportunitiesWithPipeline };
         } else {
-          console.log('⚠️ [GHL LIST] No V2 token configured, skipping V2 API');
-          throw new Error('V2 token not configured');
+                    throw new Error('V2 token not configured');
         }
       } catch (v2Error: any) {
-        console.log('⚠️ [GHL LIST] V2 API failed, trying V1 API:', v2Error.message);
-        
-        // Fallback to V1 API
+                // Fallback to V1 API
         try {
-          console.log('🔍 [GHL LIST] Trying V1 API for specific pipeline...');
-          const opportunities = await this.getOpportunitiesByPipeline(targetPipelineId);
+                    const opportunities = await this.getOpportunitiesByPipeline(targetPipelineId);
           
           // Get pipeline info to add to opportunities
           const pipelineInfo = await this.getPipelineInfo(targetPipelineId);
@@ -568,17 +551,13 @@ export class GHLService {
             pipelineId: targetPipelineId
           }));
           
-          console.log(`✅ [GHL LIST] V1 API success: Found ${opportunities.length} opportunities from pipeline ${targetPipelineId}`);
-          return { opportunities: opportunitiesWithPipeline };
+                    return { opportunities: opportunitiesWithPipeline };
         } catch (v1Error: any) {
-          console.log('❌ [GHL LIST] V1 API also failed:', v1Error.message);
-          throw v1Error;
+                    throw v1Error;
         }
       }
     } catch (error: any) {
-      console.error('❌ [GHL LIST] All API methods failed:', error);
-      
-      if (error.response?.status === 401) {
+            if (error.response?.status === 401) {
         throw new Error('GHL API authentication failed. Please check your API credentials.');
       } else if (error.response?.status === 403) {
         throw new Error('GHL API access forbidden. Please check your API permissions.');
@@ -596,13 +575,8 @@ export class GHLService {
       let page = 1;
       let hasMorePages = true;
       
-      console.log(`🔍 [GHL ALL V2] Fetching all opportunities using V2 API...`);
-      console.log(`🔍 [GHL ALL V2] Using endpoint: ${this.GHL_V2_BASE_URL}/opportunities/`);
-      
-      while (hasMorePages) {
-        console.log(`📄 [GHL ALL V2] Fetching page ${page}...`);
-        
-        const response = await axios.get(
+                  while (hasMorePages) {
+                const response = await axios.get(
           `${this.GHL_V2_BASE_URL}/opportunities/`, 
           { 
             headers,
@@ -613,12 +587,7 @@ export class GHLService {
           }
         );
         
-        console.log(`📊 [GHL ALL V2] Response status: ${response.status}`);
-        console.log(`📊 [GHL ALL V2] Response data structure:`, {
-          hasOpportunities: !!response.data.opportunities,
-          opportunitiesCount: response.data.opportunities?.length || 0,
-          dataKeys: Object.keys(response.data)
-        });
+                        });
         
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
@@ -650,12 +619,8 @@ export class GHLService {
       let page = 1;
       let hasMorePages = true;
       
-      console.log(`🔍 [GHL PIPELINE] Fetching opportunities from pipeline ID: ${pipelineId}`);
-      
-      while (hasMorePages) {
-        console.log(`📄 [GHL PIPELINE] Fetching page ${page}...`);
-        
-        const response = await axios.get(
+            while (hasMorePages) {
+                const response = await axios.get(
           `${this.GHL_BASE_URL}/pipelines/${pipelineId}/opportunities/`, 
           { 
             headers,
@@ -669,10 +634,7 @@ export class GHLService {
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
         
-        console.log(`📊 [GHL PIPELINE] Page ${page}: Found ${opportunities.length} opportunities`);
-        console.log(`📊 [GHL PIPELINE] Meta:`, meta);
-        
-        // Enhance opportunities with custom fields
+                        // Enhance opportunities with custom fields
         const enhancedOpportunities = await Promise.all(
           opportunities.map(async (opportunity: any) => {
             try {
@@ -696,8 +658,7 @@ export class GHLService {
               }
               return opportunity;
             } catch (detailError: any) {
-              console.log(`⚠️ [GHL PIPELINE] Failed to get details for opportunity ${opportunity.id}:`, detailError.message);
-              return opportunity;
+                            return opportunity;
             }
           })
         );
@@ -710,19 +671,14 @@ export class GHLService {
         
         // Safety check to prevent infinite loops
         if (page > 50) {
-          console.warn(`⚠️ [GHL PIPELINE] Reached maximum page limit (50), stopping pagination`);
+
           break;
         }
       }
       
-      console.log(`✅ [GHL PIPELINE] Total opportunities fetched: ${allOpportunities.length} from ${page - 1} pages`);
-      
-      return allOpportunities;
+            return allOpportunities;
     } catch (error: any) {
-      console.error(`❌ [GHL PIPELINE] Error fetching opportunities from pipeline ${pipelineId}:`, error);
-      console.error(`❌ [GHL PIPELINE] Error response:`, error.response?.data);
-      console.error(`❌ [GHL PIPELINE] Error status:`, error.response?.status);
-      throw error;
+                        throw error;
     }
   }
 
@@ -733,13 +689,8 @@ export class GHLService {
       let page = 1;
       let hasMorePages = true;
       
-      console.log(`🔍 [GHL PIPELINE V2] Fetching opportunities from pipeline ID: ${pipelineId}`);
-      console.log(`🔍 [GHL PIPELINE V2] Using endpoint: ${this.GHL_V2_BASE_URL}/pipelines/${pipelineId}/opportunities/`);
-      
-      while (hasMorePages) {
-        console.log(`📄 [GHL PIPELINE V2] Fetching page ${page}...`);
-        
-        const response = await axios.get(
+                  while (hasMorePages) {
+                const response = await axios.get(
           `${this.GHL_V2_BASE_URL}/pipelines/${pipelineId}/opportunities/`, 
           { 
             headers,
@@ -750,20 +701,12 @@ export class GHLService {
           }
         );
         
-        console.log(`📊 [GHL PIPELINE V2] Response status: ${response.status}`);
-        console.log(`📊 [GHL PIPELINE V2] Response data structure:`, {
-          hasOpportunities: !!response.data.opportunities,
-          opportunitiesCount: response.data.opportunities?.length || 0,
-          dataKeys: Object.keys(response.data)
-        });
+                        });
         
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
         
-        console.log(`📊 [GHL PIPELINE V2] Page ${page}: Found ${opportunities.length} opportunities`);
-        console.log(`📊 [GHL PIPELINE V2] Meta:`, meta);
-        
-        // Enhance opportunities with custom fields
+                        // Enhance opportunities with custom fields
         const enhancedOpportunities = await Promise.all(
           opportunities.map(async (opportunity: any) => {
             try {
@@ -787,8 +730,7 @@ export class GHLService {
               }
               return opportunity;
             } catch (detailError: any) {
-              console.log(`⚠️ [GHL PIPELINE V2] Failed to get details for opportunity ${opportunity.id}:`, detailError.message);
-              return opportunity;
+                            return opportunity;
             }
           })
         );
@@ -801,19 +743,14 @@ export class GHLService {
         
         // Safety check to prevent infinite loops
         if (page > 50) {
-          console.warn(`⚠️ [GHL PIPELINE V2] Reached maximum page limit (50), stopping pagination`);
+
           break;
         }
       }
       
-      console.log(`✅ [GHL PIPELINE V2] Total opportunities fetched: ${allOpportunities.length} from ${page - 1} pages`);
-      
-      return allOpportunities;
+            return allOpportunities;
     } catch (error: any) {
-      console.error(`❌ [GHL PIPELINE V2] Error fetching opportunities from pipeline ${pipelineId}:`, error);
-      console.error(`❌ [GHL PIPELINE V2] Error response:`, error.response?.data);
-      console.error(`❌ [GHL PIPELINE V2] Error status:`, error.response?.status);
-      throw error;
+                        throw error;
     }
   }
 
@@ -824,12 +761,8 @@ export class GHLService {
       let page = 1;
       let hasMorePages = true;
       
-      console.log(`🔍 [GHL STAGE] Fetching opportunities from pipeline ${pipelineId}, stage: ${stageId || 'all'}`);
-      
-      while (hasMorePages) {
-        console.log(`📄 [GHL STAGE] Fetching page ${page}...`);
-        
-        const params: any = {
+            while (hasMorePages) {
+                const params: any = {
           page: page,
           limit: 100
         };
@@ -850,10 +783,7 @@ export class GHLService {
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
         
-        console.log(`📊 [GHL STAGE] Page ${page}: Found ${opportunities.length} opportunities`);
-        console.log(`📊 [GHL STAGE] Meta:`, meta);
-        
-        allOpportunities.push(...opportunities);
+                        allOpportunities.push(...opportunities);
         
         // Check if there are more pages
         hasMorePages = meta.next_page_url ? true : false;
@@ -861,19 +791,14 @@ export class GHLService {
         
         // Safety check to prevent infinite loops
         if (page > 50) {
-          console.warn(`⚠️ [GHL STAGE] Reached maximum page limit (50), stopping pagination`);
+
           break;
         }
       }
       
-      console.log(`✅ [GHL STAGE] Total opportunities fetched: ${allOpportunities.length} from ${page - 1} pages`);
-      
-      return allOpportunities;
+            return allOpportunities;
     } catch (error: any) {
-      console.error(`❌ [GHL STAGE] Error fetching opportunities from pipeline ${pipelineId}, stage ${stageId}:`, error);
-      console.error(`❌ [GHL STAGE] Error response:`, error.response?.data);
-      console.error(`❌ [GHL STAGE] Error status:`, error.response?.status);
-      throw error;
+                        throw error;
     }
   }
 
@@ -889,16 +814,13 @@ export class GHLService {
       const pipeline = pipelines.find((p: any) => p.name === pipelineName);
       return pipeline ? pipeline.id : null;
     } catch (error: any) {
-      console.error('Error fetching GHL pipelines:', error);
-      return null;
+            return null;
     }
   }
 
   static async getPipelineInfo(pipelineId: string): Promise<any | null> {
     try {
-      console.log(`🔍 [GHL PIPELINE] Fetching pipeline info for ID: ${pipelineId}`);
-      
-      // Try V1 API first
+            // Try V1 API first
       try {
         const headers = await this.getHeaders();
         const response = await axios.get(
@@ -910,12 +832,10 @@ export class GHLService {
         const pipeline = pipelines.find((p: any) => p.id === pipelineId);
         
         if (pipeline) {
-          console.log(`✅ [GHL PIPELINE] Found pipeline via V1 API: ${pipeline.name}`);
-          return pipeline;
+                    return pipeline;
         }
       } catch (v1Error: any) {
-        console.log('⚠️ [GHL PIPELINE] V1 API failed, trying V2 API:', v1Error.message);
-      }
+              }
       
       // Try V2 API
       try {
@@ -929,18 +849,14 @@ export class GHLService {
         const pipeline = pipelines.find((p: any) => p.id === pipelineId);
         
         if (pipeline) {
-          console.log(`✅ [GHL PIPELINE] Found pipeline via V2 API: ${pipeline.name}`);
-          return pipeline;
+                    return pipeline;
         }
       } catch (v2Error: any) {
-        console.log('⚠️ [GHL PIPELINE] V2 API also failed:', v2Error.message);
-      }
+              }
       
-      console.log(`❌ [GHL PIPELINE] Pipeline not found: ${pipelineId}`);
-      return null;
+            return null;
     } catch (error: any) {
-      console.error('❌ [GHL PIPELINE] Error fetching pipeline info:', error);
-      return null;
+            return null;
     }
   }
 
@@ -954,8 +870,7 @@ export class GHLService {
       
       return response.data.stages || [];
     } catch (error: any) {
-      console.error('Error fetching GHL pipeline stages:', error);
-      return [];
+            return [];
     }
   }
 
@@ -965,8 +880,7 @@ export class GHLService {
       const stage = stages.find((s: any) => s.id === stageId);
       return stage ? stage.name : null;
     } catch (error: any) {
-      console.error('Error fetching stage name:', error);
-      return null;
+            return null;
     }
   }
 
@@ -981,16 +895,11 @@ export class GHLService {
         endpoint = `${this.GHL_BASE_URL}/opportunities/`;
       }
       
-      console.log('🔍 [GHL LIST] Fetching opportunities from:', endpoint);
+            const response = await axios.get(endpoint, { headers });
       
-      const response = await axios.get(endpoint, { headers });
-      
-      console.log('✅ [GHL LIST] Found opportunities:', response.data.opportunities?.length || 0);
-      
-      return response.data.opportunities || [];
+            return response.data.opportunities || [];
     } catch (error: any) {
-      console.error('❌ [GHL LIST] Error fetching opportunities:', error);
-      return [];
+            return [];
     }
   }
 
@@ -999,80 +908,49 @@ export class GHLService {
       const headers = await this.getHeaders();
       const response = await axios.get(`${this.GHL_BASE_URL}/users/`, { headers });
       
-      console.log('✅ [GHL USERS] Found users:', response.data.users?.length || 0);
-      
-      return response.data.users || [];
+            return response.data.users || [];
     } catch (error: any) {
-      console.error('❌ [GHL USERS] Error fetching users:', error);
-      return [];
+            return [];
     }
   }
 
   static async getOpportunity(dealId: string): Promise<GHLDeal | null> {
     try {
-      console.log('🔍 [GHL GET] Fetching opportunity:', dealId);
-      
-      // Try V2 API first (only if V2 token is available)
+            // Try V2 API first (only if V2 token is available)
       try {
-        console.log('🔍 [GHL GET] Checking for V2 token...');
-        const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
+                const v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         
         if (v2Token) {
-          console.log('🔍 [GHL GET] V2 token found, trying V2 API...');
-          const v2Headers = await this.getV2Headers();
+                    const v2Headers = await this.getV2Headers();
           
-          console.log('🔍 [GHL GET] Using V2 endpoint:', `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`);
-          
-          const v2Response = await axios.get(
+                    const v2Response = await axios.get(
             `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`,
             { headers: v2Headers }
           );
-          
-          console.log('✅ [GHL GET] V2 API success - fetched opportunity with custom fields');
-          console.log('✅ [GHL GET] V2 Response status:', v2Response.status);
-          console.log('✅ [GHL GET] V2 Response data keys:', Object.keys(v2Response.data));
-          console.log('✅ [GHL GET] V2 Response structure:', {
-            hasOpportunity: !!v2Response.data.opportunity,
-            hasCustomFields: !!v2Response.data.customFields,
-            customFieldsCount: v2Response.data.customFields?.length || 0,
-            directCustomFieldsCount: v2Response.data.opportunity?.customFields?.length || 0
-          });
-          console.log('✅ [GHL GET] V2 Response:', JSON.stringify(v2Response.data, null, 2));
-          
+
+
           return v2Response.data.opportunity || v2Response.data;
         } else {
-          console.log('⚠️ [GHL GET] No V2 token configured, skipping V2 API');
-          throw new Error('V2 token not configured');
+                    throw new Error('V2 token not configured');
         }
       } catch (v2Error: any) {
-        console.log('⚠️ [GHL GET] V2 API failed, trying V1 API:', v2Error.message);
-        
-        // Fallback to V1 API
+                // Fallback to V1 API
         try {
           const v1Headers = await this.getHeaders();
           
-          console.log('🔍 [GHL GET] Using V1 endpoint:', `${this.GHL_BASE_URL}/opportunities/${dealId}`);
-          
-          const v1Response = await axios.get(
+                    const v1Response = await axios.get(
             `${this.GHL_BASE_URL}/opportunities/${dealId}`,
             { headers: v1Headers }
           );
-          
-          console.log('✅ [GHL GET] V1 API success - fetched opportunity');
-          console.log('✅ [GHL GET] V1 Response:', JSON.stringify(v1Response.data, null, 2));
-          
+
           return v1Response.data.opportunity || v1Response.data;
         } catch (v1Error: any) {
-          console.log('❌ [GHL GET] V1 API also failed:', v1Error.message);
-          throw v1Error;
+                    throw v1Error;
         }
       }
     } catch (error: any) {
-      console.error('❌ [GHL GET] All API methods failed:', error);
-      console.error('❌ [GHL GET] Error response:', error.response?.data);
-      
-      if (error.response?.status === 404) {
-        console.log('⚠️ [GHL GET] Opportunity not found (404)');
+                  if (error.response?.status === 404) {
+
         return null; // Opportunity not found
       }
       throw error;
@@ -1095,10 +973,7 @@ export class GHLService {
   }): Promise<any> {
     try {
       const headers = await this.getV2Headers();
-      
-      console.log('🔄 [GHL UPDATE] Updating opportunity:', dealId);
-      console.log('🔄 [GHL UPDATE] Update data (raw):', JSON.stringify(dealData, null, 2));
-      
+
       // Build V2-compliant payload
       const payload: any = {};
       if (dealData.name !== undefined) payload.name = dealData.name;
@@ -1115,35 +990,23 @@ export class GHLService {
           field_value: cf.field_value !== undefined ? cf.field_value : cf.value
         }));
       }
-      console.log('🔄 [GHL UPDATE] Update data (payload):', JSON.stringify(payload, null, 2));
-      
+
       // Use V2 API for opportunities
       const endpoint = `${this.GHL_V2_BASE_URL}/opportunities/${dealId}`;
-      console.log('🔄 [GHL UPDATE] Using V2 API endpoint:', endpoint);
-      
-      // Use V2 API with PUT method (matching working Python script)
+            // Use V2 API with PUT method (matching working Python script)
       const response = await axios.put(endpoint, payload, { headers });
-      
-      console.log('✅ [GHL UPDATE] Successfully updated opportunity');
-      console.log('✅ [GHL UPDATE] Response status:', response.status);
-      console.log('✅ [GHL UPDATE] Response data:', JSON.stringify(response.data, null, 2));
-      
+
       // Check if custom fields were actually updated
       if (response.data.opportunity && response.data.opportunity.customFields) {
-        console.log('✅ [GHL UPDATE] Custom fields in response:', JSON.stringify(response.data.opportunity.customFields, null, 2));
+
       } else {
-        console.log('⚠️ [GHL UPDATE] No custom fields found in response');
-      }
+              }
       
       return response.data.opportunity || response.data;
     } catch (error: any) {
-      console.error('❌ [GHL UPDATE] Error updating GHL deal:', error);
-      console.error('❌ [GHL UPDATE] Error response:', error.response?.data);
-      console.error('❌ [GHL UPDATE] Error status:', error.response?.status);
-      
-      // If we get 404, the opportunity might not exist
+                        // If we get 404, the opportunity might not exist
       if (error.response?.status === 404) {
-        console.log('⚠️ [GHL UPDATE] Opportunity not found (404)');
+
       }
       
       if (error.response?.status === 404) {
@@ -1199,23 +1062,12 @@ export class GHLService {
     try {
       const headers = await this.getV2Headers(); // Use V2 API
       const endpoint = `${this.GHL_V2_BASE_URL}/contacts/${contactId}`; // Use V2 endpoint
-      
-      console.log('👤 [GHL CONTACT UPDATE] Updating contact:', contactId);
-      console.log('👤 [GHL CONTACT UPDATE] Update data:', JSON.stringify(contactData, null, 2));
-      console.log('👤 [GHL CONTACT UPDATE] Using endpoint:', endpoint);
-      
-      const response = await axios.put(endpoint, contactData, { headers });
-      
-      console.log('✅ [GHL CONTACT UPDATE] Successfully updated contact');
-      console.log('✅ [GHL CONTACT UPDATE] Response:', JSON.stringify(response.data, null, 2));
-      
+
+            const response = await axios.put(endpoint, contactData, { headers });
+
       return response.data.contact || response.data;
     } catch (error: any) {
-      console.error('❌ [GHL CONTACT UPDATE] Error updating contact:', error);
-      console.error('❌ [GHL CONTACT UPDATE] Error response:', error.response?.data);
-      console.error('❌ [GHL CONTACT UPDATE] Error status:', error.response?.status);
-      
-      if (error.response?.status === 404) {
+                        if (error.response?.status === 404) {
         throw new Error(`GHL contact not found. The contact with ID ${contactId} may have been deleted or the ID is incorrect.`);
       } else if (error.response?.status === 401) {
         throw new Error('GHL API authentication failed. Please check your API credentials.');
@@ -1231,9 +1083,7 @@ export class GHLService {
 
   static async updateContactCustomFields(contactId: string, customFieldsArray: Array<{id: string, key: string, field_value: any}>): Promise<GHLContact> {
     try {
-      console.log('👤 [GHL CONTACT FIELDS] Updating contact custom fields:', contactId);
-      console.log('👤 [GHL CONTACT FIELDS] Custom fields array:', JSON.stringify(customFieldsArray, null, 2));
-      
+
       // Get current contact data first
       const currentContact = await this.getContactById(contactId);
       if (!currentContact) {
@@ -1267,8 +1117,7 @@ export class GHLService {
         customFields: updatedCustomFields
       });
     } catch (error: any) {
-      console.error('❌ [GHL CONTACT FIELDS] Error updating contact custom fields:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -1279,15 +1128,12 @@ export class GHLService {
       const locationId = await FirebaseService.getConfiguration('ghl_location_id');
       
       if (locationId) {
-        console.log('✅ [GHL LOCATIONS] Found location from config:', locationId);
-        return locationId;
+                return locationId;
       }
       
-      console.log('⚠️ [GHL LOCATIONS] No location ID found in configurations');
-      return null;
+            return null;
     } catch (error: any) {
-      console.error('❌ [GHL LOCATIONS] Error getting location ID from config:', error);
-      return null;
+            return null;
     }
   }
 
@@ -1300,29 +1146,20 @@ export class GHLService {
 
       const headers = await this.getV2Headers();
       const endpoint = `https://services.leadconnectorhq.com/locations/${locationId}/customFields`;
-      
-      console.log('🔍 [GHL CUSTOM FIELDS] Fetching custom fields for model:', model);
-      console.log('🔍 [GHL CUSTOM FIELDS] Using endpoint:', endpoint);
-      console.log('🔍 [GHL CUSTOM FIELDS] Using headers:', JSON.stringify(headers, null, 2));
-      
+
       const response = await axios.get(endpoint, {
         headers,
         params: { model }
       });
       
-      console.log('✅ [GHL CUSTOM FIELDS] Successfully fetched custom fields');
-      console.log('✅ [GHL CUSTOM FIELDS] Found fields:', response.data.customFields?.length || 0);
-      
-      return {
+                  return {
         locationId,
         model,
         customFields: response.data.customFields || [],
         totalFields: response.data.customFields?.length || 0
       };
     } catch (error: any) {
-      console.error('❌ [GHL CUSTOM FIELDS] Error fetching custom fields:', error);
-      console.error('❌ [GHL CUSTOM FIELDS] Error response:', error.response?.data);
-      throw error;
+                  throw error;
     }
   }
 
@@ -1358,8 +1195,7 @@ export class GHLService {
 
       return response.data;
     } catch (error) {
-      console.error('GHL document upload error:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -1378,9 +1214,7 @@ export class GHLService {
   // Test sub-account connection
   static async testSubAccountConnection(subAccountId: string): Promise<{ success: boolean; message: string; endpoint?: string }> {
     try {
-      console.log('🔍 [GHL TEST] Testing sub-account connection:', subAccountId);
-      
-      // Get sub-account credentials
+            // Get sub-account credentials
       const subAccountCredentials = await FirebaseService.getSubAccountById(subAccountId);
       if (!subAccountCredentials) {
         throw new Error(`Sub-account with ID ${subAccountId} not found`);
@@ -1389,8 +1223,7 @@ export class GHLService {
       // Try V2 API first with a simple endpoint
       if (subAccountCredentials.v2Token) {
         try {
-          console.log('🔍 [GHL TEST] Testing V2 API');
-          const headers = {
+                    const headers = {
             'Authorization': `Bearer ${subAccountCredentials.v2Token}`,
             'Version': '2021-07-28',
             'Content-Type': 'application/json',
@@ -1402,22 +1235,19 @@ export class GHLService {
             headers
           });
           
-          console.log('✅ [GHL TEST] V2 API test successful');
-          return { 
+                    return { 
             success: true, 
             message: 'V2 API connection successful',
             endpoint: 'locations'
           };
         } catch (v2Error: any) {
-          console.log('⚠️ [GHL TEST] V2 API failed, trying V1 API:', v2Error.message);
-        }
+                  }
       }
 
       // Fallback to V1 API
       if (subAccountCredentials.apiKey) {
         try {
-          console.log('🔍 [GHL TEST] Testing V1 API');
-          const headers = {
+                    const headers = {
             'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
             'Content-Type': 'application/json',
             'Version': '2021-07-28'
@@ -1428,22 +1258,19 @@ export class GHLService {
             headers
           });
           
-          console.log('✅ [GHL TEST] V1 API test successful');
-          return { 
+                    return { 
             success: true, 
             message: 'V1 API connection successful',
             endpoint: 'locations'
           };
         } catch (v1Error: any) {
-          console.log('❌ [GHL TEST] V1 API also failed:', v1Error.message);
-          throw v1Error;
+                    throw v1Error;
         }
       }
 
       throw new Error('No valid API credentials found for sub-account');
     } catch (error: any) {
-      console.error('❌ [GHL TEST] Connection test failed:', error);
-      throw error;
+            throw error;
     }
   }
 

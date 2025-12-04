@@ -22,9 +22,6 @@ export class StripeService {
       apiVersion: '2023-10-16',
       typescript: true,
     });
-
-    console.log('✅ Stripe initialized');
-    console.log(`🔧 Stripe Mode: ${secretKey.startsWith('sk_test_') ? 'TEST' : 'LIVE'}`);
   }
 
   /**
@@ -166,11 +163,9 @@ export class StripeService {
           await client.customers.update(customerId, {
             metadata: customerMetadata
           });
-          console.log(`StripeService: Updated customer ${customerId} metadata with Discord info for webhook processing`);
-        }
+                  }
       } catch (error) {
-        console.error(`StripeService: Failed to update customer metadata:`, error);
-        // Continue anyway - subscription metadata should have it
+                // Continue anyway - subscription metadata should have it
       }
     }
 
@@ -187,9 +182,7 @@ export class StripeService {
       }
     });
     
-    console.log(`StripeService: Created subscription ${subscription.id} with metadata:`, subscription.metadata);
-    
-    return subscription;
+        return subscription;
   }
 
   /**
@@ -281,11 +274,9 @@ export class StripeService {
         const user = await FirebaseService.getUserByDiscordId(discordId);
         if (user) {
           userId = user.id;
-          console.log(`StripeService: Found user by Discord ID ${discordId}, linking subscription to userId ${userId}`);
-        }
+                  }
       } catch (error) {
-        console.log(`StripeService: Could not find user by Discord ID ${discordId}`);
-      }
+              }
     }
     
     // If no userId, try to find user by email
@@ -294,11 +285,9 @@ export class StripeService {
         const user = await FirebaseService.getUserByEmail(email);
         if (user) {
           userId = user.id;
-          console.log(`StripeService: Found user by email ${email}, linking subscription to userId ${userId}`);
-        }
+                  }
       } catch (error) {
-        console.log(`StripeService: Could not find user by email ${email}`);
-      }
+              }
     }
     
     // If still no userId but we have Discord ID and subscription is active/trialing or payment succeeded, create user
@@ -333,8 +322,7 @@ export class StripeService {
               }
             }
           } catch (error) {
-            console.error(`StripeService: Could not retrieve customer ${subscription.customer}:`, error);
-          }
+                      }
         }
         
         // Only create user if we have Discord ID
@@ -357,8 +345,7 @@ export class StripeService {
           
           if (existingUser) {
             // User exists - update with Discord info and payment email
-            console.log(`StripeService: Found existing user ${existingUser.id}, updating with payment info...`);
-            const updateData: Partial<import('../services/firebaseService').User> = {
+                        const updateData: Partial<import('../services/firebaseService').User> = {
               discordId: discordId,
               username: discordUsername || existingUser.username
             };
@@ -377,8 +364,7 @@ export class StripeService {
             
             existingUser = await FirebaseService.updateUser(existingUser.id, updateData) || existingUser;
             userId = existingUser.id;
-            console.log(`StripeService: Updated existing user ${userId} with payment and Discord info`);
-          } else {
+                      } else {
             // Create new user with payment email as primary
             const userData: Omit<import('../services/firebaseService').User, 'id' | 'createdAt' | 'updatedAt'> = {
               discordId: discordId,
@@ -392,13 +378,11 @@ export class StripeService {
             };
             
             userId = (await FirebaseService.createUser(userData)).id;
-            console.log(`StripeService: Created new user ${userId} from Discord ID ${discordId} with payment email ${customerEmail}`);
-          }
+                      }
           
           // If subscription is already active/trialing, whitelist the user immediately
           if (subscription.status === 'active' || subscription.status === 'trialing') {
             await FirebaseService.updateUser(userId, { isWhitelisted: true });
-            console.log(`StripeService: ✅ Whitelisting user ${userId} (subscription active)`);
           }
           
           // Update Stripe customer and subscription metadata with userId for future reference
@@ -422,24 +406,18 @@ export class StripeService {
                   username: discordUsername || subscription.metadata?.username || ''
                 }
               });
-              console.log(`StripeService: Updated customer and subscription metadata with userId ${userId}`);
-            } catch (error) {
-              console.error(`StripeService: Failed to update Stripe metadata:`, error);
-            }
+                          } catch (error) {
+                          }
           }
         } else {
-          console.log(`StripeService: No Discord ID found in subscription or customer metadata. User will be created when they authenticate with Discord.`);
-        }
+                  }
       } catch (error) {
-        console.error(`StripeService: Failed to create user from Discord ID ${discordId}:`, error);
-        // Still try to add to Discord even if user creation fails
+                // Still try to add to Discord even if user creation fails
         if (discordId && (subscription.status === 'active' || subscription.status === 'trialing')) {
           try {
             await DiscordBotService.addMemberToServer(discordId);
-            console.log(`StripeService: Added user ${discordId} to Discord server (user creation failed)`);
           } catch (discordError) {
-            console.error(`StripeService: Failed to add user to Discord server:`, discordError);
-          }
+                      }
         }
         return;
       }
@@ -447,15 +425,12 @@ export class StripeService {
     
     // If still no userId, we can't create subscription record yet
     if (!userId) {
-      console.log(`StripeService: No userId found for subscription ${subscription.id}. Will be linked when user authenticates.`);
-      // Still try to add to Discord if Discord ID is in metadata
+            // Still try to add to Discord if Discord ID is in metadata
       if (discordId && (subscription.status === 'active' || subscription.status === 'trialing')) {
         try {
           await DiscordBotService.addMemberToServer(discordId);
-          console.log(`StripeService: Added user ${discordId} to Discord server (no userId yet)`);
         } catch (error) {
-          console.error(`StripeService: Failed to add user to Discord server:`, error);
-        }
+                  }
       }
       return;
     }
@@ -489,8 +464,7 @@ export class StripeService {
     // Get user to check Discord ID if not in metadata
     const user = await FirebaseService.getUserById(userId);
     if (!user) {
-      console.error(`StripeService: User ${userId} not found`);
-      return;
+            return;
     }
 
     // Use Discord ID from metadata if available, otherwise use user's Discord ID
@@ -500,23 +474,14 @@ export class StripeService {
         const customer = await this.getClient().customers.retrieve(subscription.customer as string);
         if (typeof customer !== 'string' && !customer.deleted && customer.metadata?.discordId) {
           discordId = customer.metadata.discordId;
-          console.log(`StripeService: Found Discord ID ${discordId} in customer metadata`);
-        }
+                  }
       } catch (error) {
-        console.error(`StripeService: Could not retrieve customer to get Discord ID:`, error);
-      }
+              }
     }
     
     const finalDiscordId = discordId || user.discordId || null;
     
-    console.log(`StripeService: Discord ID for webhook processing:`, {
-      fromSubscriptionMetadata: subscription.metadata?.discordId || null,
-      fromCustomerMetadata: discordId || null,
-      fromUser: user.discordId || null,
-      finalDiscordId
-    });
-
-    // Handle different event types
+        // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed':
       case 'customer.subscription.created':
@@ -529,36 +494,21 @@ export class StripeService {
         if (subscription.status === 'active' || subscription.status === 'trialing' || (isPaymentSucceeded && subscription.status === 'incomplete')) {
           // Add user to Discord server and assign paid role if Discord ID is available
           if (finalDiscordId) {
-            console.log(`StripeService: Attempting to add user ${finalDiscordId} to Discord server with paid role...`);
-            console.log(`StripeService: Subscription status: ${subscription.status}, Event type: ${event.type}`);
-            
-            try {
+                                    try {
               // Add user to Discord server (assigns paid role)
               const added = await DiscordBotService.addMemberToServer(finalDiscordId);
               if (added) {
-                console.log(`StripeService: ✅ Successfully added user ${finalDiscordId} to Discord server with paid role`);
-              } else {
-                console.warn(`StripeService: ⚠️ Failed to add user ${finalDiscordId} to Discord server (returned false)`);
-                console.warn(`StripeService: Check Discord Bot API configuration: DISCORD_API_KEY and DISCORD_PAID_MEMBER_ROLE_ID`);
-              }
+                              } else {
+                              }
             } catch (error: any) {
-              console.error(`StripeService: ❌ Failed to add user ${finalDiscordId} to Discord server:`, error?.message || error);
-              // Log detailed error for debugging
+                            // Log detailed error for debugging
               if (error?.response) {
-                console.error(`StripeService: Discord Bot API HTTP Status: ${error.response.status}`);
-                console.error(`StripeService: Discord Bot API error response:`, error.response.data);
-              } else if (error?.request) {
-                console.error(`StripeService: Discord Bot API: No response received. Check if ${process.env.DISCORD_API_BASE_URL || 'https://api.rain.club/discord'} is accessible.`);
-              } else {
-                console.error(`StripeService: Discord Bot API error:`, error);
-              }
+                                              } else if (error?.request) {
+                              } else {
+                              }
             }
           } else {
-            console.warn(`StripeService: ⚠️ No Discord ID available for user ${userId}`);
-            console.warn(`StripeService: Subscription metadata:`, JSON.stringify(subscription.metadata || {}));
-            console.warn(`StripeService: User Discord ID:`, user.discordId || 'none');
-            console.warn(`StripeService: Will be added when they authenticate with Discord`);
-          }
+                                  }
         }
 
         // Update or create subscription in Firebase
@@ -582,14 +532,12 @@ export class StripeService {
         // Set isWhitelisted to true when subscription is active or trialing
         if ((subscription.status === 'active' || subscription.status === 'trialing') && !user.isWhitelisted) {
           userUpdates.isWhitelisted = true;
-          console.log(`StripeService: ✅ Whitelisting user ${userId} (subscription active)`);
         }
         
         // Set onboarding step to 2 (password creation) after payment
         // Only set if user hasn't completed onboarding yet
         if (!user.onboardingCompleted && (!user.onboardingStep || user.onboardingStep < 2)) {
           userUpdates.onboardingStep = 2;
-          console.log(`StripeService: Set onboarding step to 2 (password creation) for user ${userId}`);
         }
         
         // Generate verification code and send welcome email for new subscriptions
@@ -602,9 +550,7 @@ export class StripeService {
             );
             userUpdates.verificationCode = verificationCode;
             userUpdates.verificationCodeExpiresAt = codeExpiresAt;
-            console.log(`StripeService: Generated verification code ${verificationCode} for user ${userId}`);
-            
-            // Send welcome email with verification code
+                        // Send welcome email with verification code
             // Get email from customer object (most reliable source)
             const EmailService = require('./emailService').EmailService;
             let customerEmail = email; // From subscription metadata
@@ -613,11 +559,9 @@ export class StripeService {
                 const customer = await this.getClient().customers.retrieve(subscription.customer as string);
                 if (typeof customer !== 'string' && !customer.deleted && customer.email) {
                   customerEmail = customer.email; // Use customer email (payment email)
-                  console.log(`StripeService: Using customer email from Stripe: ${customerEmail}`);
-                }
+                                  }
               } catch (e) {
-                console.warn(`StripeService: Could not retrieve customer email, using metadata email`);
-              }
+                              }
             }
             // Fallback to user email
             if (!customerEmail) {
@@ -626,36 +570,20 @@ export class StripeService {
             const username = discordUsername || user.username || 'there';
             
             if (customerEmail) {
-              console.log(`StripeService: Attempting to send welcome email to ${customerEmail}...`);
-              console.log(`StripeService: Email sources - metadata: ${email || 'none'}, customer: ${subscription.customer ? 'retrieved' : 'none'}, user: ${user.email || 'none'}`);
-              try {
+                                          try {
                 await EmailService.sendWelcomeEmail(customerEmail, username, verificationCode);
-                console.log(`StripeService: ✅ Welcome email sent successfully to ${customerEmail}`);
-              } catch (emailError: any) {
-                console.error(`StripeService: ❌ Failed to send welcome email to ${customerEmail}:`, emailError?.message || emailError);
-                console.error(`StripeService: Email service error details:`, {
-                  error: emailError?.message,
-                  stack: emailError?.stack,
-                  code: emailError?.code
-                });
-                // Check if email service is initialized
+                              } catch (emailError: any) {
+                                                // Check if email service is initialized
                 if (emailError?.message?.includes('not configured') || emailError?.message?.includes('transporter')) {
-                  console.error(`StripeService: ⚠️ Email service is not properly configured. Please check EmailConfig in Firebase Admin settings.`);
-                  console.error(`StripeService: Required fields: smtpHost, smtpPort, smtpUser, smtpPassword, fromEmail, fromName, enabled=true`);
-                }
+                                                    }
               }
             } else {
-              console.warn(`StripeService: ⚠️ No email available to send welcome email for user ${userId}`);
-              console.warn(`StripeService: Email from metadata: ${email || 'none'}, User email: ${user.email || 'none'}, Customer: ${subscription.customer || 'none'}`);
-            }
+                                        }
           } catch (error: any) {
-            console.error(`StripeService: ❌ Failed to generate verification code or send welcome email:`, error);
-            console.error(`StripeService: Error details:`, error?.message || error);
-            // Don't fail webhook if email fails, but log the error
+                                    // Don't fail webhook if email fails, but log the error
           }
         } else if (user.verificationCode) {
-          console.log(`StripeService: User ${userId} already has verification code, skipping email send`);
-        }
+                  }
         
         if (Object.keys(userUpdates).length > 0) {
           await FirebaseService.updateUser(userId, userUpdates);
@@ -679,10 +607,8 @@ export class StripeService {
                 userId: userId
               }
             });
-            console.log(`StripeService: Updated customer and subscription metadata with userId ${userId}`);
-          } catch (error) {
-            console.error(`StripeService: Failed to update Stripe metadata:`, error);
-          }
+                      } catch (error) {
+                      }
         }
         break;
 
@@ -717,19 +643,15 @@ export class StripeService {
             if (now > gracePeriodEnd) {
               try {
                 await DiscordBotService.removeMemberFromServer(discordIdForRemoval);
-                console.log(`StripeService: Removed user ${discordIdForRemoval} from Discord server`);
-              } catch (error) {
-                console.error(`StripeService: Failed to remove user from Discord server:`, error);
-              }
+                              } catch (error) {
+                              }
             }
           } else {
             // If no period end date, remove immediately
             try {
               await DiscordBotService.removeMemberFromServer(discordIdForRemoval);
-              console.log(`StripeService: Removed user ${discordIdForRemoval} from Discord server`);
-            } catch (error) {
-              console.error(`StripeService: Failed to remove user from Discord server:`, error);
-            }
+                          } catch (error) {
+                          }
           }
         }
         break;

@@ -71,8 +71,6 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
   )
 
   const onSubmit = async (data: any) => {
-    console.log('🚀 Starting deal update with data:', data)
-    console.log('🔍 Investment Type value:', data.investmentType)
     setIsSubmitting(true)
     try {
       await updateDealMutation.mutateAsync({
@@ -91,9 +89,7 @@ export function EditDealModal({ deal, onClose, onSuccess }: EditDealModalProps) 
         anyAdditionalInformation: data.anyAdditionalInformation,
         status: data.status,
       })
-      console.log('✅ Deal updated successfully!')
     } catch (error) {
-      console.error('❌ Deal update failed:', error)
       throw error
     } finally {
       setIsSubmitting(false)

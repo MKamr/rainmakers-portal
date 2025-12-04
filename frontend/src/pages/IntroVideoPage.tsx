@@ -17,9 +17,8 @@ export function IntroVideoPage() {
         const user = JSON.parse(decodeURIComponent(userParam));
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        console.log('IntroVideoPage: Saved token and user from Discord OAuth');
       } catch (error) {
-        console.error('IntroVideoPage: Failed to parse user data:', error);
+        // Failed to parse user data
       }
     }
   }, [token, userParam]);
@@ -33,7 +32,6 @@ export function IntroVideoPage() {
       // Redirect to portal - App.tsx will check for terms acceptance
       window.location.href = '/';
     } catch (err) {
-      console.error('Error completing onboarding:', err);
       setIsCompleting(false);
     }
   };

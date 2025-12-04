@@ -29,7 +29,6 @@ export const TermsAndConditionsModal: React.FC<TermsAndConditionsModalProps> = (
       const response = await appointmentsAPI.getTermsText();
       setTermsText(response.terms);
     } catch (error) {
-      console.error('Error fetching terms:', error);
       setError('Failed to load terms and conditions');
     }
   };
@@ -47,7 +46,6 @@ export const TermsAndConditionsModal: React.FC<TermsAndConditionsModalProps> = (
       await appointmentsAPI.acceptTerms();
       onAccept();
     } catch (error: any) {
-      console.error('Error accepting terms:', error);
       setError(error.response?.data?.error || 'Failed to accept terms and conditions');
     } finally {
       setIsLoading(false);

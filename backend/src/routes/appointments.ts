@@ -56,8 +56,7 @@ router.get('/terms', async (req: Request, res: Response) => {
   try {
     res.json({ terms: TERMS_AND_CONDITIONS });
   } catch (error) {
-    console.error('Error getting terms:', error);
-    res.status(500).json({ error: 'Failed to get terms and conditions' });
+        res.status(500).json({ error: 'Failed to get terms and conditions' });
   }
 });
 
@@ -83,8 +82,7 @@ router.post('/accept-terms', async (req: Request, res: Response) => {
 
     res.json({ message: 'Terms and conditions accepted successfully' });
   } catch (error) {
-    console.error('Error accepting terms:', error);
-    res.status(500).json({ error: 'Failed to accept terms and conditions' });
+        res.status(500).json({ error: 'Failed to accept terms and conditions' });
   }
 });
 
@@ -99,8 +97,7 @@ router.get('/terms-status', async (req: Request, res: Response) => {
     const hasAccepted = await FirebaseService.hasUserAcceptedTerms(userId);
     res.json({ hasAccepted });
   } catch (error) {
-    console.error('Error checking terms status:', error);
-    res.status(500).json({ error: 'Failed to check terms status' });
+        res.status(500).json({ error: 'Failed to check terms status' });
   }
 });
 
@@ -121,8 +118,7 @@ router.get('/my-assignments', async (req: Request, res: Response) => {
     const appointments = await FirebaseService.getAppointmentsByUserId(userId);
     res.json({ appointments });
   } catch (error) {
-    console.error('Error getting user appointments:', error);
-    res.status(500).json({ error: 'Failed to get appointments' });
+        res.status(500).json({ error: 'Failed to get appointments' });
   }
 });
 
@@ -185,8 +181,7 @@ router.post('/:id/call-notes', async (req: Request, res: Response) => {
     const updatedAppointment = await FirebaseService.updateAppointment(appointmentId, updateData);
     res.json({ appointment: updatedAppointment });
   } catch (error) {
-    console.error('Error submitting call notes:', error);
-    res.status(500).json({ error: 'Failed to submit call notes' });
+        res.status(500).json({ error: 'Failed to submit call notes' });
   }
 });
 
@@ -212,8 +207,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json({ appointment });
   } catch (error) {
-    console.error('Error getting appointment details:', error);
-    res.status(500).json({ error: 'Failed to get appointment details' });
+        res.status(500).json({ error: 'Failed to get appointment details' });
   }
 });
 
@@ -237,8 +231,7 @@ router.get('/admin/list', async (req: Request, res: Response) => {
     const appointments = await FirebaseService.getAllAppointments(filters);
     res.json({ appointments });
   } catch (error) {
-    console.error('Error getting appointments list:', error);
-    res.status(500).json({ error: 'Failed to get appointments list' });
+        res.status(500).json({ error: 'Failed to get appointments list' });
   }
 });
 
@@ -276,9 +269,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
       subAccountId: cleanSubAccountId
     });
 
-    console.log(`📊 Fetched ${ghlAppointments.length} appointments from GHL`);
-
-    let syncedCount = 0;
+        let syncedCount = 0;
     let skippedCount = 0;
 
     for (const ghlAppointment of ghlAppointments) {
@@ -295,8 +286,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
         );
 
         if (exists) {
-          console.log(`⏭️ Skipping existing appointment: ${ghlAppointment.id}`);
-          skippedCount++;
+                    skippedCount++;
           continue;
         }
 
@@ -310,18 +300,16 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
             // Use default credentials
             contact = await GHLService.getContactById(ghlAppointment.contactId);
           }
-          console.log(`📞 Contact fetched: ${contact?.name || 'Unknown'} (${contact?.email || 'no email'})`);
-          console.log(`📋 Contact custom fields: ${JSON.stringify(contact?.customFields || [])}`);
+
+
         } catch (contactError: any) {
-          console.warn(`⚠️ Could not fetch contact ${ghlAppointment.contactId}:`, contactError.message);
-        }
+                  }
         
         // Parse dates correctly - GHL returns ISO 8601 strings with timezone
         const startDate = new Date(ghlAppointment.startTime);
         const endDate = new Date(ghlAppointment.endTime);
-        console.log(`📅 Parsing start: ${ghlAppointment.startTime} -> ${startDate.toISOString()}`);
-        console.log(`📅 Parsing end: ${ghlAppointment.endTime} -> ${endDate.toISOString()}`);
-        
+
+
         // Extract contact name properly
         const contactName = contact?.name || (contact?.firstName && contact?.lastName 
           ? `${contact.firstName} ${contact.lastName}`.trim() 
@@ -338,13 +326,10 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           if (meetHardwellField) {
             const notesValue = meetHardwellField.field_value || meetHardwellField.fieldValue || '';
             appointmentNotes = notesValue || appointmentNotes;
-            console.log(`📝 Found appointment notes from custom field: ${notesValue}`);
-          }
+                      }
         }
         
-        console.log(`📝 Creating appointment: ${ghlAppointment.id} for contact: ${contactName}`);
-        
-        // Create appointment in Firebase
+                // Create appointment in Firebase
         await FirebaseService.createAppointment({
           ghlAppointmentId: ghlAppointment.id,
           ghlCalendarId: ghlAppointment.calendarId,
@@ -361,11 +346,9 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
           status: 'unassigned'
         });
 
-        console.log(`✅ Successfully created appointment: ${ghlAppointment.id}`);
-        syncedCount++;
+                syncedCount++;
       } catch (appointmentError) {
-        console.error('❌ Error syncing individual appointment:', appointmentError);
-        skippedCount++;
+                skippedCount++;
       }
     }
 
@@ -377,8 +360,7 @@ router.post('/admin/sync', async (req: Request, res: Response) => {
       subAccountName: subAccount?.name || 'Default'
     });
   } catch (error) {
-    console.error('Error syncing appointments:', error);
-    res.status(500).json({ error: 'Failed to sync appointments from GHL' });
+        res.status(500).json({ error: 'Failed to sync appointments from GHL' });
   }
 });
 
@@ -417,8 +399,7 @@ router.post('/admin/assign', async (req: Request, res: Response) => {
 
     res.json({ appointment: updatedAppointment });
   } catch (error) {
-    console.error('Error assigning appointment:', error);
-    res.status(500).json({ error: 'Failed to assign appointment' });
+        res.status(500).json({ error: 'Failed to assign appointment' });
   }
 });
 
@@ -480,8 +461,7 @@ router.post('/admin/bulk-assign', async (req: Request, res: Response) => {
       failed: results.failed
     });
   } catch (error) {
-    console.error('Error bulk assigning appointments:', error);
-    res.status(500).json({ error: 'Failed to bulk assign appointments' });
+        res.status(500).json({ error: 'Failed to bulk assign appointments' });
   }
 });
 
@@ -510,8 +490,7 @@ router.put('/admin/:id/unassign', async (req: Request, res: Response) => {
 
     res.json({ appointment: updatedAppointment });
   } catch (error) {
-    console.error('Error unassigning appointment:', error);
-    res.status(500).json({ error: 'Failed to unassign appointment' });
+        res.status(500).json({ error: 'Failed to unassign appointment' });
   }
 });
 
@@ -537,8 +516,7 @@ router.get('/admin/stats', async (req: Request, res: Response) => {
 
     res.json({ stats });
   } catch (error) {
-    console.error('Error getting appointment stats:', error);
-    res.status(500).json({ error: 'Failed to get appointment statistics' });
+        res.status(500).json({ error: 'Failed to get appointment statistics' });
   }
 });
 
@@ -554,8 +532,7 @@ router.get('/admin/sub-accounts', async (req: Request, res: Response) => {
     const subAccounts = await FirebaseService.getAllSubAccounts();
     res.json({ subAccounts });
   } catch (error) {
-    console.error('Error getting sub-accounts:', error);
-    res.status(500).json({ error: 'Failed to get sub-accounts' });
+        res.status(500).json({ error: 'Failed to get sub-accounts' });
   }
 });
 
@@ -589,8 +566,7 @@ router.post('/admin/sub-accounts', async (req: Request, res: Response) => {
 
     res.json({ subAccount });
   } catch (error) {
-    console.error('Error creating sub-account:', error);
-    res.status(500).json({ error: 'Failed to create sub-account' });
+        res.status(500).json({ error: 'Failed to create sub-account' });
   }
 });
 
@@ -621,8 +597,7 @@ router.put('/admin/sub-accounts/:id', async (req: Request, res: Response) => {
 
     res.json({ subAccount });
   } catch (error) {
-    console.error('Error updating sub-account:', error);
-    res.status(500).json({ error: 'Failed to update sub-account' });
+        res.status(500).json({ error: 'Failed to update sub-account' });
   }
 });
 
@@ -650,8 +625,7 @@ router.delete('/admin/sub-accounts/:id', async (req: Request, res: Response) => 
     await FirebaseService.deleteSubAccount(subAccountId);
     res.json({ message: 'Sub-account deleted successfully' });
   } catch (error) {
-    console.error('Error deleting sub-account:', error);
-    res.status(500).json({ error: 'Failed to delete sub-account' });
+        res.status(500).json({ error: 'Failed to delete sub-account' });
   }
 });
 
@@ -680,9 +654,7 @@ router.post('/admin/sub-accounts/:id/test', async (req: Request, res: Response) 
         testResult: testResult
       });
     } catch (ghlError: any) {
-      console.error('Sub-account test failed:', ghlError);
-      
-      let errorMessage = 'Connection failed';
+            let errorMessage = 'Connection failed';
       if (ghlError.response?.status === 422) {
         errorMessage = 'Invalid API credentials or parameters';
       } else if (ghlError.response?.status === 401) {
@@ -701,8 +673,7 @@ router.post('/admin/sub-accounts/:id/test', async (req: Request, res: Response) 
       });
     }
   } catch (error) {
-    console.error('Error testing sub-account:', error);
-    res.status(500).json({ error: 'Failed to test sub-account connection' });
+        res.status(500).json({ error: 'Failed to test sub-account connection' });
   }
 });
 

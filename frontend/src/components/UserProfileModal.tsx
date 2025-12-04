@@ -1,10 +1,11 @@
 import { createPortal } from 'react-dom'
 import { useQuery } from 'react-query'
-import { userAPI, adminAPI } from '../services/api'
+import { userAPI, adminAPI, paymentAPI } from '../services/api'
 import { User } from '../types'
-import { X, User as UserIcon, Mail, Phone, Key, Info, Shield, Calendar, CheckCircle } from 'lucide-react'
+import { X, User as UserIcon, Mail, Phone, Key, Info, Shield, Calendar, CheckCircle, CreditCard } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { safeFormatDate } from '../utils/dateUtils'
+import { format } from 'date-fns'
 
 interface UserProfileModalProps {
   userId?: string // If provided, show this user's profile (admin viewing another user)
@@ -32,12 +33,70 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
     }
   )
 
+  // Fetch subscription status (only for own profile)
+  const { data: subscriptionData } = useQuery(
+    'subscription',
+    paymentAPI.getSubscriptionStatus,
+    {
+      enabled: !!currentUser && !isAdminView
+    }
+  )
+
   if (!userProfile && !isLoading) {
     return null
   }
 
   const displayUser = userProfile || currentUser
   if (!displayUser) return null
+
+  // Helper function to safely convert Firebase Timestamp to Date
+  const toDate = (timestamp: any): Date | null => {
+    if (!timestamp) return null
+    
+    try {
+      // Firebase Timestamp object (server-side)
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate()
+      }
+      
+      // Already a Date object
+      if (timestamp instanceof Date) {
+        return isNaN(timestamp.getTime()) ? null : timestamp
+      }
+      
+      // Timestamp object with seconds/nanoseconds (Firestore format - serialized)
+      // Check for both _seconds (Firebase v9+) and seconds (older versions)
+      const seconds = timestamp.seconds !== undefined ? timestamp.seconds : timestamp._seconds
+      const nanoseconds = timestamp.nanoseconds !== undefined ? timestamp.nanoseconds : timestamp._nanoseconds
+      
+      if (seconds !== undefined) {
+        const date = new Date(seconds * 1000 + (nanoseconds || 0) / 1000000)
+        return isNaN(date.getTime()) ? null : date
+      }
+      
+      // If it's a number (Unix timestamp in seconds)
+      if (typeof timestamp === 'number') {
+        // Check if it's in seconds or milliseconds
+        const date = timestamp > 1000000000000 ? new Date(timestamp) : new Date(timestamp * 1000)
+        return isNaN(date.getTime()) ? null : date
+      }
+      
+      // String date (ISO format or other)
+      if (typeof timestamp === 'string') {
+        const date = new Date(timestamp)
+        return isNaN(date.getTime()) ? null : date
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error converting timestamp to date:', error, timestamp)
+      return null
+    }
+  }
+
+  const subscription = subscriptionData?.subscription
+  const gracePeriodEndDate = subscription?.gracePeriodEnd ? toDate(subscription.gracePeriodEnd) : null
+  const isInGracePeriod = gracePeriodEndDate && gracePeriodEndDate > new Date()
 
   const modalContent = (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -237,6 +296,154 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                 </div>
               )}
             </div>
+
+            {/* Subscription Section - Only show for own profile */}
+            {!isAdminView && (
+              <>
+                <div className="flex items-center space-x-2 my-6">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"></div>
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent uppercase tracking-wider">
+                    Subscription & Billing
+                  </h3>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"></div>
+                </div>
+
+                {!subscriptionData?.hasSubscription ? (
+                  <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
+                        <CreditCard className="h-5 w-5 text-orange-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                          Subscription Status
+                        </label>
+                        <p className="text-sm font-medium text-gray-500">
+                          No active subscription
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Subscription Status */}
+                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
+                          <CreditCard className="h-5 w-5 text-orange-400" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                            Status
+                          </label>
+                          <p className={`text-sm font-semibold ${
+                            subscription?.status === 'active' 
+                              ? 'text-green-400' 
+                              : subscription?.status === 'canceled'
+                              ? 'text-red-400'
+                              : 'text-yellow-400'
+                          }`}>
+                            {subscription?.status.toUpperCase() || 'UNKNOWN'}
+                            {isInGracePeriod && (
+                              <span className="ml-2 text-xs text-yellow-400">
+                                (Grace Period)
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Plan */}
+                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
+                          <Info className="h-5 w-5 text-orange-400" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                            Plan
+                          </label>
+                          <p className="text-sm font-medium text-white">
+                            Monthly
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Current Period Start */}
+                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
+                          <Calendar className="h-5 w-5 text-orange-400" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                            Current Period Start
+                          </label>
+                          <p className="text-sm font-medium text-white">
+                            {(() => {
+                              if (!subscription?.currentPeriodStart) return 'N/A'
+                              const date = toDate(subscription.currentPeriodStart)
+                              return date ? format(date, 'MMM dd, yyyy') : 'N/A'
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Current Period End */}
+                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
+                          <Calendar className="h-5 w-5 text-orange-400" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                            Current Period End
+                          </label>
+                          <p className="text-sm font-medium text-white">
+                            {(() => {
+                              if (!subscription?.currentPeriodEnd) return 'N/A'
+                              const date = toDate(subscription.currentPeriodEnd)
+                              return date ? format(date, 'MMM dd, yyyy') : 'N/A'
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grace Period End */}
+                    {gracePeriodEndDate && (
+                      <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
+                        <div className="flex items-center space-x-4">
+                          <div className="p-2.5 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
+                            <Info className="h-5 w-5 text-yellow-400" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                              Grace Period Ends
+                            </label>
+                            <p className="text-sm font-medium text-yellow-400">
+                              {format(gracePeriodEndDate, 'MMM dd, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cancellation Notice */}
+                    {subscription?.cancelAtPeriodEnd && (
+                      <div className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                        <p className="text-sm text-yellow-400">
+                          Your subscription will be canceled at the end of the current billing period.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

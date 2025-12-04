@@ -49,8 +49,7 @@ router.post('/create-checkout-session', async (req, res) => {
       }
     } catch (error) {
       // Not authenticated - that's okay for new users
-      console.log('User not authenticated, proceeding as new user');
-    }
+          }
 
     // Get price ID for monthly plan
     const priceId = process.env.STRIPE_PRICE_ID_MONTHLY;
@@ -140,9 +139,7 @@ router.post('/create-checkout-session', async (req, res) => {
       url: session.url,
     });
   } catch (error: any) {
-    console.error('Error creating checkout session:', error);
-    
-    // Provide more specific error messages
+        // Provide more specific error messages
     let errorMessage = 'Failed to create checkout session. Please try again.';
     
     if (error.message?.includes('not configured') || error.message?.includes('STRIPE')) {
@@ -171,8 +168,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET not configured');
-    return res.status(500).send('Webhook secret not configured');
+        return res.status(500).send('Webhook secret not configured');
   }
 
   let event: Stripe.Event;
@@ -180,8 +176,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   try {
     event = StripeService.verifyWebhookSignature(req.body, sig, webhookSecret);
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
@@ -255,13 +250,11 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
-    }
+            }
 
     res.json({ received: true });
   } catch (error: any) {
-    console.error('Error processing webhook:', error);
-    res.status(500).json({ error: 'Webhook processing failed' });
+        res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
@@ -293,19 +286,15 @@ router.get('/subscription', authenticateToken, async (req, res) => {
         currentPeriodStart = FirebaseService.timestampFromDate(
           new Date(stripeSubscription.current_period_start * 1000)
         );
-        console.log(`Payments: Fetched currentPeriodStart from Stripe: ${new Date(stripeSubscription.current_period_start * 1000).toISOString()}`);
       } else {
-        console.warn(`Payments: Stripe subscription ${subscription.stripeSubscriptionId} has no current_period_start`);
-      }
+              }
       
       if (stripeSubscription.current_period_end) {
         currentPeriodEnd = FirebaseService.timestampFromDate(
           new Date(stripeSubscription.current_period_end * 1000)
         );
-        console.log(`Payments: Fetched currentPeriodEnd from Stripe: ${new Date(stripeSubscription.current_period_end * 1000).toISOString()}`);
       } else {
-        console.warn(`Payments: Stripe subscription ${subscription.stripeSubscriptionId} has no current_period_end`);
-      }
+              }
       
       // Update local subscription with latest data from Stripe
       const updateData: any = {
@@ -330,22 +319,13 @@ router.get('/subscription', authenticateToken, async (req, res) => {
       
       // Always update to ensure dates are synced
       await FirebaseService.updateSubscription(subscription.id, updateData);
-      console.log(`Payments: Updated subscription ${subscription.id} with dates from Stripe`);
-    } catch (error) {
-      console.error('Error fetching Stripe subscription:', error);
-      // Continue with local subscription data
+          } catch (error) {
+            // Continue with local subscription data
     }
 
     const canAccess = canAccessPortal(subscription);
 
     // Log what we're returning for debugging
-    console.log(`Payments: Returning subscription for user ${userId}:`, {
-      hasPeriodStart: !!currentPeriodStart,
-      hasPeriodEnd: !!currentPeriodEnd,
-      periodStartValue: currentPeriodStart ? (currentPeriodStart.toDate ? currentPeriodStart.toDate().toISOString() : 'unknown') : 'null',
-      periodEndValue: currentPeriodEnd ? (currentPeriodEnd.toDate ? currentPeriodEnd.toDate().toISOString() : 'unknown') : 'null',
-    });
-
     res.json({
       hasSubscription: true,
       canAccess,
@@ -361,8 +341,7 @@ router.get('/subscription', authenticateToken, async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Error getting subscription:', error);
-    res.status(500).json({ error: 'Failed to get subscription status' });
+        res.status(500).json({ error: 'Failed to get subscription status' });
   }
 });
 
@@ -398,8 +377,7 @@ router.post('/cancel', authenticateToken, async (req, res) => {
         try {
           await DiscordBotService.removeMemberFromServer(user.discordId);
         } catch (error) {
-          console.error('Error removing user from Discord:', error);
-        }
+                  }
       }
     }
 
@@ -410,8 +388,7 @@ router.post('/cancel', authenticateToken, async (req, res) => {
         : 'Subscription canceled immediately',
     });
   } catch (error: any) {
-    console.error('Error canceling subscription:', error);
-    res.status(500).json({ error: 'Failed to cancel subscription' });
+        res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });
 
@@ -440,8 +417,7 @@ router.get('/customer-portal', authenticateToken, async (req, res) => {
       url: session.url,
     });
   } catch (error: any) {
-    console.error('Error creating customer portal session:', error);
-    res.status(500).json({ error: 'Failed to create customer portal session' });
+        res.status(500).json({ error: 'Failed to create customer portal session' });
   }
 });
 
@@ -494,8 +470,7 @@ router.post('/admin/refund', authenticateToken, requireAdmin, async (req, res) =
           try {
             await DiscordBotService.removeMemberFromServer(user.discordId);
           } catch (error) {
-            console.error('Error removing user from Discord:', error);
-          }
+                      }
         }
       }
     }
@@ -510,8 +485,7 @@ router.post('/admin/refund', authenticateToken, requireAdmin, async (req, res) =
       },
     });
   } catch (error: any) {
-    console.error('Error processing refund:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to process refund',
       details: error.message 
     });

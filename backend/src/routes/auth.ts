@@ -52,11 +52,9 @@ router.get('/discord/callback', async (req, res) => {
         stateData = JSON.parse(decodeURIComponent(state as string));
         userEmailFromState = stateData.email || null;
         userIdFromState = stateData.userId || null;
-        console.log('Auth: Parsed state parameter:', { userEmailFromState, userIdFromState, onboarding: stateData.onboarding });
-      } catch (e) {
+              } catch (e) {
         // State might be in old format (just "onboarding=true")
-        console.log('Auth: State parameter is not JSON, using as-is');
-      }
+              }
     }
 
     // Construct redirect URI from request (must match what frontend sent to Discord)
@@ -75,31 +73,13 @@ router.get('/discord/callback', async (req, res) => {
       redirectUri = process.env.DISCORD_REDIRECT_URI || `${protocol}://${host}/auth/discord/callback`;
     }
     
-    console.log('Auth: Discord callback received', {
-      hasCode: !!code,
-      redirectUri,
-      nodeEnv: process.env.NODE_ENV,
-      requestHost,
-      requestProtocol: req.protocol,
-      isLocalhost,
-      hasState: !!state,
-      userEmailFromState,
-      userIdFromState
-    });
-
-    // Exchange code for access token with constructed redirect URI
+        // Exchange code for access token with constructed redirect URI
     const tokenData = await DiscordService.exchangeCodeForToken(code as string, redirectUri);
     const accessToken = tokenData.access_token;
     
     // Log token details for debugging
-    console.log('Auth: Token exchange completed');
-    console.log('Auth: Access token length:', accessToken?.length || 0);
-    console.log('Auth: Access token preview (first 30 chars):', accessToken ? `${accessToken.substring(0, 30)}...` : 'missing');
-    console.log('Auth: Token type:', tokenData.token_type);
-    console.log('Auth: Expires in:', tokenData.expires_in, 'seconds');
-    console.log('Auth: Scopes:', tokenData.scope);
-    
-    // Get user info from Discord
+
+                // Get user info from Discord
     const discordUser = await DiscordService.getUserInfo(accessToken);
     
     // FIRST: Check Stripe for active subscription to get payment email
@@ -163,26 +143,22 @@ router.get('/discord/callback', async (req, res) => {
         try {
           user = await FirebaseService.getUserByEmail(paymentEmail);
           if (user) {
-            console.log(`Auth: Found user by payment email ${paymentEmail} (from Stripe), will link Discord account`);
+
           }
         } catch (error) {
-          console.log(`Auth: No user found by payment email ${paymentEmail}`);
-        }
+                  }
       }
     } catch (error) {
-      console.log(`Auth: Error checking Stripe for payment email:`, error);
-    }
+          }
     
     // If not found by payment email, try finding by userId from state (if user is already logged in)
     if (!user && userIdFromState) {
       try {
         user = await FirebaseService.getUserById(userIdFromState);
         if (user) {
-          console.log(`Auth: Found user by userId from state ${userIdFromState}, will link Discord account`);
-        }
+                  }
       } catch (error) {
-        console.log(`Auth: No user found by userId ${userIdFromState}`);
-      }
+              }
     }
     
     // If not found, try finding by email from state (if provided)
@@ -190,11 +166,9 @@ router.get('/discord/callback', async (req, res) => {
       try {
         user = await FirebaseService.getUserByEmail(userEmailFromState);
         if (user) {
-          console.log(`Auth: Found user by email from state ${userEmailFromState}, will link Discord account`);
-        }
+                  }
       } catch (error) {
-        console.log(`Auth: No user found by email from state ${userEmailFromState}`);
-      }
+              }
     }
     
     // If not found by payment email or state, try finding by Discord ID or Discord email
@@ -205,9 +179,7 @@ router.get('/discord/callback', async (req, res) => {
     // If user still doesn't exist, check Stripe more thoroughly for active subscription
     // This handles cases where user paid first with different email than Discord email
     if (!user) {
-      console.log(`Auth: User not found in Firebase, checking Stripe for active subscription...`);
-      
-      try {
+            try {
         const StripeService = require('../services/stripeService').StripeService;
         const stripe = StripeService.getClient();
         
@@ -238,8 +210,7 @@ router.get('/discord/callback', async (req, res) => {
         // If no customers found by Discord email/ID, search ALL customers with active subscriptions
         // This handles the case where user paid first with different email
         if (customers.length === 0) {
-          console.log(`Auth: No customers found by Discord email/ID, searching all customers with active subscriptions...`);
-          const allCustomers = await stripe.customers.list({ limit: 100 });
+                    const allCustomers = await stripe.customers.list({ limit: 100 });
           
           // Check each customer for active subscriptions
           for (const customer of allCustomers.data) {
@@ -262,8 +233,7 @@ router.get('/discord/callback', async (req, res) => {
                 const existingUser = await FirebaseService.getUserByEmail(customer.email);
                 if (existingUser && !existingUser.discordId) {
                   // Found user who paid but doesn't have Discord linked yet
-                  console.log(`Auth: Found existing user by payment email ${customer.email}, will link Discord account...`);
-                  customers.push(customer);
+                                    customers.push(customer);
                   break; // Found the right customer
                 }
               } catch (error) {
@@ -300,9 +270,7 @@ router.get('/discord/callback', async (req, res) => {
         
         // If active subscription found, create/link user account
         if (activeSubscription && subscriptionCustomer) {
-          console.log(`Auth: Found active subscription for Discord user ${discordUser.id}, creating/linking account...`);
-          
-          // Get payment email from Stripe customer (might be different from Discord email)
+                    // Get payment email from Stripe customer (might be different from Discord email)
           const paymentEmailFromStripe = subscriptionCustomer.email || '';
           
           // Use payment email from earlier check if available, otherwise use from customer
@@ -316,19 +284,10 @@ router.get('/discord/callback', async (req, res) => {
             try {
               existingUser = await FirebaseService.getUserByEmail(finalPaymentEmail);
               if (existingUser) {
-                console.log(`Auth: Found existing user by payment email ${finalPaymentEmail}, linking Discord account...`);
-                console.log(`Auth: Payment email: ${finalPaymentEmail}, Discord email: ${discordUser.email}`);
-                console.log(`Auth: Existing user details:`, {
-                  id: existingUser.id,
-                  email: existingUser.email,
-                  discordId: existingUser.discordId || 'none',
-                  subscriptionId: existingUser.subscriptionId || 'none'
-                });
-              }
+                                                              }
             } catch (error) {
               // User doesn't exist by payment email
-              console.log(`Auth: No user found by payment email ${finalPaymentEmail}`);
-            }
+                          }
           }
           
           // Create or update user
@@ -346,17 +305,13 @@ router.get('/discord/callback', async (req, res) => {
               if (finalPaymentEmail && finalPaymentEmail !== discordUser.email) {
                 // Payment email exists and differs - keep payment email, store Discord email separately
                 updateData.discordEmail = discordUser.email;
-                console.log(`Auth: ✅ Preserving payment email "${finalPaymentEmail}" as primary email`);
-                console.log(`Auth: ✅ Storing Discord email "${discordUser.email}" in discordEmail field`);
-              } else if (!finalPaymentEmail) {
+                                              } else if (!finalPaymentEmail) {
                 // No payment email yet, use Discord email as primary
                 updateData.email = discordUser.email;
-                console.log(`Auth: No payment email found, using Discord email "${discordUser.email}" as primary`);
-              } else {
+                              } else {
                 // Emails match, just update discordEmail to be explicit
                 updateData.discordEmail = discordUser.email;
-                console.log(`Auth: Payment and Discord emails match: "${finalPaymentEmail}"`);
-              }
+                              }
             }
             
             if (discordUser.avatar) {
@@ -367,8 +322,7 @@ router.get('/discord/callback', async (req, res) => {
             // The payment email is already in existingUser.email, so we don't touch it
             
             const updatedUser = await FirebaseService.updateUser(existingUser.id, updateData) || existingUser;
-            console.log(`Auth: ✅ Updated user ${updatedUser.id} - Payment Email: "${updatedUser.email}", Discord Email: "${updatedUser.discordEmail || updatedUser.email}"`);
-            user = updatedUser;
+                        user = updatedUser;
             
             // Create subscription record if missing
             if (!updatedUser.subscriptionId) {
@@ -422,8 +376,7 @@ router.get('/discord/callback', async (req, res) => {
               try {
                 const userFromMetadata = await FirebaseService.getUserById(userIdFromMetadata);
                 if (userFromMetadata) {
-                  console.log(`Auth: Found existing user by subscription metadata userId ${userIdFromMetadata}, linking Discord account...`);
-                  // Link Discord to this user
+                                    // Link Discord to this user
                   const updateData: Partial<import('../services/firebaseService').User> = {
                     discordId: discordUser.id,
                     discordEmail: discordUser.email,
@@ -448,31 +401,25 @@ router.get('/discord/callback', async (req, res) => {
                   // Continue with normal flow below
                 }
               } catch (error) {
-                console.log(`Auth: User from metadata ${userIdFromMetadata} not found, will create new user`);
-              }
+                              }
             }
             
             // Only create new user if we still don't have one
             if (!user) {
-              console.log(`Auth: Creating new user for Discord ${discordUser.id} with payment email ${finalPaymentEmail}`);
-              
-              // Check if subscription already exists in Firebase (by Stripe subscription ID)
+                            // Check if subscription already exists in Firebase (by Stripe subscription ID)
               // This prevents creating duplicate subscriptions
               let existingSubscription = null;
               try {
                 existingSubscription = await FirebaseService.getSubscriptionByStripeSubscriptionId(activeSubscription.id);
                 
                 if (existingSubscription) {
-                  console.log(`Auth: Subscription ${activeSubscription.id} already exists in Firebase, linking to existing subscription`);
-                  
-                  // Get the user who owns this subscription
+                                    // Get the user who owns this subscription
                   const ownerUserId = existingSubscription.userId;
                   if (ownerUserId) {
                     try {
                       const ownerUser = await FirebaseService.getUserById(ownerUserId);
                       if (ownerUser) {
-                        console.log(`Auth: Found existing user ${ownerUserId} who owns this subscription, linking Discord instead of creating new user`);
-                        // Link Discord to existing user
+                                                // Link Discord to existing user
                         // Preserve payment email, store Discord email separately
                         const updateData: Partial<import('../services/firebaseService').User> = {
                           discordId: discordUser.id,
@@ -484,8 +431,7 @@ router.get('/discord/callback', async (req, res) => {
                           if (ownerUser.email && ownerUser.email !== discordUser.email) {
                             // Payment email exists and differs - keep it, store Discord email separately
                             updateData.discordEmail = discordUser.email;
-                            console.log(`Auth: Preserving payment email ${ownerUser.email}, storing Discord email ${discordUser.email} separately`);
-                          } else if (!ownerUser.email) {
+                                                      } else if (!ownerUser.email) {
                             // No payment email yet, use Discord email as primary
                             updateData.email = discordUser.email;
                           } else {
@@ -511,21 +457,17 @@ router.get('/discord/callback', async (req, res) => {
                           }
                         });
                       } else {
-                        console.warn(`Auth: Subscription owner user ${ownerUserId} not found, will create new user`);
-                        // Owner user doesn't exist, we'll create a new user below
+                                                // Owner user doesn't exist, we'll create a new user below
                       }
                     } catch (error) {
-                      console.warn(`Auth: Error fetching subscription owner user ${ownerUserId}:`, error);
-                      // Owner user doesn't exist or error, we'll create a new user below
+                                            // Owner user doesn't exist or error, we'll create a new user below
                     }
                   } else {
-                    console.warn(`Auth: Subscription exists but has no owner userId, will create new user`);
-                    // Subscription exists but has no owner, we'll create a new user below
+                                        // Subscription exists but has no owner, we'll create a new user below
                   }
                 }
               } catch (error) {
-                console.log(`Auth: Error checking for existing subscription:`, error);
-              }
+                              }
               
               // Before creating new user, check if there's an existing user by payment email
               // This handles the case where user paid first (created user with payment email)
@@ -534,8 +476,7 @@ router.get('/discord/callback', async (req, res) => {
                 try {
                   const userByPaymentEmail = await FirebaseService.getUserByEmail(finalPaymentEmail);
                   if (userByPaymentEmail) {
-                    console.log(`Auth: Found existing user by payment email ${finalPaymentEmail}, linking Discord instead of creating new user`);
-                    // Link Discord to existing user
+                                        // Link Discord to existing user
                     // Preserve payment email, store Discord email separately
                     const updateData: Partial<import('../services/firebaseService').User> = {
                       discordId: discordUser.id,
@@ -547,8 +488,7 @@ router.get('/discord/callback', async (req, res) => {
                       if (finalPaymentEmail && finalPaymentEmail !== discordUser.email) {
                         // Payment email exists and differs - keep it, store Discord email separately
                         updateData.discordEmail = discordUser.email;
-                        console.log(`Auth: ✅ Preserving payment email "${finalPaymentEmail}", storing Discord email "${discordUser.email}" separately`);
-                      } else if (!finalPaymentEmail) {
+                                              } else if (!finalPaymentEmail) {
                         // No payment email yet, use Discord email as primary
                         updateData.email = discordUser.email;
                       } else {
@@ -574,8 +514,7 @@ router.get('/discord/callback', async (req, res) => {
                     });
                   }
                 } catch (error) {
-                  console.log(`Auth: No existing user found by payment email ${finalPaymentEmail}, will create new user`);
-                }
+                                  }
               }
               
               // Only create new user if we still don't have one
@@ -618,8 +557,7 @@ router.get('/discord/callback', async (req, res) => {
                 
                 // If subscription already exists, link user to it instead of creating new subscription
                 if (existingSubscription) {
-                  console.log(`Auth: Linking new user ${newUser.id} to existing subscription ${existingSubscription.id}`);
-                  // Update subscription to point to new user
+                                    // Update subscription to point to new user
                   await FirebaseService.updateSubscription(existingSubscription.id, {
                     userId: newUser.id
                   });
@@ -634,8 +572,7 @@ router.get('/discord/callback', async (req, res) => {
                     subscriptionId: subscriptionRecord.id,
                     isWhitelisted: subscriptionStatus === 'active' || subscriptionStatus === 'trialing'
                   });
-                  console.log(`Auth: Created new subscription record ${subscriptionRecord.id} for new user ${newUser.id}`);
-                }
+                                  }
                 
                 // Update Stripe metadata
                 await stripe.subscriptions.update(activeSubscription.id, {
@@ -661,8 +598,7 @@ router.get('/discord/callback', async (req, res) => {
               }
             } else {
               // User was found and linked, update Stripe metadata
-              console.log(`Auth: User linked successfully, updating Stripe metadata`);
-              await stripe.subscriptions.update(activeSubscription.id, {
+                            await stripe.subscriptions.update(activeSubscription.id, {
                 metadata: {
                   ...activeSubscription.metadata,
                   userId: user.id,
@@ -688,8 +624,7 @@ router.get('/discord/callback', async (req, res) => {
           return res.redirect(paymentRedirectUrl);
         }
       } catch (error) {
-        console.error(`Auth: Error checking Stripe before redirect:`, error);
-        // If error, still redirect to payment page
+                // If error, still redirect to payment page
         let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://www.rain.club');
         frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
         if (!frontendUrl.startsWith('http')) {
@@ -702,8 +637,7 @@ router.get('/discord/callback', async (req, res) => {
 
     // At this point, user should exist (either found initially or created/linked from Stripe)
     if (!user) {
-      console.error(`Auth: User is still null after all checks, redirecting to payment page`);
-      let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://www.rain.club');
+            let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://www.rain.club');
       frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
       if (!frontendUrl.startsWith('http')) {
         frontendUrl = `https://${frontendUrl}`;
@@ -735,17 +669,13 @@ router.get('/discord/callback', async (req, res) => {
             updateData.email = currentPaymentEmail;
           }
           updateData.discordEmail = discordEmail;
-          console.log(`Auth: ✅ Preserving payment email "${currentPaymentEmail}" as primary email`);
-          console.log(`Auth: ✅ Storing Discord email "${discordEmail}" in discordEmail field`);
-        } else if (!currentPaymentEmail) {
+                            } else if (!currentPaymentEmail) {
           // No payment email yet, use Discord email as primary
           updateData.email = discordEmail;
-          console.log(`Auth: No payment email found, using Discord email "${discordEmail}" as primary`);
-        } else {
+                  } else {
           // Emails match, just update discordEmail to be explicit
           updateData.discordEmail = discordEmail;
-          console.log(`Auth: Payment and Discord emails match: "${currentPaymentEmail}"`);
-        }
+                  }
       }
       
       if (discordUser.avatar) {
@@ -755,12 +685,7 @@ router.get('/discord/callback', async (req, res) => {
       // Only update if there are changes
       if (Object.keys(updateData).length > 0) {
         user = await FirebaseService.updateUser(user.id, updateData) || user;
-        console.log(`Auth: ✅ Updated user ${user.id} with Discord info:`);
-        console.log(`Auth:   - Username: ${discordUser.username}`);
-        console.log(`Auth:   - Discord ID: ${discordUser.id}`);
-        console.log(`Auth:   - Payment Email: "${user.email}"`);
-        console.log(`Auth:   - Discord Email: "${user.discordEmail || user.email}"`);
-      }
+                                              }
     }
     
     // User exists - check subscription status
@@ -770,8 +695,7 @@ router.get('/discord/callback', async (req, res) => {
 
     // If no subscription found in Firebase, check Stripe directly (webhook might not have processed yet)
     if (!subscription) {
-      console.log(`Auth: No subscription found in Firebase for user ${user.id}, checking Stripe directly...`);
-      try {
+            try {
         const StripeService = require('../services/stripeService').StripeService;
         const stripe = StripeService.getClient();
         
@@ -810,9 +734,7 @@ router.get('/discord/callback', async (req, res) => {
           );
 
           if (activeSubscription) {
-            console.log(`Auth: Found active subscription ${activeSubscription.id} in Stripe for user ${user.id}`);
-            
-            // Map Stripe status to our Subscription status type
+                        // Map Stripe status to our Subscription status type
             // Only allow: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing'
             let subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' = 'active';
             if (activeSubscription.status === 'trialing') {
@@ -851,7 +773,7 @@ router.get('/discord/callback', async (req, res) => {
             // Set isWhitelisted to true when subscription is active or trialing
             if ((subscriptionStatus === 'active' || subscriptionStatus === 'trialing') && !user.isWhitelisted) {
               userUpdates.isWhitelisted = true;
-              console.log(`Auth: ✅ Whitelisting user ${user.id} (subscription active)`);
+
             }
             await FirebaseService.updateUser(user.id, userUpdates);
             
@@ -869,29 +791,20 @@ router.get('/discord/callback', async (req, res) => {
             }
 
             subscription = subscriptionRecord;
-            console.log(`Auth: ✅ Created and linked subscription ${subscriptionRecord.id} to user ${user.id}`);
-            break; // Found subscription, no need to continue
+                        break; // Found subscription, no need to continue
           }
         }
       } catch (error) {
-        console.error(`Auth: Error checking Stripe for subscription:`, error);
-        // Continue with normal flow even if Stripe check fails
+                // Continue with normal flow even if Stripe check fails
       }
     }
 
     // Verify user can access portal (active subscription or grace period)
     const canAccess = user.hasManualSubscription || (subscription && canAccessPortal(subscription));
-    console.log(`Auth: User ${user.id} subscription check:`, {
-      hasSubscription: !!subscription,
-      subscriptionStatus: subscription?.status,
-      canAccessPortal: canAccess
-    });
-
-    // If user has active subscription, add them to Discord server and assign role
+        // If user has active subscription, add them to Discord server and assign role
     // Discord bot operations run asynchronously - don't block login
     if (canAccess) {
-      console.log(`Auth: User ${user.id} has active subscription, proceeding with login...`);
-      // Fire-and-forget Discord operations (don't block login)
+            // Fire-and-forget Discord operations (don't block login)
       (async () => {
         try {
           // Set a timeout to prevent hanging (increased to 15 seconds for Discord API operations)
@@ -904,14 +817,9 @@ router.get('/discord/callback', async (req, res) => {
           let roleAssignedDuringAdd = false;
           try {
             // Debug logging to verify we're using the correct token
-            console.log('Auth: About to call addUserToGuild');
-            console.log('Auth: accessToken value (first 50 chars):', accessToken ? accessToken.substring(0, 50) : 'MISSING');
-            console.log('Auth: accessToken length:', accessToken?.length || 0);
-            console.log('Auth: accessToken === botToken?', accessToken === process.env.DISCORD_BOT_TOKEN);
-            console.log('Auth: Bot token (first 50 chars):', process.env.DISCORD_BOT_TOKEN ? process.env.DISCORD_BOT_TOKEN.substring(0, 50) : 'MISSING');
-            console.log('Auth: Tokens match?', accessToken === process.env.DISCORD_BOT_TOKEN);
-            
-            // Use Promise.race with timeout, but catch timeout errors gracefully
+
+
+                        // Use Promise.race with timeout, but catch timeout errors gracefully
             // Pass role ID to addUserToGuild so role is assigned when user is added (more efficient)
             const roleId = process.env.DISCORD_PAID_MEMBER_ROLE_ID || '';
             let addedToServer = false;
@@ -925,31 +833,26 @@ router.get('/discord/callback', async (req, res) => {
               // If role ID was provided, role should have been assigned during user addition
               if (addedToServer && roleId) {
                 roleAssignedDuringAdd = true;
-                console.log(`Auth: ✅ User ${discordUser.id} added to server with role assigned in one operation`);
-              }
+                              }
             } catch (error: any) {
               if (error.message === 'Discord operation timeout') {
-                console.warn('Auth: Discord operation timed out, but may have succeeded. Checking user status...');
-                // Check if user was actually added despite timeout
+                                // Check if user was actually added despite timeout
                 const isInServer = await DiscordService.isUserInGuild(discordUser.id);
                 if (isInServer) {
-                  console.log('Auth: ✅ User was added to server despite timeout');
-                  addedToServer = true;
+                                    addedToServer = true;
                   // Check if role was also assigned
                   if (roleId) {
                     try {
                       const hasRole = await DiscordBotService.checkMemberStatus(discordUser.id, roleId);
                       if (hasRole) {
                         roleAssignedDuringAdd = true;
-                        console.log('Auth: ✅ Role was also assigned during user addition');
-                      }
+                                              }
                     } catch (e) {
                       // Ignore role check errors
                     }
                   }
                 } else {
-                  console.warn('Auth: ⚠️ User not in server after timeout');
-                }
+                                  }
               } else {
                 throw error; // Re-throw non-timeout errors
               }
@@ -964,20 +867,14 @@ router.get('/discord/callback', async (req, res) => {
               
               if (userInServer) {
                 if (roleAssignedDuringAdd) {
-                  console.log(`Auth: ✅ User ${discordUser.id} is in Discord server with role already assigned`);
-                } else {
-                  console.log(`Auth: ✅ User ${discordUser.id} is in Discord server - proceeding to assign role`);
-                }
+                                  } else {
+                                  }
               } else {
-                console.warn(`Auth: ⚠️ User ${discordUser.id} not verified in Discord server - cannot assign role`);
-                console.warn(`Auth: ⚠️ Role assignment will be skipped. User must be in server first.`);
-              }
+                                              }
             } else {
-              console.warn(`Auth: Failed to add user ${discordUser.id} to Discord server - cannot assign role`);
-            }
+                          }
           } catch (error: any) {
-            console.error(`Auth: Error adding user ${discordUser.id} to Discord server:`, error.message || error);
-          }
+                      }
           
           // Step 2: Assign paid role ONLY if user is confirmed to be in server AND role wasn't already assigned
           if (userInServer && !roleAssignedDuringAdd) {
@@ -993,16 +890,13 @@ router.get('/discord/callback', async (req, res) => {
                   timeoutPromise
                 ]) as boolean;
                 if (added) {
-                  console.log(`Auth: ✅ Assigned paid role to user ${discordUser.id}`);
-                } else {
-                  console.warn(`Auth: ⚠️ Failed to assign paid role to user ${discordUser.id} (returned false). Check Discord Bot API configuration.`);
+                                  } else {
+
                 }
               } catch (error: any) {
-                console.error(`Auth: Failed to assign paid role to user ${discordUser.id}:`, error.message || error);
-              }
+                              }
             } else {
-              console.log(`Auth: User ${discordUser.id} already has paid role`);
-            }
+                          }
           } else {
             // User not in server - check if they already have the role (maybe they joined manually)
             try {
@@ -1011,16 +905,14 @@ router.get('/discord/callback', async (req, res) => {
                 timeoutPromise
               ]) as boolean;
               if (!hasPaidRole) {
-                console.warn(`Auth: ⚠️ Cannot assign role to user ${discordUser.id} - user not in Discord server`);
-                console.warn(`Auth: ⚠️ User must join the Discord server first before role can be assigned`);
-              }
+                                              }
             } catch (error) {
               // Ignore check errors
             }
           }
         } catch (error: any) {
           // Don't fail login if Discord operations fail or timeout
-          console.error(`Auth: Discord operations failed (non-blocking):`, error.message || error);
+
         }
       })(); // Fire-and-forget
     } else {
@@ -1031,11 +923,9 @@ router.get('/discord/callback', async (req, res) => {
             const hasPaidRole = await DiscordBotService.checkMemberStatus(discordUser.id);
             if (hasPaidRole) {
               await DiscordBotService.removeMemberFromServer(discordUser.id);
-              console.log(`Auth: Removed paid role from user ${discordUser.id} due to missing subscription`);
-            }
+                          }
           } catch (error) {
-            console.error(`Auth: Failed to remove paid role from user without subscription:`, error);
-          }
+                      }
         })(),
         new Promise((resolve) => setTimeout(resolve, 3000)) // 3 second timeout
       ]).catch(() => {});
@@ -1050,8 +940,7 @@ router.get('/discord/callback', async (req, res) => {
     }
 
     // Generate JWT token (only reached if canAccess is true)
-    console.log(`Auth: ✅ User ${user.id} has active subscription, generating JWT token...`);
-    const token = jwt.sign(
+        const token = jwt.sign(
       { userId: user.id, discordId: user.discordId },
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
@@ -1085,8 +974,7 @@ router.get('/discord/callback', async (req, res) => {
         isWhitelisted: user.isWhitelisted,
         hasManualSubscription: user.hasManualSubscription || false
       }))}`;
-      console.log(`Auth: ✅ Redirecting user ${user.id} to onboarding intro step`);
-      return res.redirect(introUrl);
+            return res.redirect(introUrl);
     }
     
     const finalRedirectUrl = `${frontendUrl}?token=${token}&user=${encodeURIComponent(JSON.stringify({
@@ -1099,15 +987,10 @@ router.get('/discord/callback', async (req, res) => {
       isWhitelisted: user.isWhitelisted,
       hasManualSubscription: user.hasManualSubscription || false
     }))}`;
-    
-    console.log(`Auth: ✅ Redirecting user ${user.id} to frontend with token`);
-    console.log(`Auth: Redirect URL: ${frontendUrl}?token=${token.substring(0, 20)}...&user=...`);
+
     return res.redirect(finalRedirectUrl);
   } catch (error: any) {
-    console.error('Auth: ❌ Discord OAuth callback error:', error);
-    console.error('Auth: Error stack:', error.stack);
-    
-    // Redirect to frontend with error
+            // Redirect to frontend with error
     let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://www.rain.club');
     frontendUrl = frontendUrl.trim().replace(/['"]/g, '');
     if (!frontendUrl.startsWith('http')) {
@@ -1142,16 +1025,7 @@ router.post('/discord', async (req, res) => {
       redirectUri = process.env.DISCORD_REDIRECT_URI || 'https://rain.club/auth/discord/callback';
     }
     
-    console.log('Auth: Discord POST callback received', {
-      hasCode: !!code,
-      redirectUri,
-      nodeEnv: process.env.NODE_ENV,
-      requestHost,
-      requestProtocol: req.protocol,
-      isLocalhost
-    });
-
-    // Exchange code for access token with constructed redirect URI
+        // Exchange code for access token with constructed redirect URI
     const tokenData = await DiscordService.exchangeCodeForToken(code, redirectUri);
     const accessToken = tokenData.access_token;
     
@@ -1176,8 +1050,7 @@ router.post('/discord', async (req, res) => {
 
     // If no subscription found in Firebase, check Stripe directly (webhook might not have processed yet)
     if (!subscription) {
-      console.log(`Auth: No subscription found in Firebase for user ${user.id}, checking Stripe directly...`);
-      try {
+            try {
         const StripeService = require('../services/stripeService').StripeService;
         const stripe = StripeService.getClient();
         
@@ -1216,9 +1089,7 @@ router.post('/discord', async (req, res) => {
           );
 
           if (activeSubscription) {
-            console.log(`Auth: Found active subscription ${activeSubscription.id} in Stripe for user ${user.id}`);
-            
-            // Map Stripe status to our Subscription status type
+                        // Map Stripe status to our Subscription status type
             // Only allow: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing'
             let subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' = 'active';
             if (activeSubscription.status === 'trialing') {
@@ -1257,7 +1128,7 @@ router.post('/discord', async (req, res) => {
             // Set isWhitelisted to true when subscription is active or trialing
             if ((subscriptionStatus === 'active' || subscriptionStatus === 'trialing') && !user.isWhitelisted) {
               userUpdates.isWhitelisted = true;
-              console.log(`Auth: ✅ Whitelisting user ${user.id} (subscription active)`);
+
             }
             await FirebaseService.updateUser(user.id, userUpdates);
             
@@ -1275,13 +1146,11 @@ router.post('/discord', async (req, res) => {
             }
 
             subscription = subscriptionRecord;
-            console.log(`Auth: ✅ Created and linked subscription ${subscriptionRecord.id} to user ${user.id}`);
-            break; // Found subscription, no need to continue
+                        break; // Found subscription, no need to continue
           }
         }
       } catch (error) {
-        console.error(`Auth: Error checking Stripe for subscription:`, error);
-        // Continue with normal flow even if Stripe check fails
+                // Continue with normal flow even if Stripe check fails
       }
     }
 
@@ -1294,39 +1163,29 @@ router.post('/discord', async (req, res) => {
       
       try {
         // Debug logging to verify we're using the correct token
-        console.log('Auth: About to call addUserToGuild (POST /discord/callback)');
-        console.log('Auth: accessToken value (first 50 chars):', accessToken ? accessToken.substring(0, 50) : 'MISSING');
-        console.log('Auth: accessToken length:', accessToken?.length || 0);
-        console.log('Auth: accessToken === botToken?', accessToken === process.env.DISCORD_BOT_TOKEN);
-        console.log('Auth: Bot token (first 50 chars):', process.env.DISCORD_BOT_TOKEN ? process.env.DISCORD_BOT_TOKEN.substring(0, 50) : 'MISSING');
-        console.log('Auth: Tokens match?', accessToken === process.env.DISCORD_BOT_TOKEN);
-        console.log('Auth: Role ID to assign:', roleId || 'none');
-        
-        // Pass role ID to addUserToGuild so role is assigned when user is added (more efficient)
+
+
+
+                        // Pass role ID to addUserToGuild so role is assigned when user is added (more efficient)
         const addedToServer = await DiscordService.addUserToGuild(discordUser.id, accessToken, roleId);
         if (addedToServer) {
           // If role ID was provided, role should have been assigned during user addition
           if (roleId) {
             roleAssignedDuringAdd = true;
-            console.log(`Auth: ✅ User ${discordUser.id} added to server with role assigned in one operation`);
-          }
+                      }
           
           // Verify user is actually in server
           await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
           userInServer = await DiscordService.isUserInGuild(discordUser.id);
           if (userInServer) {
             if (roleAssignedDuringAdd) {
-              console.log(`Auth: ✅ User ${discordUser.id} is in Discord server with role already assigned`);
-            } else {
-              console.log(`Auth: ✅ User ${discordUser.id} is in Discord server - proceeding to assign role`);
-            }
+                          } else {
+                          }
           } else {
-            console.warn(`Auth: ⚠️ User ${discordUser.id} not verified in Discord server - cannot assign role`);
-          }
+                      }
         }
       } catch (error: any) {
-        console.error(`Auth: Error adding user ${discordUser.id} to Discord server:`, error.message || error);
-      }
+              }
       
       // Step 2: Assign paid role ONLY if user is confirmed to be in server AND role wasn't already assigned
       if (userInServer && !roleAssignedDuringAdd) {
@@ -1335,30 +1194,23 @@ router.post('/discord', async (req, res) => {
           try {
             const added = await DiscordBotService.addMemberToServer(discordUser.id);
             if (added) {
-              console.log(`Auth: ✅ Assigned paid role to user ${discordUser.id}`);
-            } else {
-              console.warn(`Auth: ⚠️ Failed to assign paid role to user ${discordUser.id} (returned false). Check Discord Bot API configuration.`);
+                          } else {
+
             }
           } catch (error: any) {
-            console.error(`Auth: Failed to assign paid role to user ${discordUser.id}:`, error.message || error);
-          }
+                      }
         } else {
-          console.log(`Auth: User ${discordUser.id} already has paid role`);
-        }
+                  }
       } else {
-        console.warn(`Auth: ⚠️ Cannot assign role to user ${discordUser.id} - user not in Discord server`);
-        console.warn(`Auth: ⚠️ User must join the Discord server first before role can be assigned`);
-      }
+                      }
     } else {
       // No active subscription - ensure paid role is removed and block access
       const hasPaidRole = await DiscordBotService.checkMemberStatus(discordUser.id);
       if (hasPaidRole) {
         try {
           await DiscordBotService.removeMemberFromServer(discordUser.id);
-          console.log(`Auth: Removed paid role from user ${discordUser.id} due to missing subscription`);
-        } catch (error) {
-          console.error(`Auth: Failed to remove paid role from user without subscription:`, error);
-        }
+                  } catch (error) {
+                  }
       }
 
       return res.status(403).json({ 
@@ -1497,8 +1349,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     });
   } catch (error: any) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+        res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -1571,8 +1422,7 @@ router.post('/create-password', authenticateToken, async (req, res) => {
       message: 'Password created successfully'
     });
   } catch (error: any) {
-    console.error('Create password error:', error);
-    res.status(500).json({ error: 'Failed to create password' });
+        res.status(500).json({ error: 'Failed to create password' });
   }
 });
 
@@ -1600,8 +1450,7 @@ router.get('/username/check', async (req, res) => {
 
     res.json({ available: !exists });
   } catch (error: any) {
-    console.error('Username check error:', error);
-    res.status(500).json({ error: 'Failed to check username availability' });
+        res.status(500).json({ error: 'Failed to check username availability' });
   }
 });
 
@@ -1665,8 +1514,7 @@ router.post('/accept-terms', authenticateToken, async (req, res) => {
       acceptedAt: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Accept terms error:', error);
-    res.status(500).json({ error: 'Failed to accept terms' });
+        res.status(500).json({ error: 'Failed to accept terms' });
   }
 });
 
@@ -1734,9 +1582,7 @@ router.post('/login-after-payment', async (req, res) => {
       });
     }
 
-    console.log('Auth: Login after payment request', { discordId, email, username });
-
-    // Check Stripe for active subscription by Discord ID or email
+        // Check Stripe for active subscription by Discord ID or email
     const StripeService = require('../services/stripeService').StripeService;
     const stripe = StripeService.getClient();
     
@@ -1813,7 +1659,7 @@ router.post('/login-after-payment', async (req, res) => {
         try {
           user = await FirebaseService.getUserById(existingSubscription.userId);
           if (user) {
-            console.log('Auth: ✅ Found user by subscription owner (prevents duplicates):', user.id);
+
             // Update with Discord ID if missing
             if (discordId && !user.discordId) {
               const updateData: Partial<import('../services/firebaseService').User> = {
@@ -1825,8 +1671,7 @@ router.post('/login-after-payment', async (req, res) => {
             }
           }
         } catch (error) {
-          console.warn('Auth: Subscription owner user not found:', existingSubscription.userId);
-        }
+                  }
       }
     } catch (error) {
       // Ignore, continue with normal flow
@@ -1870,11 +1715,9 @@ router.post('/login-after-payment', async (req, res) => {
           try {
             user = await FirebaseService.getUserById(userIdFromMetadata);
             if (user) {
-              console.log('Auth: Found user by Stripe metadata userId:', userIdFromMetadata);
-            }
+                          }
           } catch (error) {
-            console.warn('Auth: User from Stripe metadata not found:', userIdFromMetadata);
-          }
+                      }
         }
       }
 
@@ -1883,11 +1726,9 @@ router.post('/login-after-payment', async (req, res) => {
         try {
           user = await FirebaseService.getUserByDiscordId(discordId);
           if (user) {
-            console.log('Auth: Found user by Discord ID:', discordId);
-          }
+                      }
         } catch (error) {
-          console.warn('Auth: User not found by Discord ID:', discordId);
-        }
+                  }
       }
 
       // CRITICAL: Check subscription owner FIRST (most reliable way to prevent duplicates)
@@ -1898,7 +1739,7 @@ router.post('/login-after-payment', async (req, res) => {
           if (existingSubscription && existingSubscription.userId) {
             const ownerUser = await FirebaseService.getUserById(existingSubscription.userId);
             if (ownerUser) {
-              console.log('Auth: Found user by subscription owner (prevents duplicates):', ownerUser.id);
+
               user = ownerUser;
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
@@ -1912,8 +1753,7 @@ router.post('/login-after-payment', async (req, res) => {
             }
           }
         } catch (error) {
-          console.warn('Auth: Error checking subscription owner:', error);
-        }
+                  }
       }
 
       // If still not found, search by email (payment email from customer)
@@ -1922,12 +1762,9 @@ router.post('/login-after-payment', async (req, res) => {
         try {
           user = await FirebaseService.getUserByEmail(paymentEmail);
           if (user) {
-            console.log('Auth: Found user by payment email:', paymentEmail);
-            
-            // If user found by email but doesn't have Discord ID, update it
+                        // If user found by email but doesn't have Discord ID, update it
             if (discordId && !user.discordId) {
-              console.log('Auth: Updating user with Discord ID and Discord email:', discordId);
-              const updateData: Partial<import('../services/firebaseService').User> = {
+                            const updateData: Partial<import('../services/firebaseService').User> = {
                 discordId: discordId,
                 discordEmail: email && email !== user.email ? email : undefined
               };
@@ -1935,8 +1772,7 @@ router.post('/login-after-payment', async (req, res) => {
               user = await FirebaseService.updateUser(user.id, updateData) || user;
             } else if (discordId && user.discordId && user.discordId !== discordId) {
               // If Discord ID differs, update it (user might have changed Discord account)
-              console.log('Auth: Updating user with new Discord ID:', discordId);
-              const updateData: Partial<import('../services/firebaseService').User> = {
+                            const updateData: Partial<import('../services/firebaseService').User> = {
                 discordId: discordId
               };
               if (email && email !== user.email) updateData.discordEmail = email;
@@ -1945,11 +1781,10 @@ router.post('/login-after-payment', async (req, res) => {
             }
           }
         } catch (error) {
-          console.warn('Auth: User not found by email:', paymentEmail);
-        }
+                  }
       }
       } catch (firebaseError: any) {
-        console.error('Auth: Firebase query failed (may not be configured locally):', firebaseError.message);
+
         // If Firebase isn't configured, we can't create users, but we can still check Stripe
         // and return an error with helpful message
         if (firebaseError.code === 16 || firebaseError.message?.includes('authentication credentials')) {
@@ -1967,16 +1802,13 @@ router.post('/login-after-payment', async (req, res) => {
     // If user doesn't exist, create them (webhook might not have processed yet)
     // But only if we have at least Discord ID or email to identify the user
     if (!user && (discordId || email)) {
-      console.log('Auth: User not found in Firebase, creating from payment data...');
-      
-      try {
+            try {
         // Double-check one more time in case user was created by concurrent request
         if (discordId) {
           try {
             const existingUser = await FirebaseService.getUserByDiscordId(discordId);
             if (existingUser) {
-              console.log('Auth: Found user by Discord ID after double-check:', discordId);
-              user = existingUser;
+                            user = existingUser;
             }
           } catch (e) {
             // Ignore
@@ -1987,13 +1819,11 @@ router.post('/login-after-payment', async (req, res) => {
           try {
             const existingUser = await FirebaseService.getUserByEmail(email);
             if (existingUser) {
-              console.log('Auth: Found user by email after double-check:', email);
-              user = existingUser;
+                            user = existingUser;
               
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
-                console.log('Auth: Updating user with Discord ID and Discord email:', discordId);
-                const updateData: Partial<import('../services/firebaseService').User> = {
+                                const updateData: Partial<import('../services/firebaseService').User> = {
                   discordId: discordId,
                   discordEmail: email && email !== user.email ? email : undefined
                 };
@@ -2001,8 +1831,7 @@ router.post('/login-after-payment', async (req, res) => {
                 user = await FirebaseService.updateUser(user.id, updateData) || user;
               } else if (discordId && user.discordId && user.discordId !== discordId) {
                 // If Discord ID differs, update it
-                console.log('Auth: Updating user with new Discord ID:', discordId);
-                const updateData: Partial<import('../services/firebaseService').User> = {
+                                const updateData: Partial<import('../services/firebaseService').User> = {
                   discordId: discordId
                 };
                 if (email && email !== user.email) updateData.discordEmail = email;
@@ -2023,7 +1852,7 @@ router.post('/login-after-payment', async (req, res) => {
             if (subCheck && subCheck.userId) {
               const ownerCheck = await FirebaseService.getUserById(subCheck.userId);
               if (ownerCheck) {
-                console.log('Auth: ✅ Found user by subscription owner in final check (prevents duplicate):', ownerCheck.id);
+
                 user = ownerCheck;
                 // Update with Discord ID if missing
                 if (discordId && !user.discordId) {
@@ -2046,7 +1875,7 @@ router.post('/login-after-payment', async (req, res) => {
           try {
             const finalCheck = await FirebaseService.getUserByEmail(email);
             if (finalCheck) {
-              console.log('Auth: ✅ Found user by email in final check (prevents duplicate), using existing user:', finalCheck.id);
+
               user = finalCheck;
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
@@ -2068,7 +1897,7 @@ router.post('/login-after-payment', async (req, res) => {
           try {
             const finalDiscordCheck = await FirebaseService.getUserByDiscordId(discordId);
             if (finalDiscordCheck) {
-              console.log('Auth: ✅ Found user by Discord ID in final check (prevents duplicate), using existing user:', finalDiscordCheck.id);
+
               user = finalDiscordCheck;
             }
           } catch (e) {
@@ -2112,18 +1941,16 @@ router.post('/login-after-payment', async (req, res) => {
           if (!user) {
             try {
               user = await FirebaseService.createUser(userData);
-              console.log('Auth: Created user in Firebase:', user.id);
-              console.log('Auth: User email (payment):', user.email, 'Discord email:', user.discordEmail || 'same as payment');
+
             } catch (createError: any) {
               // If creation fails due to duplicate (race condition), try to find the user again
               if (createError.message?.includes('already exists') || createError.code === 6) {
-                console.log('Auth: User creation failed (likely duplicate from race condition), searching again...');
+
                 if (paymentEmail) {
                   try {
                     user = await FirebaseService.getUserByEmail(paymentEmail);
                     if (user) {
-                      console.log('Auth: Found user after creation conflict:', user.id);
-                    }
+                                          }
                   } catch (e) {
                     // Ignore
                   }
@@ -2132,8 +1959,7 @@ router.post('/login-after-payment', async (req, res) => {
                   try {
                     user = await FirebaseService.getUserByDiscordId(discordId);
                     if (user) {
-                      console.log('Auth: Found user by Discord ID after creation conflict:', user.id);
-                    }
+                                          }
                   } catch (e) {
                     // Ignore
                   }
@@ -2149,8 +1975,7 @@ router.post('/login-after-payment', async (req, res) => {
           }
         }
       } catch (createError: any) {
-        console.error('Auth: Failed to create user in Firebase:', createError);
-        if (createError.code === 16 || createError.message?.includes('authentication credentials')) {
+                if (createError.code === 16 || createError.message?.includes('authentication credentials')) {
           return res.status(500).json({ 
             error: 'Firebase not configured',
             message: 'Firebase authentication credentials are missing or invalid. Please check your FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, and FIREBASE_PROJECT_ID environment variables, or ensure firebase-service-account.json exists.',
@@ -2159,13 +1984,12 @@ router.post('/login-after-payment', async (req, res) => {
         }
         // If error is "already exists", try to fetch again
         if (createError.message?.includes('already exists') || createError.code === 6) {
-          console.log('Auth: User creation failed (likely duplicate), trying to fetch again...');
+
           if (email) {
             try {
               user = await FirebaseService.getUserByEmail(email);
               if (user) {
-                console.log('Auth: Found user after creation conflict:', user.id);
-              }
+                              }
             } catch (e) {
               // Ignore
             }
@@ -2174,8 +1998,7 @@ router.post('/login-after-payment', async (req, res) => {
             try {
               user = await FirebaseService.getUserByDiscordId(discordId);
               if (user) {
-                console.log('Auth: Found user after creation conflict:', user.id);
-              }
+                              }
             } catch (e) {
               // Ignore
             }
@@ -2205,27 +2028,23 @@ router.post('/login-after-payment', async (req, res) => {
       // First check by Stripe subscription ID (prevents duplicates)
       subscription = await FirebaseService.getSubscriptionByStripeSubscriptionId(activeSubscription.id);
       if (subscription) {
-        console.log('Auth: Found existing subscription by Stripe subscription ID:', activeSubscription.id);
-      }
+              }
       
       // If not found, check by user's subscription ID
       if (!subscription && user.subscriptionId) {
         subscription = await FirebaseService.getSubscriptionById(user.subscriptionId);
         if (subscription) {
-          console.log('Auth: Found subscription by user subscriptionId:', user.subscriptionId);
-        }
+                  }
       }
       
       // If still not found, check by user ID
       if (!subscription) {
         subscription = await FirebaseService.getSubscriptionByUserId(user.id);
         if (subscription) {
-          console.log('Auth: Found subscription by userId:', user.id);
-        }
+                  }
       }
     } catch (firebaseError: any) {
-      console.error('Auth: Firebase subscription query failed:', firebaseError.message);
-      if (firebaseError.code === 16 || firebaseError.message?.includes('authentication credentials')) {
+            if (firebaseError.code === 16 || firebaseError.message?.includes('authentication credentials')) {
         return res.status(500).json({ 
           error: 'Firebase not configured',
           message: 'Firebase authentication credentials are missing or invalid. Please check your FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, and FIREBASE_PROJECT_ID environment variables, or ensure firebase-service-account.json exists.',
@@ -2237,14 +2056,11 @@ router.post('/login-after-payment', async (req, res) => {
 
     // Create or update subscription in Firebase if needed
     if (!subscription) {
-      console.log('Auth: Subscription not found in Firebase, creating from Stripe data...');
-      
-      try {
+            try {
         // Double-check one more time in case subscription was created by concurrent request
         const existingSubscription = await FirebaseService.getSubscriptionByStripeSubscriptionId(activeSubscription.id);
         if (existingSubscription) {
-          console.log('Auth: Found subscription by Stripe subscription ID after double-check:', activeSubscription.id);
-          subscription = existingSubscription;
+                    subscription = existingSubscription;
         }
         
         // If still no subscription, create one
@@ -2261,8 +2077,7 @@ router.post('/login-after-payment', async (req, res) => {
           };
 
           subscription = await FirebaseService.createSubscription(subscriptionData);
-          console.log('Auth: Created subscription in Firebase:', subscription.id);
-        }
+                  }
         
         // Update user with subscription ID and whitelist status (only if we have subscription)
         if (subscription) {
@@ -2272,7 +2087,7 @@ router.post('/login-after-payment', async (req, res) => {
           // Set isWhitelisted to true when subscription is active or trialing
           if ((subscriptionStatus === 'active' || subscriptionStatus === 'trialing') && !user.isWhitelisted) {
             userUpdates.isWhitelisted = true;
-            console.log(`Auth: ✅ Whitelisting user ${user.id} (subscription active)`);
+
           }
           await FirebaseService.updateUser(user.id, userUpdates);
           user.subscriptionId = subscription.id;
@@ -2281,22 +2096,19 @@ router.post('/login-after-payment', async (req, res) => {
           }
         }
       } catch (createError: any) {
-        console.error('Auth: Failed to create subscription in Firebase:', createError);
-        
-        // If error is "already exists", try to fetch again
+                // If error is "already exists", try to fetch again
         if (createError.message?.includes('already exists') || createError.code === 6) {
-          console.log('Auth: Subscription creation failed (likely duplicate), trying to fetch again...');
+
           try {
             subscription = await FirebaseService.getSubscriptionByStripeSubscriptionId(activeSubscription.id);
             if (subscription) {
-              console.log('Auth: Found subscription after creation conflict:', subscription.id);
-              // Update user with subscription ID if we found it
+                            // Update user with subscription ID if we found it
               const userUpdates: Partial<import('../services/firebaseService').User> = {
                 subscriptionId: subscription.id
               };
               if ((subscriptionStatus === 'active' || subscriptionStatus === 'trialing') && !user.isWhitelisted) {
                 userUpdates.isWhitelisted = true;
-                console.log(`Auth: ✅ Whitelisting user ${user.id} (subscription active)`);
+
               }
               await FirebaseService.updateUser(user.id, userUpdates);
               user.subscriptionId = subscription.id;
@@ -2337,16 +2149,13 @@ router.post('/login-after-payment', async (req, res) => {
         if ((subscriptionStatus === 'active' || subscriptionStatus === 'trialing') && !user.isWhitelisted) {
           await FirebaseService.updateUser(user.id, { isWhitelisted: true });
           user.isWhitelisted = true;
-          console.log(`Auth: ✅ Whitelisting user ${user.id} (subscription active)`);
+
         }
         
-        console.log('Auth: Updated subscription in Firebase:', subscription.id);
-      } catch (updateError: any) {
-        console.error('Auth: Failed to update subscription in Firebase:', updateError);
-        // Don't fail login if update fails, subscription still exists
+              } catch (updateError: any) {
+                // Don't fail login if update fails, subscription still exists
         if (updateError.code === 16 || updateError.message?.includes('authentication credentials')) {
-          console.warn('Auth: Firebase not configured, but subscription exists. Proceeding with login...');
-        } else {
+                  } else {
           throw updateError;
         }
       }
@@ -2386,8 +2195,7 @@ router.post('/login-after-payment', async (req, res) => {
     
     if (finalDiscordIdForRole && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')) {
       try {
-        console.log(`Auth: Checking Discord role for user ${finalDiscordIdForRole}...`);
-        // Step 1: Check if user is already in Discord server
+                // Step 1: Check if user is already in Discord server
         // Note: In login-after-payment, we don't have OAuth token, so we cannot add them automatically
         // Discord API requires user's OAuth token (with guilds.join scope) to add users
         // User must complete Discord OAuth login to be added
@@ -2395,16 +2203,12 @@ router.post('/login-after-payment', async (req, res) => {
           // Check if user is already in server (maybe they joined manually or via previous OAuth)
           userInServer = await DiscordService.isUserInGuild(finalDiscordIdForRole);
           if (userInServer) {
-            console.log(`Auth: ✅ User ${finalDiscordIdForRole} is already in Discord server - can assign role`);
-          } else {
-            console.warn(`Auth: ⚠️ User ${finalDiscordIdForRole} is not in Discord server`);
-            console.warn(`Auth: ⚠️ Cannot add user automatically without OAuth token (guilds.join scope)`);
-            console.warn(`Auth: ⚠️ User needs to complete Discord OAuth to be added to server`);
-            needsDiscordOAuth = true; // Mark that user needs Discord OAuth
+                      } else {
+
+                        needsDiscordOAuth = true; // Mark that user needs Discord OAuth
           }
         } catch (error: any) {
-          console.error(`Auth: Error checking if user ${finalDiscordIdForRole} is in Discord server:`, error.message || error);
-          // If check fails, assume user is not in server and needs OAuth
+                    // If check fails, assume user is not in server and needs OAuth
           needsDiscordOAuth = true;
         }
         
@@ -2412,31 +2216,22 @@ router.post('/login-after-payment', async (req, res) => {
         if (userInServer) {
           const hasPaidRole = await DiscordBotService.checkMemberStatus(finalDiscordIdForRole);
           if (!hasPaidRole) {
-            console.log(`Auth: User ${finalDiscordIdForRole} doesn't have paid role, adding now...`);
-            const added = await DiscordBotService.addMemberToServer(finalDiscordIdForRole);
+                        const added = await DiscordBotService.addMemberToServer(finalDiscordIdForRole);
             if (added) {
-              console.log(`Auth: ✅ Assigned paid role to user ${finalDiscordIdForRole} after payment login`);
-            } else {
-              console.warn(`Auth: ⚠️ Failed to assign paid role to user ${finalDiscordIdForRole} (returned false). Check Discord Bot API configuration.`);
+                          } else {
+
             }
           } else {
-            console.log(`Auth: User ${finalDiscordIdForRole} already has paid role`);
-          }
+                      }
         } else {
-          console.warn(`Auth: ⚠️ Cannot assign role to user ${finalDiscordIdForRole} - user not in Discord server`);
-          console.warn(`Auth: ⚠️ User must complete Discord OAuth to join the server first`);
-        }
+                            }
       } catch (error: any) {
-        console.error(`Auth: ❌ Failed to assign paid role to user ${finalDiscordIdForRole}:`, error?.message || error);
-        if (error?.response) {
-          console.error(`Auth: Discord Bot API HTTP Status: ${error.response.status}`);
-          console.error(`Auth: Discord Bot API error response:`, error.response.data);
-        }
+                if (error?.response) {
+                            }
         // Don't fail the login if Discord role assignment fails
       }
     } else if (!finalDiscordIdForRole) {
-      console.warn(`Auth: ⚠️ No Discord ID available for user ${user.id}, cannot assign paid role`);
-      // If user has no Discord ID, they should complete OAuth to get one
+            // If user has no Discord ID, they should complete OAuth to get one
       needsDiscordOAuth = true;
     }
 
@@ -2455,9 +2250,7 @@ router.post('/login-after-payment', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    console.log('Auth: Successfully logged in user after payment:', user.id);
-
-    res.json({
+        res.json({
       token,
       user: {
         id: user.id,
@@ -2472,8 +2265,7 @@ router.post('/login-after-payment', async (req, res) => {
       needsDiscordOAuth // Flag indicating if user needs to complete Discord OAuth to join server
     });
   } catch (error: any) {
-    console.error('Auth: Login after payment failed:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Login failed',
       message: error.message || 'Failed to log in after payment'
     });
@@ -2570,8 +2362,7 @@ router.post('/otp/request', otpRequestLimiter, async (req, res) => {
       message: 'If an account exists with this email, a code has been sent.'
     });
   } catch (error: any) {
-    console.error('Error requesting OTP:', error);
-    res.status(500).json({ error: 'Failed to send OTP code' });
+        res.status(500).json({ error: 'Failed to send OTP code' });
   }
 });
 
@@ -2653,8 +2444,7 @@ router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
-    res.status(500).json({ error: 'Failed to verify code' });
+        res.status(500).json({ error: 'Failed to verify code' });
   }
 });
 
@@ -2716,10 +2506,8 @@ router.post('/discord/link', async (req, res) => {
     // Add user to Discord server
     try {
       await DiscordBotService.addMemberToServer(discordUser.id);
-      console.log(`Auth: ✅ Added user ${discordUser.id} to Discord server after linking`);
-    } catch (error) {
-      console.error('Auth: Failed to add user to Discord server:', error);
-      // Continue even if Discord server add fails
+          } catch (error) {
+            // Continue even if Discord server add fails
     }
     
     // Generate JWT token
@@ -2742,8 +2530,7 @@ router.post('/discord/link', async (req, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Error linking Discord:', error);
-    if (error.message?.includes('Invalid OAuth2 access token')) {
+        if (error.message?.includes('Invalid OAuth2 access token')) {
       return res.status(401).json({ error: 'Invalid Discord authorization code' });
     }
     res.status(500).json({ error: 'Failed to link Discord account' });
@@ -2793,8 +2580,7 @@ router.post('/verification/resend', authenticateToken, resendCodeLimiter, async 
       message: 'Verification code has been sent to your email'
     });
   } catch (error: any) {
-    console.error('Error resending verification code:', error);
-    res.status(500).json({ error: 'Failed to resend verification code' });
+        res.status(500).json({ error: 'Failed to resend verification code' });
   }
 });
 
@@ -2814,8 +2600,7 @@ router.get('/discord/status', authenticateToken, async (req, res) => {
       discordEmail: user.discordEmail || undefined,
     });
   } catch (error: any) {
-    console.error('Error getting Discord status:', error);
-    res.status(500).json({ error: 'Failed to get Discord status' });
+        res.status(500).json({ error: 'Failed to get Discord status' });
   }
 });
 
@@ -2844,8 +2629,7 @@ router.post('/discord/disconnect', authenticateToken, async (req, res) => {
       message: 'Discord account disconnected successfully'
     });
   } catch (error: any) {
-    console.error('Error disconnecting Discord:', error);
-    res.status(500).json({ error: 'Failed to disconnect Discord account' });
+        res.status(500).json({ error: 'Failed to disconnect Discord account' });
   }
 });
 

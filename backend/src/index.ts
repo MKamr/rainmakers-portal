@@ -57,18 +57,7 @@ app.use(express.urlencoded({ extended: true }));
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  console.log(`🌐 [${timestamp}] ${req.method} ${req.path}`);
-  console.log(`📍 Headers:`, {
-    'user-agent': req.headers['user-agent'],
-    'origin': req.headers.origin,
-    'referer': req.headers.referer,
-    'authorization': req.headers.authorization ? 'Bearer ***' : 'none',
-    'content-type': req.headers['content-type']
-  });
-  console.log(`🔍 Query:`, req.query);
-  console.log(`📦 Body:`, req.body);
-  console.log('---');
-  next();
+            next();
 });
 
 // Security middleware
@@ -92,15 +81,10 @@ app.use(cors({
       'https://rainmakers-portal-backend-production.up.railway.app'
     ];
     
-    console.log('🌐 [CORS] Request origin:', origin);
-    console.log('🌐 [CORS] Allowed origins:', allowedOrigins);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('✅ [CORS] Origin allowed:', origin);
-      callback(null, true);
+            if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
     } else {
-      console.log('❌ [CORS] Origin blocked:', origin);
-      callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -179,10 +163,7 @@ app.get('/api/health', (req, res) => {
 app.use((req, res, next) => {
   const originalSend = res.send;
   res.send = function(data) {
-    console.log(`📤 [${new Date().toISOString()}] Response ${res.statusCode} for ${req.method} ${req.path}`);
-    console.log(`📋 Response data:`, typeof data === 'string' ? JSON.parse(data || '{}') : data);
-    console.log('---');
-    return originalSend.call(this, data);
+        return originalSend.call(this, data);
   };
   next();
 });
@@ -194,22 +175,15 @@ app.use(errorHandler);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Rainmakers Portal Backend running on port ${PORT}`);
-  console.log(`🔥 Database: Firebase Firestore`);
-  console.log(`🌐 Frontend URL: https://www.rain.club`);
-  
-  // Initialize email service if configured
+        // Initialize email service if configured
   try {
     const emailConfig = await FirebaseService.getEmailConfig();
     if (emailConfig && emailConfig.enabled) {
       await EmailService.initialize(emailConfig);
-      console.log(`📧 Email Service: Configured and ready`);
-    } else {
-      console.log(`📧 Email Service: Not configured`);
-    }
+          } else {
+          }
   } catch (error) {
-    console.log(`📧 Email Service: Failed to initialize - ${error}`);
-  }
+      }
 });
 
 export default app;

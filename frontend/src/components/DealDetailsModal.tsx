@@ -58,12 +58,6 @@ export function DealDetailsModal({ deal, onClose }: DealDetailsModalProps) {
     ]
 
     if (!allowedTypes.includes(file.type)) {
-      console.log('🔍 [DEBUG] File upload rejected:', { 
-        fileName: file.name, 
-        fileType: file.type, 
-        fileSize: file.size,
-        allowedTypes: allowedTypes 
-      });
       toast.error(`File type not supported. Detected type: ${file.type}. Please upload PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP, ZIP, RAR, 7Z, TAR, GZ, BZ2, TXT, or CSV files.`)
       return
     }

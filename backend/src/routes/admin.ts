@@ -15,8 +15,7 @@ const router = express.Router();
 
 // Handle CORS preflight requests for admin file upload
 router.options('/onedrive/upload', (req, res) => {
-  console.log('🌐 [CORS] Preflight request for /admin/onedrive/upload');
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -116,9 +115,7 @@ router.post('/ghl/import-opportunity', requireAdmin, [
 // Get raw GHL opportunities data for debugging
 router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [ADMIN] Fetching raw GHL opportunities data...');
-    
-    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+        const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
     if (!ghlApiKey) {
       return res.status(400).json({ error: 'GHL API key not configured' });
     }
@@ -126,9 +123,7 @@ router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Res
     // Get all opportunities from GHL
     const ghlOpportunities = await GHLService.listOpportunities();
     
-    console.log(`📊 [ADMIN] Found ${ghlOpportunities.opportunities?.length || 0} opportunities in GHL`);
-    
-    // Return raw data with metadata
+        // Return raw data with metadata
     res.json({
       success: true,
       totalOpportunities: ghlOpportunities.opportunities?.length || 0,
@@ -143,8 +138,7 @@ router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Res
       }
     });
   } catch (error: any) {
-    console.error('❌ [ADMIN] Raw GHL opportunities error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to fetch raw GHL opportunities',
       details: error.message,
       stack: error.stack
@@ -155,14 +149,10 @@ router.get('/ghl/opportunities/raw', requireAdmin, async (req: Request, res: Res
 // Get raw portal deals data for debugging
 router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [ADMIN] Fetching raw portal deals data...');
-    
-    // Get all deals from our system
+        // Get all deals from our system
     const ourDeals = await FirebaseService.getAllDeals();
     
-    console.log(`📊 [ADMIN] Found ${ourDeals.length} deals in our system`);
-    
-    // Return raw data with metadata
+        // Return raw data with metadata
     res.json({
       success: true,
       totalDeals: ourDeals.length,
@@ -179,8 +169,7 @@ router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error('❌ [ADMIN] Raw portal deals error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to fetch raw portal deals',
       details: error.message,
       stack: error.stack
@@ -192,9 +181,7 @@ router.get('/deals/raw', requireAdmin, async (req: Request, res: Response) => {
 router.get('/ghl/opportunity/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    console.log('🔍 [ADMIN] Testing opportunity fetch for ID:', id);
-    
-    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+        const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
     if (!ghlApiKey) {
       return res.status(400).json({ error: 'GHL API key not configured' });
     }
@@ -206,9 +193,7 @@ router.get('/ghl/opportunity/:id', requireAdmin, async (req: Request, res: Respo
       return res.status(404).json({ error: 'Opportunity not found' });
     }
     
-    console.log('✅ [ADMIN] Successfully fetched opportunity:', opportunity.id);
-    
-    res.json({
+        res.json({
       success: true,
       opportunity,
       metadata: {
@@ -219,8 +204,7 @@ router.get('/ghl/opportunity/:id', requireAdmin, async (req: Request, res: Respo
       }
     });
   } catch (error: any) {
-    console.error('❌ [ADMIN] Opportunity fetch error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to fetch opportunity',
       details: error.message,
       stack: error.stack
@@ -242,9 +226,7 @@ interface TestResult {
 // Test GHL API connection with detailed debugging
 router.get('/ghl/test-connection', requireAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [ADMIN] Testing GHL API connection...');
-    
-    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
+        const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
     const ghlV2Token = await FirebaseService.getConfiguration('ghl_v2_token');
     
     if (!ghlApiKey) {
@@ -263,8 +245,7 @@ router.get('/ghl/test-connection', requireAdmin, async (req: Request, res: Respo
     
     // Test V1 API
     try {
-      console.log('🔍 [ADMIN] Testing V1 API...');
-      const headers = {
+            const headers = {
         'Authorization': `Bearer ${ghlApiKey}`,
         'Content-Type': 'application/json',
         'Version': '2021-07-28'
@@ -292,8 +273,7 @@ router.get('/ghl/test-connection', requireAdmin, async (req: Request, res: Respo
     // Test V2 API
     if (ghlV2Token) {
       try {
-        console.log('🔍 [ADMIN] Testing V2 API...');
-        const v2Headers = {
+                const v2Headers = {
           'Authorization': `Bearer ${ghlV2Token}`,
           'Version': '2021-07-28',
           'Content-Type': 'application/json',
@@ -330,15 +310,13 @@ router.get('/ghl/test-connection', requireAdmin, async (req: Request, res: Respo
       });
     }
     
-    console.log('✅ [ADMIN] GHL connection test completed');
-    res.json({
+        res.json({
       success: true,
       message: 'GHL API connection test completed',
       ...results
     });
   } catch (error: any) {
-    console.error('❌ [ADMIN] GHL connection test error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to test GHL connection',
       details: error.message
     });
@@ -680,8 +658,7 @@ router.get('/users', async (req: Request, res: Response) => {
     const users = await FirebaseService.getAllUsers();
     res.json(users);
   } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+        res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
@@ -717,8 +694,7 @@ router.put('/users/:id', [
 
     res.json(updatedUser);
   } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+        res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
@@ -742,16 +718,13 @@ router.post('/users/:id/manual-subscription', [
 
     const updatedUser = await FirebaseService.updateUser(id, { hasManualSubscription: grant });
     
-    console.log(`Admin ${req.user!.id} ${grant ? 'granted' : 'revoked'} manual subscription access for user ${id}`);
-    
-    res.json({
+        res.json({
       success: true,
       message: `Manual subscription access ${grant ? 'granted' : 'revoked'} successfully`,
       user: updatedUser
     });
   } catch (error) {
-    console.error('Error updating manual subscription access:', error);
-    res.status(500).json({ error: 'Failed to update manual subscription access' });
+        res.status(500).json({ error: 'Failed to update manual subscription access' });
   }
 });
 
@@ -759,9 +732,7 @@ router.post('/users/:id/manual-subscription', [
 // Get all Discord auto-access users
 router.get('/discord-auto-access', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [DISCORD AUTO-ACCESS] Fetching auto-access users...');
-    
-    const autoAccessUsers = await FirebaseService.getDiscordAutoAccessUsers();
+        const autoAccessUsers = await FirebaseService.getDiscordAutoAccessUsers();
     
     res.json({
       message: 'Discord auto-access users fetched successfully',
@@ -770,8 +741,7 @@ router.get('/discord-auto-access', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('❌ [DISCORD AUTO-ACCESS] Error fetching auto-access users:', error);
-    res.status(500).json({
+        res.status(500).json({
       error: 'Failed to fetch Discord auto-access users',
       message: error.message
     });
@@ -791,9 +761,7 @@ router.post('/discord-auto-access', [
 
     const { discordUsername, notes } = req.body;
     
-    console.log('➕ [DISCORD AUTO-ACCESS] Adding Discord username:', discordUsername);
-    
-    // Check if username already exists
+        // Check if username already exists
     const existingUser = await FirebaseService.getDiscordAutoAccessUserByUsername(discordUsername);
     if (existingUser) {
       return res.status(400).json({ 
@@ -810,16 +778,13 @@ router.post('/discord-auto-access', [
       addedByUsername: req.user!.username
     });
     
-    console.log('✅ [DISCORD AUTO-ACCESS] Added user:', autoAccessUser.id);
-    
-    res.status(201).json({
+        res.status(201).json({
       message: 'Discord username added to auto-access list successfully',
       user: autoAccessUser,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('❌ [DISCORD AUTO-ACCESS] Error adding auto-access user:', error);
-    res.status(500).json({
+        res.status(500).json({
       error: 'Failed to add Discord username to auto-access list',
       message: error.message
     });
@@ -897,23 +862,18 @@ router.delete('/discord-auto-access/:id', async (req: Request, res: Response) =>
   try {
     const { id } = req.params;
     
-    console.log('🗑️ [DISCORD AUTO-ACCESS] Removing auto-access user:', id);
-    
-    const deleted = await FirebaseService.removeDiscordAutoAccessUser(id);
+        const deleted = await FirebaseService.removeDiscordAutoAccessUser(id);
     if (!deleted) {
       return res.status(404).json({ error: 'Auto-access user not found' });
     }
     
-    console.log('✅ [DISCORD AUTO-ACCESS] Removed user:', id);
-    
-    res.json({
+        res.json({
       message: 'Discord username removed from auto-access list successfully',
       id,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('❌ [DISCORD AUTO-ACCESS] Error removing auto-access user:', error);
-    res.status(500).json({
+        res.status(500).json({
       error: 'Failed to remove Discord username from auto-access list',
       message: error.message
     });
@@ -957,15 +917,13 @@ router.get('/deals', async (req: Request, res: Response) => {
 
     res.json(deals);
   } catch (error) {
-    console.error('Get all deals error:', error);
-    res.status(500).json({ error: 'Failed to fetch deals' });
+        res.status(500).json({ error: 'Failed to fetch deals' });
   }
 });
 
 // Test endpoint to verify admin routes are working
 router.get('/test', async (req: Request, res: Response) => {
-  console.log('🧪 [ADMIN TEST] Admin route test endpoint hit');
-  res.json({ 
+    res.json({ 
     message: 'Admin routes are working', 
     timestamp: new Date().toISOString(),
     route: '/api/admin/test'
@@ -975,53 +933,17 @@ router.get('/test', async (req: Request, res: Response) => {
 // Exchange OneDrive authorization code for tokens using PKCE
 router.post('/onedrive/exchange', async (req: Request, res: Response) => {
   try {
-    console.log('🔄 [EXCHANGE] ===== OneDrive Token Exchange Started =====');
-    console.log('🔄 [EXCHANGE] Request method:', req.method);
-    console.log('🔄 [EXCHANGE] Request path:', req.path);
-    console.log('🔄 [EXCHANGE] Request url:', req.url);
-    console.log('🔄 [EXCHANGE] Request headers:', {
-      'user-agent': req.headers['user-agent'],
-      'origin': req.headers.origin,
-      'referer': req.headers.referer,
-      'content-type': req.headers['content-type'],
-      'authorization': req.headers.authorization ? 'Bearer ***' : 'none'
-    });
-    console.log('🔄 [EXCHANGE] Request body:', req.body);
-    console.log('🔄 [EXCHANGE] Request query:', req.query);
-    
-    const { code, codeVerifier } = req.body;
+                                const { code, codeVerifier } = req.body;
 
     if (!code || !codeVerifier) {
-      console.log('❌ [EXCHANGE] Missing code or codeVerifier');
-      return res.status(400).json({ error: 'Code and code verifier are required' });
+            return res.status(400).json({ error: 'Code and code verifier are required' });
     }
-
-    console.log('✅ [EXCHANGE] Code and codeVerifier received');
-    console.log('🔍 [EXCHANGE] Environment check:', {
-      MICROSOFT_CLIENT_ID: !!process.env.MICROSOFT_CLIENT_ID,
-      MICROSOFT_REDIRECT_URI: !!process.env.MICROSOFT_REDIRECT_URI,
-      MICROSOFT_CLIENT_ID_VALUE: process.env.MICROSOFT_CLIENT_ID ? process.env.MICROSOFT_CLIENT_ID.substring(0, 10) + '...' : 'NOT SET',
-      MICROSOFT_REDIRECT_URI_VALUE: process.env.MICROSOFT_REDIRECT_URI || 'NOT SET'
-    });
-    
     if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_REDIRECT_URI) {
-      console.error('❌ [EXCHANGE] Missing required environment variables');
-      return res.status(500).json({ 
+            return res.status(500).json({ 
         error: 'Missing Microsoft configuration',
         details: 'MICROSOFT_CLIENT_ID or MICROSOFT_REDIRECT_URI not set'
       });
     }
-    
-    console.log('🔄 [EXCHANGE] Exchanging code for tokens with Microsoft...');
-    console.log('🔄 [EXCHANGE] Request details:', {
-      client_id: process.env.MICROSOFT_CLIENT_ID.substring(0, 10) + '...',
-      redirect_uri: process.env.MICROSOFT_REDIRECT_URI,
-      grant_type: 'authorization_code',
-      code: code.substring(0, 20) + '...',
-      code_verifier: codeVerifier.substring(0, 20) + '...',
-      scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
-    });
-
     // Exchange code for tokens using PKCE
     let response;
     try {
@@ -1034,30 +956,18 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
       formData.append('code_verifier', codeVerifier);
       formData.append('scope', 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read');
       
-      console.log('🔄 [EXCHANGE] Sending form data to Microsoft...');
-      
-      response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
+            response = await axios.post('https://login.microsoftonline.com/common/oauth2/v2.0/token', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
-      console.log('✅ [EXCHANGE] Microsoft API response received');
-    } catch (microsoftError: any) {
-      console.error('❌ [EXCHANGE] Microsoft API error:', {
-        status: microsoftError.response?.status,
-        statusText: microsoftError.response?.statusText,
-        data: microsoftError.response?.data,
-        message: microsoftError.message
-      });
-      throw new Error(`Microsoft API error: ${microsoftError.response?.status} - ${microsoftError.response?.data?.error_description || microsoftError.message}`);
+          } catch (microsoftError: any) {
+            throw new Error(`Microsoft API error: ${microsoftError.response?.status} - ${microsoftError.response?.data?.error_description || microsoftError.message}`);
     }
 
     const { access_token, refresh_token, expires_in } = response.data;
     
-    console.log('✅ [EXCHANGE] Tokens received from Microsoft');
-    console.log('🔄 [EXCHANGE] Saving tokens to Firebase...');
-
-    // Save token to Firebase
+            // Save token to Firebase
     try {
       await FirebaseService.saveOneDriveToken({
         accessToken: access_token,
@@ -1065,14 +975,10 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
         expiresAt: Timestamp.fromDate(new Date(Date.now() + expires_in * 1000)),
         scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
       });
-      console.log('✅ [EXCHANGE] Tokens saved to Firebase');
-    } catch (firebaseError: any) {
-      console.error('❌ [EXCHANGE] Firebase save error:', firebaseError);
-      throw new Error(`Firebase save error: ${firebaseError.message}`);
+          } catch (firebaseError: any) {
+            throw new Error(`Firebase save error: ${firebaseError.message}`);
     }
-    console.log('🔄 [EXCHANGE] Getting user info from Microsoft Graph...');
-
-    // Get user info to confirm connection
+        // Get user info to confirm connection
     let userResponse;
     try {
       userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
@@ -1080,18 +986,8 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
           'Authorization': `Bearer ${access_token}`
         }
       });
-      console.log('✅ [EXCHANGE] User info retrieved:', {
-        email: userResponse.data.mail || userResponse.data.userPrincipalName,
-        name: userResponse.data.displayName
-      });
-    } catch (graphError: any) {
-      console.error('❌ [EXCHANGE] Microsoft Graph API error:', {
-        status: graphError.response?.status,
-        statusText: graphError.response?.statusText,
-        data: graphError.response?.data,
-        message: graphError.message
-      });
-      throw new Error(`Microsoft Graph API error: ${graphError.response?.status} - ${graphError.response?.data?.error?.message || graphError.message}`);
+          } catch (graphError: any) {
+            throw new Error(`Microsoft Graph API error: ${graphError.response?.status} - ${graphError.response?.data?.error?.message || graphError.message}`);
     }
 
     const result = {
@@ -1103,17 +999,9 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
       }
     };
 
-    console.log('✅ [EXCHANGE] ===== OneDrive Token Exchange Completed Successfully =====');
-    res.json(result);
+        res.json(result);
   } catch (error) {
-    console.error('❌ [EXCHANGE] ===== OneDrive Token Exchange Failed =====');
-    console.error('❌ [EXCHANGE] Error type:', typeof error);
-    console.error('❌ [EXCHANGE] Error message:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('❌ [EXCHANGE] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('❌ [EXCHANGE] Full error object:', error);
-    console.error('❌ [EXCHANGE] ===== OneDrive Token Exchange Failed =====');
-    
-    res.status(500).json({ 
+                            res.status(500).json({ 
       error: 'Failed to exchange authorization code for tokens',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1123,19 +1011,13 @@ router.post('/onedrive/exchange', async (req: Request, res: Response) => {
 // Save OneDrive tokens (called from frontend after token exchange)
 router.post('/onedrive/save-tokens', async (req: Request, res: Response) => {
   try {
-    console.log('💾 [SAVE-TOKENS] ===== OneDrive Save Tokens Started =====');
-    console.log('💾 [SAVE-TOKENS] Request body:', req.body);
-    
-    const { accessToken, refreshToken, expiresIn } = req.body;
+            const { accessToken, refreshToken, expiresIn } = req.body;
     
     if (!accessToken || !refreshToken || !expiresIn) {
-      console.log('❌ [SAVE-TOKENS] Missing required token data');
-      return res.status(400).json({ error: 'Access token, refresh token, and expires in are required' });
+            return res.status(400).json({ error: 'Access token, refresh token, and expires in are required' });
     }
     
-    console.log('💾 [SAVE-TOKENS] Saving tokens to Firebase...');
-    
-    // Save token to Firebase
+        // Save token to Firebase
     await FirebaseService.saveOneDriveToken({
       accessToken,
       refreshToken,
@@ -1143,19 +1025,12 @@ router.post('/onedrive/save-tokens', async (req: Request, res: Response) => {
       scope: 'https://graph.microsoft.com/Files.ReadWrite.All offline_access User.Read'
     });
     
-    console.log('✅ [SAVE-TOKENS] Tokens saved to Firebase successfully');
-    console.log('💾 [SAVE-TOKENS] ===== OneDrive Save Tokens Completed =====');
-    
-    res.json({
+            res.json({
       success: true,
       message: 'OneDrive tokens saved successfully'
     });
   } catch (error) {
-    console.error('❌ [SAVE-TOKENS] ===== OneDrive Save Tokens Failed =====');
-    console.error('❌ [SAVE-TOKENS] Error:', error);
-    console.error('❌ [SAVE-TOKENS] ===== OneDrive Save Tokens Failed =====');
-    
-    res.status(500).json({ 
+                res.status(500).json({ 
       error: 'Failed to save OneDrive tokens',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1205,11 +1080,9 @@ router.post('/onedrive/upload', upload.single('file'), [
           req.file.mimetype,
           ghlApiKey
         );
-        console.log('Document synced to GHL contact:', deal.ghlContactId);
-      }
+              }
     } catch (error) {
-      console.warn('Failed to sync document to GHL:', error);
-      // Don't fail the upload if GHL sync fails
+            // Don't fail the upload if GHL sync fails
     }
 
     res.status(201).json({
@@ -1226,8 +1099,7 @@ router.post('/onedrive/upload', upload.single('file'), [
       }
     });
   } catch (error) {
-    console.error('Upload document error:', error);
-    res.status(500).json({ error: 'Failed to upload document' });
+        res.status(500).json({ error: 'Failed to upload document' });
   }
 });
 
@@ -1247,8 +1119,7 @@ router.get('/onedrive/deal/:dealId', async (req: Request, res: Response) => {
     
     res.json(files);
   } catch (error) {
-    console.error('Get documents error:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+        res.status(500).json({ error: 'Failed to fetch documents' });
   }
 });
 
@@ -1261,8 +1132,7 @@ router.delete('/onedrive/document/:fileId', async (req: Request, res: Response) 
 
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
-    console.error('Delete document error:', error);
-    res.status(500).json({ error: 'Failed to delete document' });
+        res.status(500).json({ error: 'Failed to delete document' });
   }
 });
 
@@ -1282,8 +1152,7 @@ router.post('/ghl/api-key', async (req: Request, res: Response) => {
       message: 'GHL API key configured successfully' 
     });
   } catch (error) {
-    console.error('Set GHL API key error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to set GHL API key',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1293,15 +1162,9 @@ router.post('/ghl/api-key', async (req: Request, res: Response) => {
 // Test GHL connection
 router.get('/ghl/test', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 Testing GHL connection...');
-    
-    const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
-    console.log('🔑 GHL API key exists:', !!ghlApiKey);
-    console.log('🔑 GHL API key preview:', ghlApiKey ? `${ghlApiKey.substring(0, 10)}...` : 'none');
-    
+        const ghlApiKey = await FirebaseService.getConfiguration('ghl_api_key');
     if (!ghlApiKey) {
-      console.log('❌ GHL API key not configured in Firebase config');
-      return res.status(400).json({ 
+            return res.status(400).json({ 
         connected: false,
         error: 'GHL API key not configured',
         message: 'Please configure GHL API key in admin settings'
@@ -1309,9 +1172,7 @@ router.get('/ghl/test', async (req: Request, res: Response) => {
     }
 
     const ghlBaseUrl = process.env.GHL_BASE_URL || 'https://rest.gohighlevel.com/v1';
-    console.log('🌐 GHL Base URL:', ghlBaseUrl);
-
-    // Test API key by fetching pipelines
+        // Test API key by fetching pipelines
     const response = await axios.get(`${ghlBaseUrl}/pipelines/`, {
       headers: {
         'Authorization': `Bearer ${ghlApiKey}`,
@@ -1320,20 +1181,12 @@ router.get('/ghl/test', async (req: Request, res: Response) => {
       }
     });
 
-    console.log('✅ GHL connection successful');
-    res.json({
+        res.json({
       connected: true,
       pipelines: response.data.pipelines || [],
       message: 'GHL connection successful'
     });
   } catch (error) {
-    console.error('❌ GHL test error:', error);
-    console.error('🔍 Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      status: (error as any)?.response?.status,
-      data: (error as any)?.response?.data
-    });
-    
     res.status(500).json({ 
       connected: false,
       error: 'Failed to connect to GHL',
@@ -1370,8 +1223,7 @@ router.get('/ghl/pipelines', async (req: Request, res: Response) => {
 
     res.json({ pipelines: pipelinesWithStages });
   } catch (error) {
-    console.error('GHL pipelines error:', error);
-    res.status(500).json({ error: 'Failed to fetch GHL pipelines' });
+        res.status(500).json({ error: 'Failed to fetch GHL pipelines' });
   }
 });
 
@@ -1397,9 +1249,7 @@ router.get('/ghl/calendars', async (req: Request, res: Response) => {
       });
       
       const services = calendarsResponse.data.calendars || calendarsResponse.data.services || [];
-      console.log('GHL Calendar services found:', services.length);
-      
-      // Map calendar services to our format
+            // Map calendar services to our format
       calendars = services.map((service: any) => ({
         id: service.id,
         name: service.name || service.title || 'Unnamed Calendar',
@@ -1408,9 +1258,7 @@ router.get('/ghl/calendars', async (req: Request, res: Response) => {
       }));
       
     } catch (servicesError: any) {
-      console.log('Calendar services endpoint failed, trying locations:', servicesError.message);
-      
-      try {
+            try {
         // Fallback to locations endpoint
         const locationsResponse = await axios.get(`${process.env.GHL_BASE_URL}/locations/`, {
           headers: {
@@ -1420,9 +1268,7 @@ router.get('/ghl/calendars', async (req: Request, res: Response) => {
         });
         
         const locations = locationsResponse.data.locations || [];
-        console.log('GHL Locations found:', locations.length);
-        
-        // Extract calendars from locations
+                // Extract calendars from locations
         calendars = locations.map((location: any) => ({
           id: location.id,
           name: `${location.name} (Location)`,
@@ -1431,24 +1277,20 @@ router.get('/ghl/calendars', async (req: Request, res: Response) => {
         }));
         
       } catch (locationsError: any) {
-        console.log('Locations endpoint also failed:', locationsError.message);
-        // Return empty array if both fail
+                // Return empty array if both fail
         calendars = [];
       }
     }
     res.json({ calendars });
   } catch (error) {
-    console.error('GHL calendars error:', error);
-    res.status(500).json({ error: 'Failed to fetch calendars' });
+        res.status(500).json({ error: 'Failed to fetch calendars' });
   }
 });
 
 // Get GHL configuration
 router.get('/ghl/config', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 Fetching GHL configuration...');
-    
-    const config = {
+        const config = {
       apiKey: await FirebaseService.getConfiguration('ghl_api_key'),
       v2Token: await FirebaseService.getConfiguration('ghl_v2_token'),
       pipelineId: await FirebaseService.getConfiguration('ghl_pipeline_id'),
@@ -1464,15 +1306,13 @@ router.get('/ghl/config', async (req: Request, res: Response) => {
       skipGHL: await FirebaseService.getConfiguration('skip_ghl_sync')
     };
 
-    console.log('✅ GHL config fetched successfully');
-    res.json({
+        res.json({
       ...config,
       configured: !!config.apiKey,
       message: config.apiKey ? 'GHL is configured' : 'GHL API key not configured'
     });
   } catch (error) {
-    console.error('❌ Get GHL config error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to fetch GHL configuration',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1486,8 +1326,7 @@ router.post('/ghl/toggle-sync', async (req: Request, res: Response) => {
     await FirebaseService.setConfiguration('skip_ghl_sync', enabled ? 'false' : 'true', 'Skip GHL sync for debugging');
     res.json({ success: true, skipGHL: !enabled });
   } catch (error) {
-    console.error('Toggle GHL sync error:', error);
-    res.status(500).json({ error: 'Failed to toggle GHL sync' });
+        res.status(500).json({ error: 'Failed to toggle GHL sync' });
   }
 });
 
@@ -1496,9 +1335,7 @@ router.post('/ghl/test-contact', async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, phone } = req.body;
     
-    console.log('🧪 [GHL TEST] Testing contact creation with:', { firstName, lastName, email, phone });
-    
-    const testContact = await GHLService.createContact({
+        const testContact = await GHLService.createContact({
       firstName: firstName || 'Test',
       lastName: lastName || 'Contact',
       email: email || 'test@example.com',
@@ -1508,8 +1345,7 @@ router.post('/ghl/test-contact', async (req: Request, res: Response) => {
     
     res.json({ success: true, contact: testContact });
   } catch (error) {
-    console.error('GHL contact test error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to create test contact',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1524,11 +1360,7 @@ router.post('/ghl/pipelines', async (req: Request, res: Response) => {
     if (!apiKey) {
       return res.status(400).json({ error: 'API key is required' });
     }
-
-    console.log('Fetching GHL pipelines with API key:', apiKey.substring(0, 10) + '...');
-    console.log('GHL Base URL:', process.env.GHL_BASE_URL);
-
-    // Fetch all pipelines with stages included
+        // Fetch all pipelines with stages included
     const pipelinesResponse = await axios.get(`${process.env.GHL_BASE_URL}/pipelines/`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -1536,26 +1368,18 @@ router.post('/ghl/pipelines', async (req: Request, res: Response) => {
       }
     });
 
-    console.log('Pipelines response status:', pipelinesResponse.status);
-    console.log('Pipelines data:', pipelinesResponse.data);
-
-    const pipelines = pipelinesResponse.data.pipelines || [];
-    console.log('Found pipelines:', pipelines.length);
-    
-    // The v1 API includes stages, so we don't need to fetch them separately
+            const pipelines = pipelinesResponse.data.pipelines || [];
+        // The v1 API includes stages, so we don't need to fetch them separately
     const pipelinesWithStages = pipelines.map((pipeline: any) => {
-      console.log(`Pipeline: ${pipeline.name} (${pipeline.id}) - Stages: ${pipeline.stages?.length || 0}`);
       return {
         ...pipeline,
         stages: pipeline.stages || []
       };
     });
 
-    console.log('Final pipelines with stages:', pipelinesWithStages.length);
-    res.json({ pipelines: pipelinesWithStages });
+        res.json({ pipelines: pipelinesWithStages });
   } catch (error) {
-    console.error('GHL pipelines error:', error);
-    res.status(500).json({ error: 'Failed to fetch GHL pipelines' });
+        res.status(500).json({ error: 'Failed to fetch GHL pipelines' });
   }
 });
 
@@ -1635,8 +1459,7 @@ router.post('/ghl/config', [
 
     res.json({ message: 'GHL configuration saved successfully' });
   } catch (error) {
-    console.error('Save GHL config error:', error);
-    res.status(500).json({ error: 'Failed to save GHL configuration' });
+        res.status(500).json({ error: 'Failed to save GHL configuration' });
   }
 });
 
@@ -1732,8 +1555,7 @@ router.get('/analytics', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+        res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
 
@@ -1743,27 +1565,20 @@ router.get('/documents', async (req: Request, res: Response) => {
     // Return empty array - documents are not stored in Firebase
     res.json([]);
   } catch (error) {
-    console.error('Get all documents error:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+        res.status(500).json({ error: 'Failed to fetch documents' });
   }
 });
 
 // Fetch GHL custom fields
 router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 [ADMIN] Fetching GHL custom fields...');
-    
-    // Get contact custom fields
+        // Get contact custom fields
     const contactFieldsResult = await GHLService.getContactCustomFields();
     const contactFields = contactFieldsResult.customFields || [];
-    console.log('📞 Contact fields found:', contactFields.length);
-    
-    // Get opportunity custom fields
+        // Get opportunity custom fields
     const opportunityFieldsResult = await GHLService.getOpportunityCustomFields();
     const opportunityFields = opportunityFieldsResult.customFields || [];
-    console.log('💼 Opportunity fields found:', opportunityFields.length);
-    
-    // Combine all fields
+        // Combine all fields
     const allFields = [...contactFields, ...opportunityFields];
     
     // Create summary
@@ -1782,13 +1597,6 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
     };
   
   // Do not write file in read-only environments; just log the JSON
-  console.log('🧾 [ADMIN] GHL custom fields JSON (full output):');
-  console.log('[SUMMARY]', JSON.stringify(customFieldsData.summary));
-  console.log('[CONTACT_FIELDS_COUNT]', customFieldsData.contactFields.length);
-  console.log('[OPPORTUNITY_FIELDS_COUNT]', customFieldsData.opportunityFields.length);
-  console.log('[CONTACT_FIELDS_FULL]', JSON.stringify(customFieldsData.contactFields, null, 2));
-  console.log('[OPPORTUNITY_FIELDS_FULL]', JSON.stringify(customFieldsData.opportunityFields, null, 2));
-  
   res.json({
       success: true,
       summary,
@@ -1798,8 +1606,7 @@ router.post('/ghl/fetch-custom-fields', async (req: Request, res: Response) => {
     });
     
   } catch (error) {
-    console.error('❌ [ADMIN] Fetch custom fields error:', error);
-    res.status(500).json({ 
+        res.status(500).json({ 
       error: 'Failed to fetch GHL custom fields',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -1812,8 +1619,7 @@ router.get('/email/config', requireAdmin, async (req: Request, res: Response) =>
     const emailConfig = await FirebaseService.getEmailConfig();
     res.json(emailConfig);
   } catch (error) {
-    console.error('❌ [ADMIN] Get email config error:', error);
-    res.status(500).json({ error: 'Failed to get email configuration' });
+        res.status(500).json({ error: 'Failed to get email configuration' });
   }
 });
 
@@ -1846,8 +1652,7 @@ router.post('/email/config', requireAdmin, [
       message: 'Email configuration saved successfully' 
     });
   } catch (error) {
-    console.error('❌ [ADMIN] Save email config error:', error);
-    res.status(500).json({ error: 'Failed to save email configuration' });
+        res.status(500).json({ error: 'Failed to save email configuration' });
   }
 });
 
@@ -1870,8 +1675,7 @@ router.post('/email/test', requireAdmin, [
       }
       await EmailService.initialize(storedConfig);
     } catch (initError) {
-      console.error('❌ [ADMIN] Email init for test failed:', initError);
-      return res.status(400).json({ error: 'Failed to initialize email service. Check SMTP settings.' });
+            return res.status(400).json({ error: 'Failed to initialize email service. Check SMTP settings.' });
     }
 
     // Test email connection after init
@@ -1893,8 +1697,7 @@ router.post('/email/test', requireAdmin, [
       message: 'Test email sent successfully' 
     });
   } catch (error) {
-    console.error('❌ [ADMIN] Test email error:', error);
-    res.status(500).json({ error: 'Failed to send test email' });
+        res.status(500).json({ error: 'Failed to send test email' });
   }
 });
 

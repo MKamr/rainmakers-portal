@@ -90,9 +90,7 @@ const getStripePublishableKey = () => {
   // Return test key or fallback to live key if test key not available
   const key = testKey || liveKey || '';
   
-  if (!key) {
-    console.error('Stripe publishable key is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY_TEST in your .env file.');
-  }
+  // Stripe key validation
   
   return key;
 };
@@ -132,6 +130,7 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Helper function to get email from PaymentElement
   const getEmailFromPaymentElement = async (): Promise<string | null> => {
@@ -149,6 +148,12 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
 
     if (!stripe || !elements) {
       setError('Stripe is not loaded');
+      setIsProcessing(false);
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError('You must agree to the subscription terms and conditions to continue');
       setIsProcessing(false);
       return;
     }
@@ -184,13 +189,11 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
           // Setup intent already confirmed, retrieve it using clientSecret prop
           if (clientSecret) {
             try {
-              console.log('Setup intent already confirmed, retrieving...', clientSecret);
               const retrievedSetupIntent = await stripe.retrieveSetupIntent(clientSecret);
               
               if (retrievedSetupIntent.setupIntent && 
                   retrievedSetupIntent.setupIntent.status === 'succeeded' && 
                   retrievedSetupIntent.setupIntent.payment_method) {
-                console.log('Retrieved confirmed setup intent:', retrievedSetupIntent.setupIntent.id);
                 
                 // Get email from input field or PaymentElement (required)
                 const emailToUse = customerEmail || await getEmailFromPaymentElement();
@@ -259,7 +262,6 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
                 return;
               }
             } catch (retrieveError: any) {
-              console.error('Error retrieving setup intent:', retrieveError);
               // Fall through to show error
             }
           }
@@ -273,7 +275,6 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
           return;
         }
         
-        console.error('Stripe setup error:', stripeError);
         setError(stripeError.message || 'Payment setup failed');
         setIsProcessing(false);
         return;
@@ -363,7 +364,6 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('Error processing payment:', err);
       setError(err.response?.data?.error || err.message || 'Payment processing failed');
     } finally {
       setIsProcessing(false);
@@ -394,9 +394,34 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
         />
       </div>
 
+      <div className="mt-6">
+        {/* Terms and Conditions Checkbox */}
+        <label className="flex items-start space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            className="mt-1 h-5 w-5 text-yellow-500 border-yellow-500 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer bg-black border-2"
+            required
+          />
+          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+            I agree to{' '}
+            <a 
+              href="/subscription-terms.html" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-yellow-400 hover:text-yellow-300 underline font-semibold"
+              onClick={(e) => e.stopPropagation()}
+            >
+              CRE Media III, LLC's Terms of Service & Privacy Policy
+            </a>
+          </span>
+        </label>
+      </div>
+
       <button
         type="submit"
-        disabled={!stripe || !elements || isProcessing}
+        disabled={!stripe || !elements || isProcessing || !agreedToTerms}
         className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isProcessing ? 'Processing...' : 'Subscribe - $49/month'}
@@ -471,7 +496,6 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
       setClientSecret(response.clientSecret);
       setCustomerId(response.customerId);
     } catch (err: any) {
-      console.error('Error initializing payment:', err);
       setError(err.response?.data?.error || 'Failed to initialize payment');
     } finally {
       setIsProcessing(false);
@@ -487,9 +511,6 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
       mode: import.meta.env.MODE,
       testKeyValue: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST ? 'Set (hidden)' : 'Not set',
     };
-    
-    console.error('Stripe Configuration Debug Info:', debugInfo);
-    console.error('Available env vars:', Object.keys(import.meta.env).filter(k => k.includes('STRIPE')));
     
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -599,7 +620,9 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
                     },
                     loader: 'auto',
                     clientSecret,
-                    
+                    terms: {
+                      card: 'always',
+                    },
                   }}
                 >
                   <PaymentElementForm

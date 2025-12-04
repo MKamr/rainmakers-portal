@@ -38,9 +38,7 @@ export class AppointmentService {
       throw new Error('GHL v2 private integration token not configured. V2 API requires a different token than V1 API.');
     }
     
-    console.log('🔑 [GHL V2] Using V2 private integration token');
-    
-    return {
+        return {
       'Authorization': `Bearer ${v2Token}`,
       'Version': '2021-04-15', // Use correct API version for calendars/events endpoint
       'Accept': 'application/json'
@@ -56,9 +54,7 @@ export class AppointmentService {
     subAccountId?: string;
   }): Promise<any[]> {
     try {
-      console.log('📅 [GHL CALENDAR EVENTS] Fetching calendar events with params:', params);
-
-      let subAccountCredentials = null;
+            let subAccountCredentials = null;
       if (params?.subAccountId) {
         subAccountCredentials = await FirebaseService.getSubAccountById(params.subAccountId);
         if (!subAccountCredentials) {
@@ -70,8 +66,7 @@ export class AppointmentService {
       let headers: any;
 
       if (subAccountCredentials?.v2Token) {
-        console.log('📅 [GHL CALENDAR EVENTS] Using sub-account V2 token');
-        v2Token = subAccountCredentials.v2Token;
+                v2Token = subAccountCredentials.v2Token;
         headers = {
           'Authorization': `Bearer ${v2Token}`,
           'Version': '2021-04-15',
@@ -81,8 +76,7 @@ export class AppointmentService {
       } else {
         v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
         if (v2Token) {
-          console.log('📅 [GHL CALENDAR EVENTS] Using default V2 API');
-          headers = {
+                    headers = {
             'Authorization': `Bearer ${v2Token}`,
             'Version': '2021-04-15',
             'Content-Type': 'application/json',
@@ -101,19 +95,14 @@ export class AppointmentService {
         endTime: params.endTime
       };
 
-      console.log('📅 [GHL CALENDAR EVENTS] Using endpoint:', endpoint);
-      console.log('📅 [GHL CALENDAR EVENTS] Query params:', queryParams);
-
-      const response = await axios.get(endpoint, {
+                  const response = await axios.get(endpoint, {
         headers,
         params: queryParams
       });
 
-      console.log('✅ [GHL CALENDAR EVENTS] Success, found events:', response.data.events?.length || 0);
-      return response.data.events || [];
+            return response.data.events || [];
     } catch (error: any) {
-      console.error('❌ [GHL CALENDAR EVENTS] Error fetching calendar events:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -126,9 +115,7 @@ export class AppointmentService {
     subAccountId?: string;
   }): Promise<GHLAppointment[]> {
     try {
-      console.log('📅 [GHL APPOINTMENTS] Fetching appointments with params:', params);
-      
-      // If subAccountId is not provided or is empty string, get default credentials
+            // If subAccountId is not provided or is empty string, get default credentials
       let subAccountCredentials = null;
       if (params?.subAccountId && params.subAccountId.trim() !== '') {
         subAccountCredentials = await FirebaseService.getSubAccountById(params.subAccountId);
@@ -140,8 +127,7 @@ export class AppointmentService {
       // For default account, check if there are any sub-accounts with ghlUserId configured
       // This is a fallback when no sub-account is explicitly provided
       if (!subAccountCredentials) {
-        console.log('📅 [GHL APPOINTMENTS] No sub-account specified, using default configuration');
-      }
+              }
       
       // Try V2 API first
       try {
@@ -149,8 +135,7 @@ export class AppointmentService {
         let headers: any;
         
         if (subAccountCredentials?.v2Token) {
-          console.log('📅 [GHL APPOINTMENTS] Using sub-account V2 token');
-          v2Token = subAccountCredentials.v2Token;
+                    v2Token = subAccountCredentials.v2Token;
           headers = {
             'Authorization': `Bearer ${v2Token}`,
             'Version': '2021-04-15', // Use correct API version for calendars/events endpoint
@@ -159,8 +144,7 @@ export class AppointmentService {
         } else {
           v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
           if (v2Token) {
-            console.log('📅 [GHL APPOINTMENTS] Using default V2 API');
-            headers = {
+                        headers = {
               'Authorization': `Bearer ${v2Token}`,
               'Version': '2021-04-15', // Use correct API version for calendars/events endpoint
               'Accept': 'application/json'
@@ -207,21 +191,17 @@ export class AppointmentService {
           // If no calendarId provided, check for userId in sub-account or default config
           if (!queryParams.calendarId) {
             if (subAccountCredentials?.ghlUserId) {
-              console.log('📅 [GHL APPOINTMENTS] Using userId from sub-account:', subAccountCredentials.ghlUserId);
-              queryParams.userId = subAccountCredentials.ghlUserId;
+                            queryParams.userId = subAccountCredentials.ghlUserId;
             } else {
               // Try to get userId from default configuration
               try {
                 const defaultUserId = await FirebaseService.getConfiguration('ghl_user_id');
                 if (defaultUserId) {
-                  console.log('📅 [GHL APPOINTMENTS] Using userId from default config:', defaultUserId);
-                  queryParams.userId = defaultUserId;
+                                    queryParams.userId = defaultUserId;
                 } else {
-                  console.log('⚠️ [GHL APPOINTMENTS] No userId found in default config or sub-account. API may fail if calendarId is not provided.');
-                }
+                                  }
               } catch (configError) {
-                console.log('⚠️ [GHL APPOINTMENTS] Could not retrieve default userId config');
-              }
+                              }
             }
           }
           
@@ -230,30 +210,21 @@ export class AppointmentService {
             throw new Error('GHL V2 API requires either calendarId, userId, or groupId parameter');
           }
           
-          console.log('📅 [GHL APPOINTMENTS] Using V2 endpoint:', endpoint);
-          console.log('📅 [GHL APPOINTMENTS] Query params:', queryParams);
-          console.log('📅 [GHL APPOINTMENTS] Headers:', headers);
-          
-          const response = await axios.get(endpoint, {
+                                        const response = await axios.get(endpoint, {
             headers,
             params: queryParams
           });
           
-          console.log('✅ [GHL APPOINTMENTS] V2 API success, found appointments:', response.data.events?.length || 0);
-          return response.data.events || [];
+                    return response.data.events || [];
         }
       } catch (v2Error: any) {
-        console.log('⚠️ [GHL APPOINTMENTS] V2 API failed, trying V1 API:', v2Error.message);
-        console.log('⚠️ [GHL APPOINTMENTS] V2 Error details:', v2Error.response?.data);
-      }
+                      }
       
       // Fallback to V1 API
-      console.log('📅 [GHL APPOINTMENTS] Using V1 API');
-      let headers: any;
+            let headers: any;
       
       if (subAccountCredentials?.apiKey) {
-        console.log('📅 [GHL APPOINTMENTS] Using sub-account V1 API key');
-        headers = {
+                headers = {
           'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
           'Content-Type': 'application/json',
           'Version': '2021-07-28'
@@ -279,19 +250,16 @@ export class AppointmentService {
       // Add userId if available and no calendarId
       if (!params?.calendarId) {
         if (subAccountCredentials?.ghlUserId) {
-          console.log('📅 [GHL APPOINTMENTS V1] Using userId from sub-account:', subAccountCredentials.ghlUserId);
-          queryParams.userId = subAccountCredentials.ghlUserId;
+                    queryParams.userId = subAccountCredentials.ghlUserId;
         } else {
           // Try default userId
           try {
             const defaultUserId = await FirebaseService.getConfiguration('ghl_user_id');
             if (defaultUserId) {
-              console.log('📅 [GHL APPOINTMENTS V1] Using userId from default config:', defaultUserId);
-              queryParams.userId = defaultUserId;
+                            queryParams.userId = defaultUserId;
             }
           } catch (configError) {
-            console.log('⚠️ [GHL APPOINTMENTS V1] Could not retrieve default userId config');
-          }
+                      }
         }
       }
       
@@ -300,27 +268,20 @@ export class AppointmentService {
         throw new Error('GHL V1 API requires either locationId, calendarId, or userId parameter');
       }
       
-      console.log('📅 [GHL APPOINTMENTS V1] Using endpoint:', endpoint);
-      console.log('📅 [GHL APPOINTMENTS V1] Query params:', queryParams);
-      
-      const response = await axios.get(endpoint, {
+                  const response = await axios.get(endpoint, {
         headers,
         params: queryParams
       });
       
-      console.log('✅ [GHL APPOINTMENTS] V1 API success, found appointments:', response.data.appointments?.length || 0);
-      return response.data.appointments || [];
+            return response.data.appointments || [];
     } catch (error: any) {
-      console.error('❌ [GHL APPOINTMENTS] Error fetching appointments:', error);
-      throw error;
+            throw error;
     }
   }
 
   static async getAppointmentById(appointmentId: string, subAccountId?: string): Promise<GHLAppointment | null> {
     try {
-      console.log('📅 [GHL APPOINTMENT] Fetching appointment by ID:', appointmentId);
-      
-      let subAccountCredentials = null;
+            let subAccountCredentials = null;
       if (subAccountId) {
         subAccountCredentials = await FirebaseService.getSubAccountById(subAccountId);
         if (!subAccountCredentials) {
@@ -334,8 +295,7 @@ export class AppointmentService {
         let headers: any;
         
         if (subAccountCredentials?.v2Token) {
-          console.log('📅 [GHL APPOINTMENT] Using sub-account V2 token');
-          v2Token = subAccountCredentials.v2Token;
+                    v2Token = subAccountCredentials.v2Token;
           headers = {
             'Authorization': `Bearer ${v2Token}`,
             'Version': '2021-07-28',
@@ -345,8 +305,7 @@ export class AppointmentService {
         } else {
           v2Token = await FirebaseService.getConfiguration('ghl_v2_token');
           if (v2Token) {
-            console.log('📅 [GHL APPOINTMENT] Using default V2 API');
-            headers = await this.getV2Headers();
+                        headers = await this.getV2Headers();
           }
         }
         
@@ -354,20 +313,16 @@ export class AppointmentService {
           const endpoint = `${this.GHL_V2_BASE_URL}/calendars/events/${appointmentId}`;
           
           const response = await axios.get(endpoint, { headers });
-          console.log('✅ [GHL APPOINTMENT] V2 API success');
-          return response.data.event || response.data;
+                    return response.data.event || response.data;
         }
       } catch (v2Error: any) {
-        console.log('⚠️ [GHL APPOINTMENT] V2 API failed, trying V1 API:', v2Error.message);
-      }
+              }
       
       // Fallback to V1 API
-      console.log('📅 [GHL APPOINTMENT] Using V1 API');
-      let headers: any;
+            let headers: any;
       
       if (subAccountCredentials?.apiKey) {
-        console.log('📅 [GHL APPOINTMENT] Using sub-account V1 API key');
-        headers = {
+                headers = {
           'Authorization': `Bearer ${subAccountCredentials.apiKey}`,
           'Content-Type': 'application/json',
           'Version': '2021-07-28'
@@ -379,11 +334,9 @@ export class AppointmentService {
       const endpoint = `${this.GHL_BASE_URL}/appointments/${appointmentId}`;
       
       const response = await axios.get(endpoint, { headers });
-      console.log('✅ [GHL APPOINTMENT] V1 API success');
-      return response.data.appointment || response.data;
+            return response.data.appointment || response.data;
     } catch (error: any) {
-      console.error('❌ [GHL APPOINTMENT] Error fetching appointment:', error);
-      if (error.response?.status === 404) {
+            if (error.response?.status === 404) {
         return null;
       }
       throw error;
@@ -396,15 +349,12 @@ export class AppointmentService {
       const locationId = await FirebaseService.getConfiguration('ghl_location_id');
       
       if (locationId) {
-        console.log('✅ [GHL LOCATIONS] Found location from config:', locationId);
-        return locationId;
+                return locationId;
       }
       
-      console.log('⚠️ [GHL LOCATIONS] No location ID found in configurations');
-      return null;
+            return null;
     } catch (error: any) {
-      console.error('❌ [GHL LOCATIONS] Error getting location ID from config:', error);
-      return null;
+            return null;
     }
   }
 }

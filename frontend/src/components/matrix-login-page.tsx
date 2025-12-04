@@ -13,19 +13,25 @@ const MatrixRain = () => {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
     const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}"
     const matrixArray = matrix.split("")
-
     const fontSize = 10
-    const columns = canvas.width / fontSize
 
-    const drops: number[] = []
+    // Initialize canvas and drops
+    let columns = Math.floor(window.innerWidth / fontSize)
+    let drops: number[] = []
+    
+    const initCanvas = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      columns = Math.floor(canvas.width / fontSize)
+      drops = []
     for (let x = 0; x < columns; x++) {
-      drops[x] = 1
+        drops[x] = Math.random() * -100 // Random starting positions
+      }
     }
+
+    initCanvas()
 
     const draw = () => {
       ctx.fillStyle = "rgba(0, 0, 0, 0.04)"
@@ -66,8 +72,7 @@ const MatrixRain = () => {
     const interval = setInterval(draw, 35)
 
     const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      initCanvas()
     }
 
     window.addEventListener("resize", handleResize)
@@ -114,35 +119,20 @@ export function MatrixLoginPage() {
     const userParam = urlParams.get("user")
     const error = urlParams.get("error")
 
-    console.log('MatrixLoginPage: Checking OAuth callback', {
-      hasToken: !!token,
-      hasUserParam: !!userParam,
-      hasError: !!error,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : null
-    });
-
     if (error) {
-      console.error("Discord auth error:", error)
       return
     }
 
     if (token && userParam) {
       try {
-        console.log('MatrixLoginPage: Processing token and user data...');
         const user = JSON.parse(decodeURIComponent(userParam))
-        console.log('MatrixLoginPage: Parsed user:', { id: user.id, username: user.username, email: user.email });
-        
         localStorage.setItem("token", token)
         localStorage.setItem("user", JSON.stringify(user))
-        console.log('MatrixLoginPage: ✅ Saved token and user to localStorage, redirecting to portal...');
-        
         // Use navigate instead of window.location.href to avoid full page reload issues
-        window.location.href = "/"
+        navigate("/", { replace: true })
       } catch (error) {
-        console.error("MatrixLoginPage: Failed to parse user data:", error)
+        // Failed to parse user data
       }
-    } else {
-      console.log('MatrixLoginPage: No token/user params found, showing login page');
     }
   }, [])
 
@@ -169,10 +159,9 @@ export function MatrixLoginPage() {
         }
         
         // Redirect to portal
-        window.location.href = '/';
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
-      console.error('Login error:', err);
       const errorMessage = err.response?.data?.error || 'Login failed. Please try again.';
       setError(errorMessage);
       

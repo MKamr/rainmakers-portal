@@ -13,8 +13,7 @@ router.post('/create-setup-intent', async (req, res) => {
     try {
       StripeService.getClient();
     } catch (initError: any) {
-      console.error('Stripe initialization failed:', initError);
-      return res.status(503).json({ error: initError.message || 'Payment service is not configured. Please contact support.' });
+            return res.status(503).json({ error: initError.message || 'Payment service is not configured. Please contact support.' });
     }
 
     const { customerEmail, discordId, discordUsername } = req.body;
@@ -75,8 +74,7 @@ router.post('/create-setup-intent', async (req, res) => {
       customerId: customer.id,
     });
   } catch (error: any) {
-    console.error('Error creating setup intent:', error);
-    res.status(400).json({ error: error.message || 'Failed to create setup intent' });
+        res.status(400).json({ error: error.message || 'Failed to create setup intent' });
   }
 });
 
@@ -89,8 +87,7 @@ router.post('/create-subscription', async (req, res) => {
     try {
       StripeService.getClient();
     } catch (initError: any) {
-      console.error('Stripe initialization failed:', initError);
-      return res.status(503).json({ error: initError.message || 'Payment service is not configured. Please contact support.' });
+            return res.status(503).json({ error: initError.message || 'Payment service is not configured. Please contact support.' });
     }
 
     const { paymentMethodId, customerId, customerEmail, plan, discordId, discordUsername } = req.body;
@@ -203,8 +200,7 @@ router.post('/create-subscription', async (req, res) => {
       customerId: customer.id,
     });
   } catch (error: any) {
-    console.error('Error creating subscription:', error);
-    res.status(400).json({ error: error.message || 'Failed to create subscription' });
+        res.status(400).json({ error: error.message || 'Failed to create subscription' });
   }
 });
 

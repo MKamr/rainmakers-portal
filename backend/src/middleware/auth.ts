@@ -138,7 +138,6 @@ export const checkSetupComplete = async (
 
     next();
   } catch (error) {
-    console.error('Setup check error:', error);
-    return res.status(500).json({ error: 'Failed to verify setup completion' });
+        return res.status(500).json({ error: 'Failed to verify setup completion' });
   }
 };

@@ -317,8 +317,7 @@ export class FirebaseService {
       
       return snapshot.docs[0].data() as DiscordAutoAccessUser;
     } catch (error) {
-      console.error('Error getting Discord auto-access user by username:', error);
-      return null;
+            return null;
     }
   }
 
@@ -347,26 +346,20 @@ export class FirebaseService {
       await userRef.delete();
       return true;
     } catch (error) {
-      console.error('Error removing Discord auto-access user:', error);
-      return false;
+            return false;
     }
   }
 
   // Deal methods - Updated to handle flexible data structure and filter undefined values
   static async createDeal(dealData: any): Promise<any> {
     try {
-      console.log('🔥 [FIREBASE] Creating deal with data:', dealData);
-      
-      const newDealRef = FirebaseService.dealsCollection.doc();
+            const newDealRef = FirebaseService.dealsCollection.doc();
     const now = Timestamp.now();
     
       // Filter out undefined values to prevent Firestore errors
     const cleanDealData = Object.fromEntries(
         Object.entries(dealData).filter(([key, value]) => value !== undefined)
       );
-      
-      console.log('🔥 [FIREBASE] Cleaned deal data (removed undefined):', cleanDealData);
-      
       // Create deal with flexible structure - include all provided fields
       const newDeal = {
         id: newDealRef.id,
@@ -375,15 +368,10 @@ export class FirebaseService {
       updatedAt: now,
       };
       
-      console.log('🔥 [FIREBASE] Deal to be saved:', newDeal);
-      
-      await newDealRef.set(newDeal);
-      console.log('✅ [FIREBASE] Deal created successfully with ID:', newDealRef.id);
-      
-      return newDeal;
+            await newDealRef.set(newDeal);
+            return newDeal;
     } catch (error) {
-      console.error('❌ [FIREBASE] Error creating deal:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -406,63 +394,38 @@ export class FirebaseService {
   // ✅ EXACT MATCH TO YOUR QUERY STRUCTURE
   static async getDealsByUserId(userId: string): Promise<Deal[]> {
     try {
-      console.log('🔥 [FIREBASE] Getting deals for user ID:', userId);
-      
-      // Match your exact Firebase query structure
+            // Match your exact Firebase query structure
       const dealsRef = db.collection('deals');
       const q = dealsRef.where('userId', '==', userId);
       
       const querySnapshot = await q.get();
-      console.log('🔥 [FIREBASE] Query executed, found documents:', querySnapshot.docs.length);
-      
-      const userDeals: Deal[] = [];
+            const userDeals: Deal[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        console.log('🔥 [FIREBASE] Deal document:', {
-          id: doc.id,
-          userId: data.userId,
-          status: data.status,
-          stage: data.stage,
-          title: data.title,
-          value: data.value
-        });
-        
-        // Match your exact structure: { id: doc.id, ...doc.data() }
+                // Match your exact structure: { id: doc.id, ...doc.data() }
         userDeals.push({ id: doc.id, ...data } as Deal);
       });
       
-      console.log('🔥 [FIREBASE] Deals for user:', userDeals.length);
-      return userDeals;
+            return userDeals;
     } catch (error) {
-      console.error('❌ [FIREBASE] Error getting deals by user ID:', error);
-      console.error('❌ [FIREBASE] Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        userId
-      });
       return [];
     }
   }
 
   static async getAllDeals(): Promise<Deal[]> {
     try {
-      console.log('🔥 [FIREBASE] Getting all deals from deals collection...');
-      
-    const dealsSnapshot = await db.collection('deals')
+          const dealsSnapshot = await db.collection('deals')
       .orderBy('createdAt', 'desc')
       .get();
     
-      console.log('🔥 [FIREBASE] Found total documents in deals collection:', dealsSnapshot.docs.length);
-      
-      const deals = dealsSnapshot.docs.map(doc => {
+            const deals = dealsSnapshot.docs.map(doc => {
         // ✅ FIX: Include document ID in the response
         return { id: doc.id, ...doc.data() } as Deal;
       });
       
-      console.log('🔥 [FIREBASE] Returning all deals:', deals.length);
-      return deals;
+            return deals;
     } catch (error) {
-      console.error('❌ [FIREBASE] Error getting all deals:', error);
-      return [];
+            return [];
     }
   }
 
@@ -530,37 +493,29 @@ export class FirebaseService {
   // Configuration methods
   static async getConfiguration(key: string): Promise<string | null> {
     try {
-      console.log('🔧 [CONFIG] Getting configuration for key:', key);
-      
-      // Try configurations collection first (new structure)
+            // Try configurations collection first (new structure)
     const configDoc = await db.collection('configurations').doc(key).get();
       if (configDoc.exists) {
         const data = configDoc.data();
-        console.log('🔧 [CONFIG] Found in configurations collection:', { key, hasValue: !!data?.value });
-        return data?.value || null;
+                return data?.value || null;
       }
       
       // Fallback to config collection (old structure)
       const oldConfigDoc = await db.collection('config').doc(key).get();
       if (oldConfigDoc.exists) {
         const data = oldConfigDoc.data();
-        console.log('🔧 [CONFIG] Found in config collection (fallback):', { key, hasValue: !!data?.value });
         return data?.value || null;
       }
       
-      console.log('🔧 [CONFIG] Configuration not found:', key);
-      return null;
+            return null;
     } catch (error) {
-      console.error('❌ [CONFIG] Error getting configuration:', error);
-      return null;
+            return null;
     }
   }
 
   static async setConfiguration(key: string, value: string, description?: string): Promise<void> {
     try {
-      console.log('🔧 [CONFIG] Setting configuration:', { key, hasValue: !!value, description });
-      
-      await db.collection('configurations').doc(key).set({
+            await db.collection('configurations').doc(key).set({
       key,
       value,
         description: description || '',
@@ -568,10 +523,8 @@ export class FirebaseService {
         updatedAt: Timestamp.now()
       });
       
-      console.log('🔧 [CONFIG] Configuration set successfully:', key);
-    } catch (error) {
-      console.error('❌ [CONFIG] Error setting configuration:', error);
-      throw error;
+          } catch (error) {
+            throw error;
     }
   }
 
@@ -588,8 +541,7 @@ export class FirebaseService {
         createdAt: Timestamp.now()
       });
     } catch (error) {
-      console.error('Error saving OneDrive token:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -607,8 +559,7 @@ export class FirebaseService {
       const tokenDoc = snapshot.docs[0];
       return tokenDoc.data() as any;
     } catch (error) {
-      console.error('Error getting latest OneDrive token:', error);
-      return null;
+            return null;
     }
   }
 
@@ -646,8 +597,7 @@ export class FirebaseService {
         usersByMonth: usersByMonth
       };
     } catch (error) {
-      console.error('Error getting analytics:', error);
-      return {
+            return {
         totalDeals: 0,
         totalValue: 0,
         dealsByStatus: {},
@@ -666,8 +616,7 @@ export class FirebaseService {
       }
       return null;
     } catch (error) {
-      console.error('Error getting email config:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -688,10 +637,8 @@ export class FirebaseService {
       };
 
       await db.collection('config').doc('email').set(emailConfig);
-      console.log('✅ [FIREBASE] Email configuration saved successfully');
-    } catch (error) {
-      console.error('❌ [FIREBASE] Error saving email config:', error);
-      throw error;
+          } catch (error) {
+            throw error;
     }
   }
 
@@ -756,8 +703,7 @@ export class FirebaseService {
       // If we have a status filter, we need to avoid orderBy to prevent index requirements
       // Instead, we'll get the data and sort in memory
       if (filters?.status) {
-        console.log('📊 [FIRESTORE] Using status filter, fetching without orderBy to avoid index requirement');
-        const snapshot = await query.get();
+                const snapshot = await query.get();
         let results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
         
         // Sort in memory by appointmentDate descending
@@ -774,11 +720,9 @@ export class FirebaseService {
       const snapshot = await query.orderBy('appointmentDate', 'desc').get();
       return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
-      console.error('Error getting appointments:', error);
-      // If error is about missing index, try getting all and filtering in memory
+            // If error is about missing index, try getting all and filtering in memory
       if (error instanceof Error && error.message.includes('index')) {
-        console.log('⚠️ [FIRESTORE] Missing index, falling back to in-memory filtering');
-        try {
+                try {
           const snapshot = await FirebaseService.appointmentsCollection.get();
           let results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Appointment));
           
@@ -807,8 +751,7 @@ export class FirebaseService {
           
           return results;
         } catch (fallbackError) {
-          console.error('Error in fallback query:', fallbackError);
-          return [];
+                    return [];
         }
       }
       return [];
@@ -823,11 +766,9 @@ export class FirebaseService {
         .get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
-      console.error('Error getting appointments by user ID:', error);
-      // If error is about missing index, try fetching without orderBy
+            // If error is about missing index, try fetching without orderBy
       if (error instanceof Error && error.message.includes('index')) {
-        console.log('⚠️ [FIRESTORE] Missing index for getAppointmentsByUserId, falling back to in-memory sorting');
-        try {
+                try {
           const snapshot = await FirebaseService.appointmentsCollection
             .where('assignedToUserId', '==', userId)
             .get();
@@ -842,8 +783,7 @@ export class FirebaseService {
           
           return results;
         } catch (fallbackError) {
-          console.error('Error in fallback query:', fallbackError);
-          return [];
+                    return [];
         }
       }
       return [];
@@ -858,8 +798,7 @@ export class FirebaseService {
         .get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
     } catch (error) {
-      console.error('Error getting unassigned appointments:', error);
-      return [];
+            return [];
     }
   }
 
@@ -872,8 +811,7 @@ export class FirebaseService {
         .get();
       return !snapshot.empty;
     } catch (error) {
-      console.error('Error checking terms acceptance:', error);
-      return false;
+            return false;
     }
   }
 
@@ -917,11 +855,9 @@ export class FirebaseService {
       };
       
       await newTermsRef.set(termsAcceptance);
-      console.log(`✅ Terms acceptance recorded for user ${userId} (Version: ${termsVersion})`);
       return termsAcceptance;
     } catch (error) {
-      console.error('Error recording terms acceptance:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -936,8 +872,7 @@ export class FirebaseService {
       }
       return snapshot.docs[0].data() as TermsAcceptance;
     } catch (error) {
-      console.error('Error getting terms acceptance:', error);
-      return null;
+            return null;
     }
   }
 
@@ -987,8 +922,7 @@ export class FirebaseService {
         .get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubAccount));
     } catch (error) {
-      console.error('Error getting sub-accounts:', error);
-      return [];
+            return [];
     }
   }
 
@@ -1000,8 +934,7 @@ export class FirebaseService {
         .get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubAccount));
     } catch (error) {
-      console.error('Error getting active sub-accounts:', error);
-      return [];
+            return [];
     }
   }
 
@@ -1016,8 +949,7 @@ export class FirebaseService {
       }
       return snapshot.docs[0].data() as SubAccount;
     } catch (error) {
-      console.error('Error getting sub-account by name:', error);
-      return null;
+            return null;
     }
   }
 
@@ -1057,8 +989,7 @@ export class FirebaseService {
       }
       return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Subscription;
     } catch (error) {
-      console.error('Error getting subscription by user ID:', error);
-      return null;
+            return null;
     }
   }
 
@@ -1073,8 +1004,7 @@ export class FirebaseService {
       }
       return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Subscription;
     } catch (error) {
-      console.error('Error getting subscription by Stripe subscription ID:', error);
-      return null;
+            return null;
     }
   }
 
@@ -1131,8 +1061,7 @@ export class FirebaseService {
       
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document));
     } catch (error) {
-      console.error('Error getting documents by deal and user:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -1199,8 +1128,7 @@ export class FirebaseService {
       await otpDoc.ref.update({ used: true });
       return true;
     } catch (error) {
-      console.error('Error verifying OTP code:', error);
-      return false;
+            return false;
     }
   }
 
@@ -1225,8 +1153,7 @@ export class FirebaseService {
       
       return user;
     } catch (error) {
-      console.error('Error getting user by verification code:', error);
-      return null;
+            return null;
     }
   }
 

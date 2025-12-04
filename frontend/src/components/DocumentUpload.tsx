@@ -21,10 +21,7 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
     ['deal-documents', dealId],
     () => documentsAPI.getDealDocuments(dealId),
     {
-      enabled: !!dealId,
-      onError: (error) => {
-        console.error('Failed to fetch documents:', error);
-      }
+      enabled: !!dealId
     }
   );
 
@@ -40,7 +37,6 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
         onUploadSuccess?.();
       },
       onError: (error: any) => {
-        console.error('Upload error:', error);
         toast.error(error.response?.data?.error || 'Failed to upload some documents');
       }
     }
@@ -54,7 +50,6 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
       toast.success('Document deleted successfully');
     },
     onError: (error: any) => {
-      console.error('Delete error:', error);
       toast.error(error.response?.data?.error || 'Failed to delete document');
     }
   });
@@ -69,7 +64,6 @@ export function DocumentUpload({ dealId, onUploadSuccess }: DocumentUploadProps)
         toast.success('Selected documents deleted successfully');
       },
       onError: (error: any) => {
-        console.error('Delete error:', error);
         toast.error(error.response?.data?.error || 'Failed to delete some documents');
       }
     }

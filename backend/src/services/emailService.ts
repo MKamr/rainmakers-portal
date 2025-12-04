@@ -31,22 +31,18 @@ export class EmailService {
     // Verify connection configuration
     try {
       await this.transporter.verify();
-      console.log('✅ [EMAIL] SMTP connection verified successfully');
-    } catch (error) {
-      console.error('❌ [EMAIL] SMTP connection failed:', error);
-      throw new Error('Email service configuration failed');
+          } catch (error) {
+            throw new Error('Email service configuration failed');
     }
   }
 
   static async sendDealNotificationEmail(deal: Deal, createdBy?: string): Promise<void> {
     if (!this.transporter || !this.config) {
-      console.log('⚠️ [EMAIL] Email service not configured, skipping notification');
-      return;
+            return;
     }
 
     if (!this.config.notificationEmails || this.config.notificationEmails.length === 0) {
-      console.log('⚠️ [EMAIL] No notification emails configured, skipping');
-      return;
+            return;
     }
 
     try {
@@ -61,22 +57,18 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] Deal notification sent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to send deal notification:', error);
-      // Don't throw error to avoid breaking deal creation
+          } catch (error) {
+            // Don't throw error to avoid breaking deal creation
     }
   }
 
   static async sendDealUpdateNotificationEmail(deal: Deal, changes: string[], updatedBy: string): Promise<void> {
     if (!this.transporter || !this.config) {
-      console.log('⚠️ [EMAIL] Email service not configured, skipping update notification');
-      return;
+            return;
     }
 
     if (!this.config.notificationEmails || this.config.notificationEmails.length === 0) {
-      console.log('⚠️ [EMAIL] No notification emails configured, skipping update notification');
-      return;
+            return;
     }
 
     try {
@@ -91,22 +83,18 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] Deal update notification sent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to send deal update notification:', error);
-      // Don't throw error to avoid breaking deal update
+          } catch (error) {
+            // Don't throw error to avoid breaking deal update
     }
   }
 
   static async sendDocumentUploadNotificationEmail(deal: Deal, fileName: string, uploadedBy: string): Promise<void> {
     if (!this.transporter || !this.config) {
-      console.log('⚠️ [EMAIL] Email service not configured, skipping document upload notification');
-      return;
+            return;
     }
 
     if (!this.config.notificationEmails || this.config.notificationEmails.length === 0) {
-      console.log('⚠️ [EMAIL] No notification emails configured, skipping document upload notification');
-      return;
+            return;
     }
 
     try {
@@ -121,10 +109,8 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] Document upload notification sent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to send document upload notification:', error);
-      // Don't throw error to avoid breaking document upload
+          } catch (error) {
+            // Don't throw error to avoid breaking document upload
     }
   }
 
@@ -981,8 +967,7 @@ This is an automated notification from Rainmakers Portal
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error('❌ [EMAIL] Test connection failed:', error);
-      return false;
+            return false;
     }
   }
 
@@ -1012,21 +997,18 @@ This is an automated notification from Rainmakers Portal
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      console.error('❌ [EMAIL] Test email failed:', error);
-      return false;
+            return false;
     }
   }
 
   // Send a JSON attachment to configured notification emails
   static async sendJsonAttachmentEmail(filename: string, jsonData: any, subject?: string, bodyText?: string): Promise<boolean> {
     if (!this.transporter || !this.config) {
-      console.log('⚠️ [EMAIL] Email service not configured, cannot send JSON attachment');
-      return false;
+            return false;
     }
 
     if (!this.config.notificationEmails || this.config.notificationEmails.length === 0) {
-      console.log('⚠️ [EMAIL] No notification emails configured, skipping JSON attachment email');
-      return false;
+            return false;
     }
 
     try {
@@ -1045,11 +1027,9 @@ This is an automated notification from Rainmakers Portal
       } as any;
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] JSON attachment email sent:', result.messageId);
-      return true;
+            return true;
     } catch (error) {
-      console.error('❌ [EMAIL] Failed to send JSON attachment email:', error);
-      return false;
+            return false;
     }
   }
 
@@ -1060,8 +1040,7 @@ This is an automated notification from Rainmakers Portal
   ): Promise<void> {
     if (!this.transporter || !this.config) {
       const errorMsg = '⚠️ [EMAIL] Email service not configured, skipping welcome email. Please configure EmailConfig in Firebase Admin settings.';
-      console.error(errorMsg);
-      throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
+            throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
     }
 
     try {
@@ -1076,18 +1055,15 @@ This is an automated notification from Rainmakers Portal
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] Welcome email sent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to send welcome email:', error);
-      // Don't throw error to avoid breaking webhook
+          } catch (error) {
+            // Don't throw error to avoid breaking webhook
     }
   }
 
   static async sendOTPEmail(email: string, otpCode: string): Promise<void> {
     if (!this.transporter || !this.config) {
       const errorMsg = '⚠️ [EMAIL] Email service not configured, skipping OTP email. Please configure EmailConfig in Firebase Admin settings.';
-      console.error(errorMsg);
-      throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
+            throw new Error('Email service not configured. Please configure EmailConfig in Firebase Admin settings.');
     }
 
     try {
@@ -1102,10 +1078,8 @@ This is an automated notification from Rainmakers Portal
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] OTP email sent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to send OTP email:', error);
-      // Don't throw error to avoid breaking auth flow
+          } catch (error) {
+            // Don't throw error to avoid breaking auth flow
     }
   }
 
@@ -1115,8 +1089,7 @@ This is an automated notification from Rainmakers Portal
     verificationCode: string
   ): Promise<void> {
     if (!this.transporter || !this.config) {
-      console.log('⚠️ [EMAIL] Email service not configured, skipping verification code email');
-      return;
+            return;
     }
 
     try {
@@ -1131,10 +1104,8 @@ This is an automated notification from Rainmakers Portal
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ [EMAIL] Verification code email resent successfully:', result.messageId);
-    } catch (error) {
-      console.error('❌ [EMAIL] Failed to resend verification code email:', error);
-      throw error; // Throw here since this is user-initiated
+          } catch (error) {
+            throw error; // Throw here since this is user-initiated
     }
   }
 

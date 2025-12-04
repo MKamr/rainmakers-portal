@@ -32,8 +32,7 @@ export class DiscordBotService {
       const roleIdToCheck = roleId || this.PAID_MEMBER_ROLE_ID;
       
       if (!roleIdToCheck) {
-        console.error('DiscordBotService: PAID_MEMBER_ROLE_ID not configured');
-        return false;
+                return false;
       }
 
       const response = await axios.get(
@@ -52,8 +51,7 @@ export class DiscordBotService {
 
       return false;
     } catch (error: any) {
-      console.error('DiscordBotService: Error checking member status:', error.message);
-      if (error.response?.status === 404) {
+            if (error.response?.status === 404) {
         // Member not found or doesn't have role
         return false;
       }
@@ -76,8 +74,6 @@ export class DiscordBotService {
     // Validate configuration
     const configCheck = this.validateConfig();
     if (!configCheck.valid) {
-      console.error(`DiscordBotService: Missing required configuration: ${configCheck.missing.join(', ')}`);
-      console.error(`DiscordBotService: Please add these to backend/.env: ${configCheck.missing.map(k => `${k}=...`).join(', ')}`);
       return false;
     }
 
@@ -85,11 +81,7 @@ export class DiscordBotService {
 
     try {
       
-      console.log(`DiscordBotService: Attempting to add role ${roleIdToUse} to user ${discordId}`);
-      console.log(`DiscordBotService: API Base URL: ${this.DISCORD_API_BASE}`);
-      console.log(`DiscordBotService: Has API Key: ${!!this.DISCORD_API_KEY}`);
-      
-      // Use PUT method with URL pattern: /members/{userId}/roles/{roleId}
+                        // Use PUT method with URL pattern: /members/{userId}/roles/{roleId}
       const response = await axios.put(
         `${this.DISCORD_API_BASE}/members/${discordId}/roles/${roleIdToUse}`,
         {}, // Empty body for PUT request
@@ -103,42 +95,23 @@ export class DiscordBotService {
       );
 
       if (response.data?.success) {
-        console.log(`DiscordBotService: ✅ Successfully added role ${roleIdToUse} to member ${discordId}`);
-        if (response.data?.success?.message) {
-          console.log(`DiscordBotService: ${response.data.success.message}`);
-        }
+                if (response.data?.success?.message) {
+                  }
         return true;
       }
 
-      console.warn(`DiscordBotService: ⚠️ API returned success=false for user ${discordId}`);
-      if (response.data) {
-        console.warn(`DiscordBotService: Response data:`, response.data);
-      }
+            if (response.data) {
+              }
       return false;
     } catch (error: any) {
       const fullUrl = `${this.DISCORD_API_BASE}/members/${discordId}/roles/${roleIdToUse}`;
-      console.error(`DiscordBotService: ❌ Error adding member ${discordId} to server`);
-      console.error(`DiscordBotService: Full URL: ${fullUrl}`);
-      console.error(`DiscordBotService: Method: PUT`);
-      console.error(`DiscordBotService: Role ID: ${roleIdToUse}`);
-      
-      if (error.response) {
-        console.error(`DiscordBotService: HTTP Status: ${error.response.status}`);
-        console.error(`DiscordBotService: Error response data:`, JSON.stringify(error.response.data, null, 2));
-        console.error(`DiscordBotService: Error response headers:`, error.response.headers);
-        
-        // 405 Method Not Allowed - endpoint might need different HTTP method
+                              if (error.response) {
+                // 405 Method Not Allowed - endpoint might need different HTTP method
         if (error.response.status === 405) {
-          console.error(`DiscordBotService: ⚠️ 405 Method Not Allowed - The endpoint might require a different HTTP method (GET/PUT/PATCH)`);
-          console.error(`DiscordBotService: ⚠️ Check your Discord Bot API service documentation for the correct endpoint and method`);
-        }
+                  }
       } else if (error.request) {
-        console.error(`DiscordBotService: No response received. Is ${this.DISCORD_API_BASE} accessible?`);
-        console.error(`DiscordBotService: Request details:`, error.request);
-      } else {
-        console.error(`DiscordBotService: Error message:`, error.message);
-        console.error(`DiscordBotService: Error stack:`, error.stack);
-      }
+                      } else {
+                      }
       // Don't throw - return false instead so webhook doesn't fail
       return false;
     }
@@ -152,8 +125,7 @@ export class DiscordBotService {
       const roleIdToUse = roleId || this.PAID_MEMBER_ROLE_ID;
       
       if (!roleIdToUse) {
-        console.error('DiscordBotService: PAID_MEMBER_ROLE_ID not configured');
-        return false;
+                return false;
       }
 
       // Use DELETE method with URL pattern: /members/{userId}/roles/{roleId}
@@ -168,16 +140,13 @@ export class DiscordBotService {
       );
 
       if (response.data?.success) {
-        console.log(`DiscordBotService: Successfully removed role from member ${discordId}`);
-        return true;
+                return true;
       }
 
       return false;
     } catch (error: any) {
-      console.error('DiscordBotService: Error removing member from server:', error.message);
-      if (error.response?.data) {
-        console.error('DiscordBotService: Error response:', error.response.data);
-      }
+            if (error.response?.data) {
+              }
       throw error;
     }
   }
