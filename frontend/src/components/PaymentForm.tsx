@@ -476,7 +476,22 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
       setClientSecret(response.clientSecret);
       setCustomerId(response.customerId);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to initialize payment');
+      // Provide more detailed error information for debugging
+      let errorMessage = 'Failed to initialize payment';
+      
+      if (err.response) {
+        // Server responded with an error
+        errorMessage = err.response.data?.error || err.response.statusText || `Server error (${err.response.status})`;
+      } else if (err.request) {
+        // Request was made but no response received (network error or CORS)
+        errorMessage = 'Network error: Unable to connect to payment service. Please check your connection.';
+      } else {
+        // Something else happened
+        errorMessage = err.message || errorMessage;
+      }
+      
+      console.error('Payment initialization error:', err);
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
