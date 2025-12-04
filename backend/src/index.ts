@@ -50,6 +50,38 @@ const app = express();
 // Trust proxy for Railway deployment (needed for rate limiting and real IP detection)
 app.set('trust proxy', 1);
 
+// Define allowed origins for CORS (used in multiple places)
+const getAllowedOrigins = () => [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'https://rain.club',
+  'https://www.rain.club',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://rainmakers-portal-backend-production.up.railway.app',
+  'https://rainmakers-portal-backend.vercel.app'
+];
+
+// CRITICAL: Handle OPTIONS requests FIRST, before any other middleware
+// This is essential for Vercel serverless functions to handle CORS preflight correctly
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    res.status(204).end();
+  } else if (!origin) {
+    // Allow requests with no origin
+    res.status(204).end();
+  } else {
+    res.status(403).end();
+  }
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
@@ -71,15 +103,7 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      'https://rain.club',
-      'https://www.rain.club',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://rainmakers-portal-backend-production.up.railway.app',
-      'https://rainmakers-portal-backend.vercel.app'
-    ];
+    const allowedOrigins = getAllowedOrigins();
     
             if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
@@ -94,11 +118,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Explicit catch-all OPTIONS handler for Vercel serverless (ensures preflight requests are handled)
-app.options('*', cors(corsOptions), (req, res) => {
-  res.status(204).end();
-});
 
 // Rate limiting
 const limiter = rateLimit({
