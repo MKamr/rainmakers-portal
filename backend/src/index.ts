@@ -94,6 +94,30 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Explicit OPTIONS handler for Vercel serverless functions and preflight requests
+// This ensures OPTIONS requests are handled correctly even if CORS middleware doesn't catch them
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://rain.club',
+    'https://www.rain.club',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://rainmakers-portal-backend-production.up.railway.app',
+    'https://rainmakers-portal-backend.vercel.app'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(204).end();
+});
+
 // Security middleware - configure helmet to work with CORS
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
