@@ -4,6 +4,37 @@ import { FirebaseService } from '../services/firebaseService';
 
 const router = express.Router();
 
+// CORS helper function for subscription routes
+const checkAllowedOrigin = (origin: string | undefined): string | null => {
+  if (!origin) return null;
+  
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://rain.club',
+    'https://www.rain.club',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://rainmakers-portal-backend-production.up.railway.app',
+    'https://rainmakers-portal-backend.vercel.app'
+  ];
+  
+  return allowedOrigins.includes(origin) ? origin : null;
+};
+
+// Handle CORS preflight requests for subscription routes
+router.options('*', (req, res) => {
+  const origin = checkAllowedOrigin(req.headers.origin);
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.status(204).end();
+  } else {
+    res.status(403).end();
+  }
+});
+
 /**
  * Create setup intent for saving payment methods
  * POST /api/subscriptions/create-setup-intent

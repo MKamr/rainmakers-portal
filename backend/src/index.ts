@@ -66,7 +66,7 @@ app.use(helmet({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
@@ -91,7 +91,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Content-Range', 'X-Content-Range']
-}));
+};
+
+app.use(cors(corsOptions));
+
+// Explicit catch-all OPTIONS handler for Vercel serverless (ensures preflight requests are handled)
+app.options('*', cors(corsOptions), (req, res) => {
+  res.status(204).end();
+});
 
 // Rate limiting
 const limiter = rateLimit({
