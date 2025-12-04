@@ -18,7 +18,9 @@ const checkAllowedOrigin = (origin: string | undefined): string | null => {
     'https://rain.club',
     'https://www.rain.club',
     'http://localhost:3000',
-    'http://localhost:3001'
+    'http://localhost:3001',
+    'https://rainmakers-portal-backend-production.up.railway.app',
+    'https://rainmakers-portal-backend.vercel.app'
   ];
   
   return allowedOrigins.includes(origin) ? origin : null;

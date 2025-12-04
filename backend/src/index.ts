@@ -50,20 +50,19 @@ const app = express();
 // Trust proxy for Railway deployment (needed for rate limiting and real IP detection)
 app.set('trust proxy', 1);
 
-// Body parsing middleware (must come before request logging)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
             next();
 });
 
-// Security middleware
-app.use(helmet());
+// Security middleware - configure helmet to allow cross-origin resource sharing
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
 
-// Increase body size limits for file uploads
+// Body parsing middleware - single configuration with larger limit for file uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -78,7 +77,8 @@ app.use(cors({
       'https://www.rain.club',
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://rainmakers-portal-backend-production.up.railway.app'
+      'https://rainmakers-portal-backend-production.up.railway.app',
+      'https://rainmakers-portal-backend.vercel.app'
     ];
     
             if (allowedOrigins.indexOf(origin) !== -1) {
