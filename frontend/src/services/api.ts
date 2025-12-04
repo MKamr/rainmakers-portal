@@ -361,6 +361,14 @@ export const appointmentsAPI = {
 
 // Payment API
 export const paymentAPI = {
+  createPaymentLink: (plan: 'monthly', email?: string, discordId?: string, username?: string): Promise<{ paymentLinkId: string; url: string }> => {
+    const body: any = { plan }
+    if (email) body.email = email
+    if (discordId) body.discordId = discordId
+    if (username) body.username = username
+    return api.post('/payments/create-payment-link', body).then(res => res.data)
+  },
+  
   createCheckoutSession: (plan: 'monthly', email?: string, discordId?: string): Promise<{ sessionId: string; url: string }> => {
     const body: any = { plan }
     if (email) body.email = email

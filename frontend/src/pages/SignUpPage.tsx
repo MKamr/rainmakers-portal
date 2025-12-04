@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { paymentAPI } from '../services/api'
 
 export function SignUpPage() {
   const navigate = useNavigate()
@@ -8,6 +9,7 @@ export function SignUpPage() {
   const [email, setEmail] = useState<string>('')
   const [discordId, setDiscordId] = useState<string>('')
   const [discordUsername, setDiscordUsername] = useState<string>('')
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
@@ -42,14 +44,43 @@ export function SignUpPage() {
     }
   }, [searchParams, navigate])
 
-  const handleSignUp = () => {
-    // Directly redirect to payment page with monthly plan (only plan available)
-    const params = new URLSearchParams()
-    params.set('plan', 'monthly')
-    if (email) params.set('email', email)
-    if (discordId) params.set('discordId', discordId)
-    if (discordUsername) params.set('username', discordUsername)
-    navigate(`/payment?${params.toString()}`)
+  const handleSignUp = async () => {
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create payment link directly and redirect to Stripe
+      // Email will be collected by Stripe on their payment page
+      // We'll get it from Stripe metadata in the webhook
+      const response = await paymentAPI.createPaymentLink(
+        'monthly',
+        email || undefined, // Optional - Stripe will collect it if not provided
+        discordId || undefined,
+        discordUsername || undefined
+      )
+
+      // Redirect directly to Stripe Payment Link
+      if (response.url) {
+        window.location.href = response.url
+      } else {
+        setError('Failed to get payment link. Please try again.')
+        setIsProcessing(false)
+      }
+    } catch (err: any) {
+      let errorMessage = 'Failed to initialize payment'
+      
+      if (err.response) {
+        errorMessage = err.response.data?.error || err.response.statusText || `Server error (${err.response.status})`
+      } else if (err.request) {
+        errorMessage = 'Network error: Unable to connect to payment service. Please check your connection.'
+      } else {
+        errorMessage = err.message || errorMessage
+      }
+      
+      console.error('Payment initialization error:', err)
+      setError(errorMessage)
+      setIsProcessing(false)
+    }
   }
 
   // Matrix Rain Animation Component (same as login page)
@@ -151,6 +182,7 @@ export function SignUpPage() {
             <div className="matrix-subtitle">
               <p className="text-yellow-400 font-mono text-xs sm:text-sm mb-2">&gt; WELCOME TO RAINMAKERS PORTAL</p>
               <p className="text-yellow-400 font-mono text-base sm:text-lg font-bold">MEMBERS ONLY</p>
+              <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">✨ 7-Day Free Trial • Then $49/month</p>
             </div>
           </div>
 
@@ -173,13 +205,14 @@ export function SignUpPage() {
           <div className="space-y-4 sm:space-y-6 mt-6 sm:mt-8">
             <button
               onClick={handleSignUp}
-              className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300"
+              disabled={isProcessing}
+              className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <div className="flex items-center">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                JOIN RAINMAKERS
+                {isProcessing ? 'Redirecting to Payment...' : 'JOIN RAINMAKERS'}
               </div>
             </button>
 

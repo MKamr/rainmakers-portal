@@ -99,7 +99,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
@@ -201,15 +201,25 @@ app.use(errorHandler);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.listen(PORT, '0.0.0.0', async () => {
-        // Initialize email service if configured
-  try {
-    const emailConfig = await FirebaseService.getEmailConfig();
-    if (emailConfig && emailConfig.enabled) {
-      await EmailService.initialize(emailConfig);
-          } else {
-          }
-  } catch (error) {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Backend URL: http://0.0.0.0:${PORT}`);
+  
+  // Initialize email service if configured (non-blocking)
+  (async () => {
+    try {
+      const emailConfig = await FirebaseService.getEmailConfig();
+      if (emailConfig && emailConfig.enabled) {
+        await EmailService.initialize(emailConfig);
+        console.log('✅ Email service initialized');
+      } else {
+        console.log('ℹ️  Email service not configured or disabled');
       }
+    } catch (error: any) {
+      console.warn('⚠️  Email service initialization failed:', error.message);
+      // Don't block server startup if email service fails
+    }
+  })();
 });
 
 export default app;

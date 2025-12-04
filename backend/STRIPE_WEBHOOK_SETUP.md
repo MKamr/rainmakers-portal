@@ -98,11 +98,13 @@ For production, you need to create a webhook endpoint in the Stripe Dashboard.
 
 Select the following events to listen for:
 
-- `checkout.session.completed` - When a checkout session is completed
+- `checkout.session.completed` - When a checkout session is completed (includes Payment Links)
 - `customer.subscription.created` - When a subscription is created
 - `customer.subscription.updated` - When a subscription is updated
 - `customer.subscription.deleted` - When a subscription is canceled/deleted
+- `invoice.payment_succeeded` - When an invoice payment succeeds
 - `invoice.payment_failed` - When an invoice payment fails
+- `payment_intent.succeeded` - When a payment intent succeeds (optional, for additional payment handling)
 
 ### Step 3: Get the Webhook Secret
 
@@ -123,6 +125,17 @@ STRIPE_WEBHOOK_SECRET=whsec_your_production_webhook_secret_here
 4. Click **"Send test webhook"**
 5. Check your server logs to verify the webhook was received and processed
 
+## Payment Links vs Checkout Sessions
+
+This application uses **Stripe Payment Links** for subscription payments. Payment Links are created dynamically via the API when a user initiates a payment. **You do NOT need to create a static Payment Link in the Stripe Dashboard.**
+
+When a Payment Link is completed:
+1. Stripe automatically creates a Checkout Session behind the scenes
+2. Stripe fires the `checkout.session.completed` webhook event
+3. Your webhook handler processes this event normally
+
+So the same webhook endpoint works for both Payment Links and traditional Checkout Sessions!
+
 ## Webhook Endpoint
 
 The webhook endpoint is located at:
@@ -133,11 +146,13 @@ POST /api/payments/webhook
 
 This endpoint handles the following Stripe events:
 
-- **checkout.session.completed**: Processes completed checkout sessions and creates/updates subscriptions
+- **checkout.session.completed**: Processes completed checkout sessions (including from Payment Links) and creates/updates subscriptions
 - **customer.subscription.created**: Creates subscription records in Firebase
 - **customer.subscription.updated**: Updates subscription records in Firebase
 - **customer.subscription.deleted**: Handles subscription cancellations
+- **invoice.payment_succeeded**: Handles successful invoice payments
 - **invoice.payment_failed**: Handles failed payment attempts
+- **payment_intent.succeeded**: Handles successful payment intents
 
 ## Security
 

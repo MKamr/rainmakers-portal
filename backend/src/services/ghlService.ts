@@ -587,8 +587,6 @@ export class GHLService {
           }
         );
         
-                        });
-        
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};
         
@@ -700,8 +698,6 @@ export class GHLService {
             }
           }
         );
-        
-                        });
         
         const opportunities = response.data.opportunities || [];
         const meta = response.data.meta || {};

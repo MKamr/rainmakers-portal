@@ -1575,12 +1575,8 @@ router.post('/login-after-payment', async (req, res) => {
   try {
     const { discordId, email, username } = req.body;
 
-    if (!discordId && !email) {
-      return res.status(400).json({ 
-        error: 'Missing required field',
-        message: 'Either discordId or email is required'
-      });
-    }
+    // Note: Email/discordId are now optional - we'll extract from Stripe if not provided
+    // This handles Payment Link users where email wasn't passed in URL
 
         // Check Stripe for active subscription by Discord ID or email
     const StripeService = require('../services/stripeService').StripeService;
@@ -1589,6 +1585,7 @@ router.post('/login-after-payment', async (req, res) => {
     // Search for customer by email or Discord ID in metadata
     let customers: Stripe.Customer[] = [];
     
+    // If email is provided, search by email
     if (email) {
       const customersByEmail = await stripe.customers.list({
         email: email,
@@ -1608,6 +1605,37 @@ router.post('/login-after-payment', async (req, res) => {
           customers.push(c);
         }
       });
+    }
+
+    // If no customers found and we don't have email/discordId, try to find by recent subscriptions
+    // This handles cases where user paid via Payment Link and email wasn't passed in URL
+    if (customers.length === 0 && !email && !discordId) {
+      // Get recent subscriptions and find the most recent one (likely the user who just paid)
+      // This is a fallback - ideally email should be passed or extracted from Stripe
+      const recentSubscriptions = await stripe.subscriptions.list({
+        limit: 10,
+        status: 'all'
+      });
+      
+      // Get unique customers from recent subscriptions
+      const customerIds = new Set<string>();
+      for (const sub of recentSubscriptions.data) {
+        if (sub.customer && typeof sub.customer === 'string') {
+          customerIds.add(sub.customer);
+        }
+      }
+      
+      // Retrieve customers
+      for (const customerId of Array.from(customerIds).slice(0, 5)) { // Limit to 5 most recent
+        try {
+          const customer = await stripe.customers.retrieve(customerId);
+          if (typeof customer !== 'string' && !customer.deleted && customer.email) {
+            customers.push(customer);
+          }
+        } catch (e) {
+          // Ignore errors
+        }
+      }
     }
 
     if (customers.length === 0) {
@@ -1757,7 +1785,8 @@ router.post('/login-after-payment', async (req, res) => {
       }
 
       // If still not found, search by email (payment email from customer)
-      const paymentEmail = email || subscriptionCustomer.email || '';
+      // Extract email from customer if not provided in request
+      const paymentEmail = email || subscriptionCustomer.email || subscriptionCustomer.metadata?.email || '';
       if (!user && paymentEmail) {
         try {
           user = await FirebaseService.getUserByEmail(paymentEmail);
@@ -1800,8 +1829,11 @@ router.post('/login-after-payment', async (req, res) => {
     }
 
     // If user doesn't exist, create them (webhook might not have processed yet)
+    // Extract email from Stripe customer if not provided in request
+    const finalEmail = email || subscriptionCustomer.email || subscriptionCustomer.metadata?.email || '';
+    
     // But only if we have at least Discord ID or email to identify the user
-    if (!user && (discordId || email)) {
+    if (!user && (discordId || finalEmail)) {
             try {
         // Double-check one more time in case user was created by concurrent request
         if (discordId) {
@@ -1815,9 +1847,9 @@ router.post('/login-after-payment', async (req, res) => {
           }
         }
         
-        if (!user && email) {
+        if (!user && finalEmail) {
           try {
-            const existingUser = await FirebaseService.getUserByEmail(email);
+            const existingUser = await FirebaseService.getUserByEmail(finalEmail);
             if (existingUser) {
                             user = existingUser;
               
@@ -1871,9 +1903,9 @@ router.post('/login-after-payment', async (req, res) => {
         }
         
         // If still no user, check by email one more time (prevents duplicates from concurrent requests)
-        if (!user && email) {
+        if (!user && finalEmail) {
           try {
-            const finalCheck = await FirebaseService.getUserByEmail(email);
+            const finalCheck = await FirebaseService.getUserByEmail(finalEmail);
             if (finalCheck) {
 
               user = finalCheck;
@@ -1907,15 +1939,22 @@ router.post('/login-after-payment', async (req, res) => {
         
         // If still no user after all checks, create one
         if (!user) {
-          // Get payment email (from customer or request)
-          const paymentEmail = email || subscriptionCustomer.email || '';
+          // Use finalEmail which extracts from Stripe customer if not in request
+          // Email is required for user creation
+          if (!finalEmail) {
+            return res.status(400).json({ 
+              error: 'Missing email',
+              message: 'Email is required. Unable to find email from Stripe customer. Please contact support.'
+            });
+          }
+          
           // Get Discord email if different (from request or metadata)
           const discordEmailFromRequest = req.body.discordEmail;
           
           const userData: Omit<import('../services/firebaseService').User, 'id' | 'createdAt' | 'updatedAt'> = {
-            discordId: discordId || '',
-            username: username || subscriptionCustomer.metadata?.username || subscriptionCustomer.name || paymentEmail?.split('@')[0] || 'User',
-            email: paymentEmail, // Use payment email as primary
+            discordId: discordId || undefined,
+            username: username || subscriptionCustomer.metadata?.username || subscriptionCustomer.name || finalEmail.split('@')[0] || 'User',
+            email: finalEmail, // Use email from Stripe customer (required)
             isWhitelisted: false,
             isAdmin: false,
             termsAccepted: false,
@@ -1923,11 +1962,8 @@ router.post('/login-after-payment', async (req, res) => {
           };
           
           // If Discord email is provided and different from payment email, store it
-          if (discordEmailFromRequest && discordEmailFromRequest !== paymentEmail) {
+          if (discordEmailFromRequest && discordEmailFromRequest !== finalEmail) {
             userData.discordEmail = discordEmailFromRequest;
-          } else if (discordId && !discordEmailFromRequest) {
-            // If we have Discord ID but no Discord email, we'll set it when user completes OAuth
-            // For now, just use payment email
           }
 
           if (subscriptionCustomer.metadata?.username) {
@@ -1946,9 +1982,9 @@ router.post('/login-after-payment', async (req, res) => {
               // If creation fails due to duplicate (race condition), try to find the user again
               if (createError.message?.includes('already exists') || createError.code === 6) {
 
-                if (paymentEmail) {
+                if (finalEmail) {
                   try {
-                    user = await FirebaseService.getUserByEmail(paymentEmail);
+                    user = await FirebaseService.getUserByEmail(finalEmail);
                     if (user) {
                                           }
                   } catch (e) {

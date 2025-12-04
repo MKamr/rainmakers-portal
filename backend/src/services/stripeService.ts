@@ -25,10 +25,10 @@ export class StripeService {
   }
 
   /**
-   * Check if Stripe is initialized
+   * Check if Stripe is initialized or can be initialized
    */
   static isInitialized(): boolean {
-    return !!this.stripe;
+    return !!this.stripe || !!process.env.STRIPE_SECRET_KEY;
   }
 
   /**
@@ -120,6 +120,53 @@ export class StripeService {
         createdVia: 'rainmakers-portal'
       }
     });
+  }
+
+  /**
+   * Create a Payment Link for subscription
+   */
+  static async createPaymentLink(
+    priceId: string,
+    userId: string | null,
+    successUrl: string,
+    cancelUrl: string,
+    metadata?: Record<string, string>,
+    customerId?: string
+  ): Promise<Stripe.PaymentLink> {
+    const client = this.getClient();
+
+    const linkMetadata: Record<string, string> = {
+      ...(userId && { userId }),
+      ...metadata,
+    };
+
+    const paymentLinkParams: Stripe.PaymentLinkCreateParams = {
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      metadata: linkMetadata,
+      subscription_data: {
+        metadata: linkMetadata, // Ensure metadata flows to subscription
+        trial_period_days: 7, // 7-day free trial
+      },
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: successUrl,
+        },
+      },
+      allow_promotion_codes: true,
+      payment_method_types: ['card', 'link'], // Enable card and Link payments (Apple Pay is automatically available if domain is verified)
+    };
+
+    // Note: Payment Links don't support a direct 'customer' parameter like Checkout Sessions.
+    // The customer will be created automatically by Stripe when the payment is processed.
+    // We pass customer info through metadata so webhooks can link it back to our user.
+
+    return await client.paymentLinks.create(paymentLinkParams);
   }
 
   /**
@@ -290,14 +337,15 @@ export class StripeService {
               }
     }
     
-    // If still no userId but we have Discord ID and subscription is active/trialing or payment succeeded, create user
+    // If still no userId but we have email/Discord ID and subscription is active/trialing or payment succeeded, create user
     // Check if this is a payment success event (subscription might be incomplete but payment confirmed)
     const isPaymentSuccessEvent = event.type === 'invoice.payment_succeeded' || event.type === 'payment_intent.succeeded';
     const shouldCreateUser = subscription.status === 'active' || 
                              subscription.status === 'trialing' || 
                              (isPaymentSuccessEvent && subscription.status === 'incomplete');
     
-    if (!userId && shouldCreateUser && discordId) {
+    // Create user if we have either email OR discordId (not requiring both)
+    if (!userId && shouldCreateUser && (email || discordId)) {
       try {
         // Get customer from Stripe to get email and metadata
         let customerEmail = email;
@@ -325,17 +373,13 @@ export class StripeService {
                       }
         }
         
-        // Only create user if we have Discord ID
-        if (discordId) {
+        // Create user if we have email OR Discord ID (email takes priority for new users)
+        if (customerEmail || discordId) {
           // Check if user already exists by Discord ID or email
           let existingUser: import('../services/firebaseService').User | null = null;
-          try {
-            existingUser = await FirebaseService.getUserByDiscordId(discordId);
-          } catch (e) {
-            // User doesn't exist by Discord ID
-          }
           
-          if (!existingUser && customerEmail) {
+          // First try to find by email (more reliable for Payment Link users)
+          if (customerEmail) {
             try {
               existingUser = await FirebaseService.getUserByEmail(customerEmail);
             } catch (e) {
@@ -343,12 +387,26 @@ export class StripeService {
             }
           }
           
+          // If not found by email, try Discord ID
+          if (!existingUser && discordId) {
+            try {
+              existingUser = await FirebaseService.getUserByDiscordId(discordId);
+            } catch (e) {
+              // User doesn't exist by Discord ID
+            }
+          }
+          
           if (existingUser) {
             // User exists - update with Discord info and payment email
-                        const updateData: Partial<import('../services/firebaseService').User> = {
-              discordId: discordId,
-              username: discordUsername || existingUser.username
-            };
+            const updateData: Partial<import('../services/firebaseService').User> = {};
+            
+            // Update Discord info if provided
+            if (discordId) {
+              updateData.discordId = discordId;
+            }
+            if (discordUsername) {
+              updateData.username = discordUsername || existingUser.username;
+            }
             
             // If payment email differs from user email, store it as primary and Discord email separately
             if (customerEmail && customerEmail !== existingUser.email) {
@@ -364,21 +422,27 @@ export class StripeService {
             
             existingUser = await FirebaseService.updateUser(existingUser.id, updateData) || existingUser;
             userId = existingUser.id;
-                      } else {
+          } else {
             // Create new user with payment email as primary
-            const userData: Omit<import('../services/firebaseService').User, 'id' | 'createdAt' | 'updatedAt'> = {
-              discordId: discordId,
-              username: discordUsername || 'User',
-              email: customerEmail || '', // Use payment email as primary
-              isWhitelisted: false,
-              isAdmin: false,
-              termsAccepted: false,
-              onboardingCompleted: false,
-              onboardingStep: 2 // Payment complete, next step is password creation
-            };
-            
-            userId = (await FirebaseService.createUser(userData)).id;
-                      }
+            // Email is required for user creation
+            if (customerEmail) {
+              const userData: Omit<import('../services/firebaseService').User, 'id' | 'createdAt' | 'updatedAt'> = {
+                discordId: discordId || undefined, // Optional - user might not have Discord
+                username: discordUsername || customerEmail.split('@')[0] || 'User', // Use email username if no Discord username
+                email: customerEmail, // Use payment email as primary (required)
+                isWhitelisted: false,
+                isAdmin: false,
+                termsAccepted: false,
+                onboardingCompleted: false,
+                onboardingStep: 2 // Payment complete, next step is password creation
+              };
+              
+              userId = (await FirebaseService.createUser(userData)).id;
+            } else {
+              // No email available - log error but don't fail
+              console.error('Cannot create user: email is required but not available from Stripe customer');
+            }
+          }
           
           // If subscription is already active/trialing, whitelist the user immediately
           if (subscription.status === 'active' || subscription.status === 'trialing') {
@@ -386,13 +450,13 @@ export class StripeService {
           }
           
           // Update Stripe customer and subscription metadata with userId for future reference
-          if (customer) {
+          if (customer && userId) {
             try {
               await this.getClient().customers.update(customer.id, {
                 metadata: {
                   ...customer.metadata,
                   userId: userId,
-                  discordId: discordId,
+                  ...(discordId && { discordId }),
                   email: customerEmail || customer.email || '',
                   username: discordUsername || customer.metadata?.username || ''
                 }
@@ -401,18 +465,18 @@ export class StripeService {
                 metadata: {
                   ...subscription.metadata,
                   userId: userId,
-                  discordId: discordId,
+                  ...(discordId && { discordId }),
                   email: customerEmail || customer.email || '',
                   username: discordUsername || subscription.metadata?.username || ''
                 }
               });
-                          } catch (error) {
-                          }
+            } catch (error) {
+              // Log but don't fail - metadata update is not critical
+            }
           }
-        } else {
-                  }
+        }
       } catch (error) {
-                // Still try to add to Discord even if user creation fails
+        // Still try to add to Discord even if user creation fails
         if (discordId && (subscription.status === 'active' || subscription.status === 'trialing')) {
           try {
             await DiscordBotService.addMemberToServer(discordId);

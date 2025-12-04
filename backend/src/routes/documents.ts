@@ -493,7 +493,13 @@ router.post('/upload', upload.single('file'), [
         );
 
       } else {
-                if (!ghlApiKey)         if (!(deal as any).ghlContactId)       }
+        if (!ghlApiKey) {
+          // API key not configured
+        }
+        if (!(deal as any).ghlContactId) {
+          // Contact ID not available
+        }
+      }
     } catch (error) {
             // Don't fail the upload if GHL sync fails
     }

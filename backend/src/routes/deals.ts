@@ -1405,7 +1405,7 @@ router.get('/list-ghl-opportunities', async (req: Request, res: Response) => {
       message: 'GHL opportunities listed successfully',
       totalOpportunities: opportunities.length,
       pipelineOpportunitiesCount: pipelineOpportunities.length,
-      allOpportunities: opportunities.map(opp => ({
+      allOpportunities: opportunities.map((opp: any) => ({
         id: opp.id,
         name: opp.name,
         status: opp.status,

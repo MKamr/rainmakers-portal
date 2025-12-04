@@ -43,13 +43,13 @@ router.options('*', (req, res) => {
 // This prevents errors if STRIPE_SECRET_KEY is not configured during development
 
 /**
- * Create Stripe Checkout Session
- * POST /api/payments/create-checkout-session
+ * Create Stripe Payment Link
+ * POST /api/payments/create-payment-link
  * 
  * Note: This endpoint can be called without authentication for new users.
  * For existing users, authentication is optional but recommended.
  */
-router.post('/create-checkout-session', async (req, res) => {
+router.post('/create-payment-link', async (req, res) => {
   try {
     if (!StripeService.isInitialized()) {
       return res.status(503).json({ error: 'Payment service is not configured. Please contact support.' });
@@ -90,9 +90,9 @@ router.post('/create-checkout-session', async (req, res) => {
     }
 
     // Handle authenticated users vs new users
-    let customerId: string;
-    let customerEmail: string;
-    let customerName: string;
+    let customerId: string | undefined;
+    let customerEmail: string | undefined;
+    let customerName: string | undefined;
     let metadata: Record<string, string> = {};
 
     if (user) {
@@ -118,42 +118,207 @@ router.post('/create-checkout-session', async (req, res) => {
         customerId = customer.id;
       }
     } else {
-      // New user - use provided email or require it
-      if (!email) {
-        return res.status(400).json({ error: 'Email is required for new users. Please provide your email address.' });
-      }
+      // New user - email is optional, Stripe will collect it
+      // Only create customer if email is provided (for Discord OAuth cases)
+      if (email) {
+        customerEmail = email;
+        customerName = email.split('@')[0];
+        metadata = {
+          email,
+          ...(discordId && { discordId }),
+        };
 
-      customerEmail = email;
-      customerName = email.split('@')[0]; // Use email username as name
-      metadata = {
-        email,
-        ...(discordId && { discordId }),
-      };
-      
-      // Also include discordId in subscription metadata if provided
-      if (discordId) {
-        metadata.discordId = discordId;
+        // Create new Stripe customer for new user (optional - Stripe Payment Link can create it too)
+        if (customerEmail && customerName) {
+          const customer = await StripeService.createCustomer(customerEmail, customerName, metadata);
+          customerId = customer.id;
+        }
+      } else {
+        // No email provided - Stripe Payment Link will collect it and create customer
+        // Just pass Discord info in metadata if available
+        metadata = {
+          ...(discordId && { discordId }),
+        };
       }
-
-      // Create new Stripe customer for new user
-      const customer = await StripeService.createCustomer(customerEmail, customerName, metadata);
-      customerId = customer.id;
     }
 
-    // Create checkout session
+    // Create payment link
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.rain.club';
     // Build success URL with Discord info if available
     const successParams = new URLSearchParams();
     successParams.set('payment', 'success');
     if (discordId) successParams.set('discordId', discordId);
-    if (email) successParams.set('email', email);
+    if (email || customerEmail) successParams.set('email', email || customerEmail);
     // Get username from user object or request body
+    const username = user?.username || req.body.username || customerName;
+    if (username) successParams.set('username', username);
+    const successUrl = `${frontendUrl}/payment-success?${successParams.toString()}`;
+    const cancelUrl = `${frontendUrl}/join?payment=canceled`;
+
+    // Use userId from metadata if available, otherwise use email as identifier (or null if not provided)
+    const sessionUserId = user?.id || email || customerEmail || null;
+
+    // Add email and username to metadata for webhook processing
+    // Email may not be available yet - Stripe will provide it in webhook
+    const enhancedMetadata = {
+      ...metadata,
+      ...(email || customerEmail ? { email: email || customerEmail } : {}), // Only include email if available
+      ...(username && { username, discordUsername: username }), // Include both for compatibility
+    };
+
+    // For authenticated users, use existing customer; for new users, let Payment Link create customer
+    const paymentLink = await StripeService.createPaymentLink(
+      priceId,
+      sessionUserId,
+      successUrl,
+      cancelUrl,
+      enhancedMetadata,
+      user ? customerId : undefined // Only pass customerId if user is authenticated
+    );
+
+    res.json({
+      paymentLinkId: paymentLink.id,
+      url: paymentLink.url,
+    });
+  } catch (error: any) {
+        // Provide more specific error messages
+    let errorMessage = 'Failed to create checkout session. Please try again.';
+    
+    if (error.message?.includes('not configured') || error.message?.includes('STRIPE')) {
+      errorMessage = 'Payment service is not configured. Please contact support.';
+    } else if (error.message?.includes('customer')) {
+      errorMessage = 'Error creating customer account. Please try again.';
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * Create Stripe Checkout Session (legacy endpoint - kept for backwards compatibility)
+ * POST /api/payments/create-checkout-session
+ * 
+ * @deprecated Use /create-payment-link instead
+ */
+router.post('/create-checkout-session', async (req, res) => {
+  try {
+    if (!StripeService.isInitialized()) {
+      return res.status(503).json({ error: 'Payment service is not configured. Please contact support.' });
+    }
+
+    const { plan, email, discordId } = req.body;
+    
+    if (!plan || plan !== 'monthly') {
+      return res.status(400).json({ error: 'Invalid plan. Only "monthly" plan is available' });
+    }
+
+    // Try to get authenticated user (optional - for existing users)
+    let userId: string | null = null;
+    let user = null;
+    
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      
+      if (token && process.env.JWT_SECRET) {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+        if (decoded?.userId) {
+          const decodedUserId = decoded.userId as string;
+          userId = decodedUserId;
+          user = await FirebaseService.getUserById(decodedUserId);
+        }
+      }
+    } catch (error) {
+      // Not authenticated - that's okay for new users
+    }
+
+    // Get price ID for monthly plan
+    const priceId = process.env.STRIPE_PRICE_ID_MONTHLY;
+
+    if (!priceId) {
+      return res.status(500).json({ error: 'Stripe price ID not configured' });
+    }
+
+    // Handle authenticated users vs new users
+    let customerId: string | undefined;
+    let customerEmail: string | undefined;
+    let customerName: string | undefined;
+    let metadata: Record<string, string> = {};
+
+    if (user) {
+      // Authenticated user - use their info
+      customerEmail = user.email;
+      customerName = user.username;
+      metadata = {
+        userId: user.id,
+        ...(user.discordId && { discordId: user.discordId }),
+      };
+
+      // Check if user already has a Stripe customer
+      if (user.subscriptionId) {
+        const existingSub = await FirebaseService.getSubscriptionById(user.subscriptionId);
+        if (existingSub?.stripeCustomerId) {
+          customerId = existingSub.stripeCustomerId;
+        } else {
+          const customer = await StripeService.createCustomer(customerEmail, customerName, metadata);
+          customerId = customer.id;
+        }
+      } else {
+        const customer = await StripeService.createCustomer(customerEmail, customerName, metadata);
+        customerId = customer.id;
+      }
+    } else {
+      // New user - email is optional, Stripe will collect it
+      // Only create customer if email is provided (for Discord OAuth cases)
+      if (email) {
+        customerEmail = email;
+        customerName = email.split('@')[0];
+        metadata = {
+          email,
+          ...(discordId && { discordId }),
+        };
+
+        // Create new Stripe customer for new user (optional - Stripe Payment Link can create it too)
+        if (customerEmail && customerName) {
+          const customer = await StripeService.createCustomer(customerEmail, customerName, metadata);
+          customerId = customer.id;
+        }
+      } else {
+        // No email provided - Stripe Payment Link will collect it and create customer
+        // Just pass Discord info in metadata if available
+        metadata = {
+          ...(discordId && { discordId }),
+        };
+      }
+    }
+
+    // For legacy checkout session, customerId is required
+    // If no customerId was created, we can't use this endpoint - return error
+    if (!customerId) {
+      return res.status(400).json({ 
+        error: 'Email is required for checkout sessions. Please provide your email address or use the payment link endpoint.' 
+      });
+    }
+
+    // Create checkout session
+    const frontendUrl = process.env.FRONTEND_URL || 'https://www.rain.club';
+    const successParams = new URLSearchParams();
+    successParams.set('payment', 'success');
+    if (discordId) successParams.set('discordId', discordId);
+    if (email) successParams.set('email', email);
     const username = user?.username || req.body.username;
     if (username) successParams.set('username', username);
     const successUrl = `${frontendUrl}/payment-success?${successParams.toString()}`;
     const cancelUrl = `${frontendUrl}/join?payment=canceled`;
 
-    // Use userId from metadata if available, otherwise use email as identifier
     const sessionUserId = user?.id || email || customerId;
 
     const session = await StripeService.createCheckoutSession(
@@ -170,7 +335,6 @@ router.post('/create-checkout-session', async (req, res) => {
       url: session.url,
     });
   } catch (error: any) {
-        // Provide more specific error messages
     let errorMessage = 'Failed to create checkout session. Please try again.';
     
     if (error.message?.includes('not configured') || error.message?.includes('STRIPE')) {
@@ -217,8 +381,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const session = event.data.object as Stripe.Checkout.Session;
         const subscriptionId = session.subscription as string;
         
+        // For Payment Links, get email from customer_details if not in metadata
         if (subscriptionId) {
           const subscription = await StripeService.getSubscription(subscriptionId);
+          
+          // If subscription metadata doesn't have email, get it from checkout session
+          if (!subscription.metadata?.email && session.customer_details?.email) {
+            subscription.metadata = subscription.metadata || {};
+            subscription.metadata.email = session.customer_details.email;
+          }
+          
           await StripeService.handleSubscriptionWebhook(event, subscription);
         }
         break;
