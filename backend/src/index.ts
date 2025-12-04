@@ -60,15 +60,9 @@ app.use((req, res, next) => {
             next();
 });
 
-// Security middleware
-app.use(helmet());
-
-// Increase body size limits for file uploads
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-app.use(cors({
-  origin: function (origin, callback) {
+// CORS configuration - MUST come before helmet to prevent conflicts
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
@@ -78,20 +72,37 @@ app.use(cors({
       'https://www.rain.club',
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://rainmakers-portal-backend-production.up.railway.app'
+      'https://rainmakers-portal-backend-production.up.railway.app',
+      'https://rainmakers-portal-backend.vercel.app'
     ];
     
-            if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
     } else {
-            callback(new Error('Not allowed by CORS'));
+      // Log for debugging
+      console.warn(`CORS: Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// Security middleware - configure helmet to work with CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
 }));
+
+// Increase body size limits for file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
