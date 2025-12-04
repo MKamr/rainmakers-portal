@@ -130,7 +130,6 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Helper function to get email from PaymentElement
   const getEmailFromPaymentElement = async (): Promise<string | null> => {
@@ -148,12 +147,6 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
 
     if (!stripe || !elements) {
       setError('Stripe is not loaded');
-      setIsProcessing(false);
-      return;
-    }
-
-    if (!agreedToTerms) {
-      setError('You must agree to the subscription terms and conditions to continue');
       setIsProcessing(false);
       return;
     }
@@ -394,34 +387,21 @@ const PaymentElementForm: React.FC<PaymentElementFormProps> = ({
         />
       </div>
 
-      <div className="mt-6">
-        {/* Terms and Conditions Checkbox */}
-        <label className="flex items-start space-x-3 cursor-pointer group">
-          <input
-            type="checkbox"
-            checked={agreedToTerms}
-            onChange={(e) => setAgreedToTerms(e.target.checked)}
-            className="mt-1 h-5 w-5 text-yellow-500 border-yellow-500 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer bg-black border-2"
-            required
-          />
-          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-            I agree to{' '}
-            <a 
-              href="/subscription-terms.html" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-yellow-400 hover:text-yellow-300 underline font-semibold"
-              onClick={(e) => e.stopPropagation()}
-            >
-              CRE Media III, LLC's Terms of Service & Privacy Policy
-            </a>
-          </span>
-        </label>
+      <div className="text-xs text-gray-400 text-center mt-4">
+        By continuing, you agree to{' '}
+        <a 
+          href="/terms-of-service" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-yellow-400 hover:text-yellow-300 underline"
+        >
+          CRE Media III, LLC's Terms of Service & Privacy Policy
+        </a>
       </div>
 
       <button
         type="submit"
-        disabled={!stripe || !elements || isProcessing || !agreedToTerms}
+        disabled={!stripe || !elements || isProcessing}
         className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isProcessing ? 'Processing...' : 'Subscribe - $49/month'}
