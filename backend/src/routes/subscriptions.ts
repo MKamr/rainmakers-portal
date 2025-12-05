@@ -121,7 +121,7 @@ router.post('/create-subscription', async (req, res) => {
             return res.status(503).json({ error: initError.message || 'Payment service is not configured. Please contact support.' });
     }
 
-    const { paymentMethodId, customerId, customerEmail, plan, discordId, discordUsername } = req.body;
+    const { paymentMethodId, customerId, customerEmail, plan, discordId, discordUsername, hasTrial } = req.body;
 
     if (!paymentMethodId) {
       return res.status(400).json({ error: 'Payment method ID is required' });
@@ -216,7 +216,8 @@ router.post('/create-subscription', async (req, res) => {
       customer.id,
       priceId,
       paymentMethodId,
-      metadata
+      metadata,
+      hasTrial ? 7 : undefined // 7-day trial if hasTrial is true
     );
 
     // Get payment intent client secret if available

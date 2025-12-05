@@ -80,7 +80,8 @@ export class StripeService {
 
     return await client.checkout.sessions.create({
       customer: customerId,
-      payment_method_types: ['card'],
+      // Using dynamic payment methods - Stripe automatically determines eligible payment methods
+      // payment_method_types removed - Stripe handles this dynamically based on Dashboard settings
       payment_method_options: {
         card: {
           request_three_d_secure: 'automatic'
@@ -112,9 +113,16 @@ export class StripeService {
   ): Promise<Stripe.SetupIntent> {
     const client = this.getClient();
 
+    // Use dynamic payment methods - Stripe automatically determines eligible payment methods
+    // based on Dashboard settings, customer location, and AI models
+    // No need to specify payment_method_types - Stripe handles this dynamically
     return await client.setupIntents.create({
       customer: customerId,
-      payment_method_types: ['card'], // Removed 'link' to disable Stripe Link optional section
+      // payment_method_types removed - using dynamic payment methods
+      // Stripe will automatically show eligible payment methods based on:
+      // - Dashboard settings (Settings > Payment methods)
+      // - Customer location and currency
+      // - AI models that optimize payment method display
       metadata: {
         ...metadata,
         createdVia: 'rainmakers-portal'
@@ -159,7 +167,8 @@ export class StripeService {
         },
       },
       allow_promotion_codes: true,
-      payment_method_types: ['card', 'link'], // Enable card and Link payments (Apple Pay is automatically available if domain is verified)
+      // Using dynamic payment methods - Stripe automatically determines eligible payment methods
+      // payment_method_types removed - Stripe handles this dynamically based on Dashboard settings
     };
 
     // Note: Payment Links don't support a direct 'customer' parameter like Checkout Sessions.
@@ -176,7 +185,8 @@ export class StripeService {
     customerId: string,
     priceId: string,
     paymentMethodId: string,
-    metadata?: Record<string, string>
+    metadata?: Record<string, string>,
+    trialPeriodDays?: number
   ): Promise<Stripe.Subscription> {
     const client = this.getClient();
 
@@ -210,14 +220,14 @@ export class StripeService {
           await client.customers.update(customerId, {
             metadata: customerMetadata
           });
-                  }
+        }
       } catch (error) {
-                // Continue anyway - subscription metadata should have it
+        // Continue anyway - subscription metadata should have it
       }
     }
 
     // Create subscription
-    const subscription = await client.subscriptions.create({
+    const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: customerId,
       items: [{ price: priceId }],
       payment_behavior: 'default_incomplete',
@@ -227,9 +237,16 @@ export class StripeService {
         ...metadata,
         createdVia: 'rainmakers-portal'
       }
-    });
+    };
+
+    // Add trial period if specified
+    if (trialPeriodDays && trialPeriodDays > 0) {
+      subscriptionParams.trial_period_days = trialPeriodDays;
+    }
+
+    const subscription = await client.subscriptions.create(subscriptionParams);
     
-        return subscription;
+    return subscription;
   }
 
   /**
@@ -321,9 +338,9 @@ export class StripeService {
         const user = await FirebaseService.getUserByDiscordId(discordId);
         if (user) {
           userId = user.id;
-                  }
+        }
       } catch (error) {
-              }
+      }
     }
     
     // If no userId, try to find user by email
@@ -332,9 +349,9 @@ export class StripeService {
         const user = await FirebaseService.getUserByEmail(email);
         if (user) {
           userId = user.id;
-                  }
+        }
       } catch (error) {
-              }
+      }
     }
     
     // If still no userId but we have email/Discord ID and subscription is active/trialing or payment succeeded, create user
@@ -384,9 +401,9 @@ export class StripeService {
               existingUser = await FirebaseService.getUserByEmail(customerEmail);
             } catch (e) {
               // User doesn't exist by email
-            }
           }
-          
+        }
+        
           // If not found by email, try Discord ID
           if (!existingUser && discordId) {
             try {
@@ -401,7 +418,7 @@ export class StripeService {
             const updateData: Partial<import('../services/firebaseService').User> = {};
             
             // Update Discord info if provided
-            if (discordId) {
+        if (discordId) {
               updateData.discordId = discordId;
             }
             if (discordUsername) {
@@ -481,7 +498,7 @@ export class StripeService {
           try {
             await DiscordBotService.addMemberToServer(discordId);
           } catch (discordError) {
-                      }
+          }
         }
         return;
       }
@@ -489,12 +506,12 @@ export class StripeService {
     
     // If still no userId, we can't create subscription record yet
     if (!userId) {
-            // Still try to add to Discord if Discord ID is in metadata
+      // Still try to add to Discord if Discord ID is in metadata
       if (discordId && (subscription.status === 'active' || subscription.status === 'trialing')) {
         try {
           await DiscordBotService.addMemberToServer(discordId);
         } catch (error) {
-                  }
+        }
       }
       return;
     }
@@ -528,7 +545,7 @@ export class StripeService {
     // Get user to check Discord ID if not in metadata
     const user = await FirebaseService.getUserById(userId);
     if (!user) {
-            return;
+      return;
     }
 
     // Use Discord ID from metadata if available, otherwise use user's Discord ID
@@ -538,14 +555,14 @@ export class StripeService {
         const customer = await this.getClient().customers.retrieve(subscription.customer as string);
         if (typeof customer !== 'string' && !customer.deleted && customer.metadata?.discordId) {
           discordId = customer.metadata.discordId;
-                  }
+        }
       } catch (error) {
-              }
+      }
     }
     
     const finalDiscordId = discordId || user.discordId || null;
-    
-        // Handle different event types
+
+    // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed':
       case 'customer.subscription.created':
@@ -558,21 +575,21 @@ export class StripeService {
         if (subscription.status === 'active' || subscription.status === 'trialing' || (isPaymentSucceeded && subscription.status === 'incomplete')) {
           // Add user to Discord server and assign paid role if Discord ID is available
           if (finalDiscordId) {
-                                    try {
+            try {
               // Add user to Discord server (assigns paid role)
               const added = await DiscordBotService.addMemberToServer(finalDiscordId);
               if (added) {
-                              } else {
-                              }
+              } else {
+              }
             } catch (error: any) {
-                            // Log detailed error for debugging
+              // Log detailed error for debugging
               if (error?.response) {
-                                              } else if (error?.request) {
-                              } else {
-                              }
+              } else if (error?.request) {
+              } else {
+              }
             }
           } else {
-                                  }
+          }
         }
 
         // Update or create subscription in Firebase
@@ -671,8 +688,8 @@ export class StripeService {
                 userId: userId
               }
             });
-                      } catch (error) {
-                      }
+          } catch (error) {
+          }
         }
         break;
 
@@ -707,15 +724,15 @@ export class StripeService {
             if (now > gracePeriodEnd) {
               try {
                 await DiscordBotService.removeMemberFromServer(discordIdForRemoval);
-                              } catch (error) {
-                              }
+              } catch (error) {
+              }
             }
           } else {
             // If no period end date, remove immediately
             try {
               await DiscordBotService.removeMemberFromServer(discordIdForRemoval);
-                          } catch (error) {
-                          }
+            } catch (error) {
+            }
           }
         }
         break;

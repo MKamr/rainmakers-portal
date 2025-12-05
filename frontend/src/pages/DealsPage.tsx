@@ -24,7 +24,6 @@ export function DealsPage() {
     startDate: '',
     endDate: ''
   })
-  const [userStatusFilter, setUserStatusFilter] = useState('Open')
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
@@ -40,10 +39,8 @@ export function DealsPage() {
     }
   )
 
-  // Filter deals for regular users based on status
-  const deals = user?.isAdmin 
-    ? allDeals 
-    : (allDeals?.filter(deal => !userStatusFilter || deal.status === userStatusFilter) || [])
+  // Use all deals for both admin and regular users (filtering handled by StageView)
+  const deals = allDeals
 
   // Fetch users for admin filter
   const { data: users } = useQuery('users', adminAPI.getUsers, {
@@ -292,25 +289,6 @@ export function DealsPage() {
             </button>
           </div>
         </div>
-        {/* Regular User Status Filter */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center space-x-4">
-            <label htmlFor="user-status-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Status:</label>
-            <select
-              id="user-status-filter"
-              className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-              value={userStatusFilter}
-              onChange={(e) => setUserStatusFilter(e.target.value)}
-              aria-label="Filter deals by status"
-            >
-              <option value="">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-              <option value="Abandon">Abandon</option>
-            </select>
-          </div>
-        </div>
         </>
       )}
 
@@ -508,7 +486,7 @@ export function DealsPage() {
             deals={deals || []} 
             onCreateDeal={() => setShowCreateModal(true)} 
             isLoading={isLoading}
-            initialStatusFilter={userStatusFilter}
+            initialStatusFilter="Open"
           />
         </div>
         )

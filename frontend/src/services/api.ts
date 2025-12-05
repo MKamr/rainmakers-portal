@@ -42,8 +42,8 @@ export const authAPI = {
   loginWithDiscord: (code: string): Promise<AuthResponse> =>
     api.post('/auth/discord', { code }).then(res => res.data),
   
-  loginAfterPayment: (discordId?: string, email?: string, username?: string): Promise<AuthResponse> =>
-    api.post('/auth/login-after-payment', { discordId, email, username }).then(res => res.data),
+  loginAfterPayment: (discordId?: string, email?: string, username?: string, customerId?: string, subscriptionId?: string): Promise<AuthResponse> =>
+    api.post('/auth/login-after-payment', { discordId, email, username, customerId, subscriptionId }).then(res => res.data),
   
   createPassword: (password: string, confirmPassword: string, username?: string): Promise<{ success: boolean; message: string }> =>
     api.post('/auth/create-password', { password, confirmPassword, username }).then(res => res.data),
@@ -383,7 +383,7 @@ export const paymentAPI = {
     return api.post('/subscriptions/create-setup-intent', body).then(res => res.data)
   },
   
-  createSubscription: (paymentMethodId: string, customerId: string, customerEmail: string, plan: 'monthly', discordId?: string, discordUsername?: string): Promise<{
+  createSubscription: (paymentMethodId: string, customerId: string, customerEmail: string, plan: 'monthly', discordId?: string, discordUsername?: string, hasTrial?: boolean): Promise<{
     subscriptionId: string;
     clientSecret: string | null;
     status: string;
@@ -392,6 +392,7 @@ export const paymentAPI = {
     const body: any = { paymentMethodId, customerId, customerEmail, plan }
     if (discordId) body.discordId = discordId
     if (discordUsername) body.discordUsername = discordUsername
+    if (hasTrial) body.hasTrial = hasTrial
     return api.post('/subscriptions/create-subscription', body).then(res => res.data)
   },
   

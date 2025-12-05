@@ -947,11 +947,8 @@ router.get('/discord/callback', async (req, res) => {
     );
 
     // Check if this is an onboarding flow (from state parameter)
-    // Use existing state variable (already parsed above) and stateData
-    const stateParam = typeof state === 'string' ? state : '';
-    const isOnboarding = stateParam === 'onboarding=true' || 
-                        (typeof stateParam === 'string' && stateParam.includes('onboarding=true')) ||
-                        (stateData && stateData.onboarding === true);
+    // Use existing stateData (already parsed above)
+    const isOnboarding = stateData && stateData.onboarding === true;
     
     // Redirect to frontend with token
     let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://www.rain.club');
@@ -961,32 +958,29 @@ router.get('/discord/callback', async (req, res) => {
       frontendUrl = `https://${frontendUrl}`;
     }
     
-    // If onboarding, redirect to intro video step
-    if (isOnboarding) {
-      const introUrl = `${frontendUrl}/onboarding/intro?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        discordId: user.discordId,
-        discordEmail: user.discordEmail,
-        avatar: user.avatar,
-        isAdmin: user.isAdmin,
-        isWhitelisted: user.isWhitelisted,
-        hasManualSubscription: user.hasManualSubscription || false
-      }))}`;
-            return res.redirect(introUrl);
-    }
-    
-    const finalRedirectUrl = `${frontendUrl}?token=${token}&user=${encodeURIComponent(JSON.stringify({
+    // Prepare user object for frontend (include hasDiscord and hasPassword flags)
+    const userForFrontend = {
       id: user.id,
-      discordId: user.discordId,
       username: user.username,
       email: user.email,
+      discordId: user.discordId,
+      discordEmail: user.discordEmail,
       avatar: user.avatar,
       isAdmin: user.isAdmin,
       isWhitelisted: user.isWhitelisted,
-      hasManualSubscription: user.hasManualSubscription || false
-    }))}`;
+      hasManualSubscription: user.hasManualSubscription || false,
+      hasDiscord: !!user.discordId, // Set hasDiscord based on discordId presence
+      hasPassword: !!(user as any).passwordHash, // Set hasPassword based on passwordHash presence
+      termsAccepted: user.termsAccepted || false
+    };
+    
+    // If onboarding, redirect to intro video step
+    if (isOnboarding) {
+      const introUrl = `${frontendUrl}/onboarding/intro?token=${token}&user=${encodeURIComponent(JSON.stringify(userForFrontend))}`;
+      return res.redirect(introUrl);
+    }
+    
+    const finalRedirectUrl = `${frontendUrl}?token=${token}&user=${encodeURIComponent(JSON.stringify(userForFrontend))}`;
 
     return res.redirect(finalRedirectUrl);
   } catch (error: any) {
@@ -1573,101 +1567,112 @@ router.post('/logout', (req, res) => {
 // This endpoint is called after successful payment to log the user in automatically
 router.post('/login-after-payment', async (req, res) => {
   try {
-    const { discordId, email, username } = req.body;
+    const { discordId, email, username, customerId, subscriptionId } = req.body;
 
-    // Note: Email/discordId are now optional - we'll extract from Stripe if not provided
-    // This handles Payment Link users where email wasn't passed in URL
+    // Get data from Payment Element form (customerId, subscriptionId, email, etc.)
+    // This is more reliable than searching Stripe when we have direct IDs
 
-        // Check Stripe for active subscription by Discord ID or email
     const StripeService = require('../services/stripeService').StripeService;
     const stripe = StripeService.getClient();
     
-    // Search for customer by email or Discord ID in metadata
-    let customers: Stripe.Customer[] = [];
-    
-    // If email is provided, search by email
-    if (email) {
-      const customersByEmail = await stripe.customers.list({
-        email: email,
-        limit: 10
-      });
-      customers = [...customersByEmail.data];
-    }
-    
-    // Also search by Discord ID in metadata
-    if (discordId) {
-      const allCustomers = await stripe.customers.list({ limit: 100 });
-      const matchingCustomers = allCustomers.data.filter(
-        (c: Stripe.Customer) => c.metadata?.discordId === discordId
-      );
-      matchingCustomers.forEach((c: Stripe.Customer) => {
-        if (!customers.find((existing: Stripe.Customer) => existing.id === c.id)) {
-          customers.push(c);
-        }
-      });
-    }
-
-    // If no customers found and we don't have email/discordId, try to find by recent subscriptions
-    // This handles cases where user paid via Payment Link and email wasn't passed in URL
-    if (customers.length === 0 && !email && !discordId) {
-      // Get recent subscriptions and find the most recent one (likely the user who just paid)
-      // This is a fallback - ideally email should be passed or extracted from Stripe
-      const recentSubscriptions = await stripe.subscriptions.list({
-        limit: 10,
-        status: 'all'
-      });
-      
-      // Get unique customers from recent subscriptions
-      const customerIds = new Set<string>();
-      for (const sub of recentSubscriptions.data) {
-        if (sub.customer && typeof sub.customer === 'string') {
-          customerIds.add(sub.customer);
-        }
-      }
-      
-      // Retrieve customers
-      for (const customerId of Array.from(customerIds).slice(0, 5)) { // Limit to 5 most recent
-        try {
-          const customer = await stripe.customers.retrieve(customerId);
-          if (typeof customer !== 'string' && !customer.deleted && customer.email) {
-            customers.push(customer);
-          }
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-    }
-
-    if (customers.length === 0) {
-      return res.status(404).json({ 
-        error: 'No subscription found',
-        message: 'No active subscription found for this user. Please complete payment first.'
-      });
-    }
-
-    // Check each customer for active subscriptions
     let activeSubscription: Stripe.Subscription | null = null;
     let subscriptionCustomer: Stripe.Customer | null = null;
 
-    for (const customer of customers) {
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customer.id,
-        status: 'all',
-        limit: 10
-      });
+    // If we have subscriptionId from Payment Element, use it directly (most reliable)
+    if (subscriptionId) {
+      try {
+        activeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+        if (activeSubscription && (activeSubscription.status === 'active' || activeSubscription.status === 'trialing' || activeSubscription.status === 'past_due')) {
+          // Get customer from subscription
+          if (activeSubscription.customer) {
+            const customer = typeof activeSubscription.customer === 'string'
+              ? await stripe.customers.retrieve(activeSubscription.customer)
+              : activeSubscription.customer;
+            if (typeof customer !== 'string' && !customer.deleted) {
+              subscriptionCustomer = customer;
+            }
+          }
+        }
+      } catch (error) {
+        // Subscription not found or not ready yet, continue with fallback
+      }
+    }
 
-      // Find active or trialing subscriptions
-      const active = subscriptions.data.find(
-        (sub: Stripe.Subscription) => 
-          sub.status === 'active' || 
-          sub.status === 'trialing' ||
-          sub.status === 'past_due' // Include past_due as user still has access
-      );
+    // If we have customerId but no subscription yet, get customer and find subscription
+    if (!activeSubscription && customerId) {
+      try {
+        subscriptionCustomer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        if (typeof subscriptionCustomer !== 'string' && !subscriptionCustomer.deleted) {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 10
+          });
 
-      if (active) {
-        activeSubscription = active;
-        subscriptionCustomer = customer;
-        break;
+          // Find active or trialing subscriptions
+          const active = subscriptions.data.find(
+            (sub: Stripe.Subscription) => 
+              sub.status === 'active' || 
+              sub.status === 'trialing' ||
+              sub.status === 'past_due'
+          );
+
+          if (active) {
+            activeSubscription = active;
+          }
+        }
+      } catch (error) {
+        // Customer not found, continue with fallback
+      }
+    }
+
+    // Fallback: Search for customer by email or Discord ID (for Payment Link compatibility)
+    if (!activeSubscription || !subscriptionCustomer) {
+      let customers: Stripe.Customer[] = [];
+      
+      // If email is provided, search by email
+      if (email) {
+        const customersByEmail = await stripe.customers.list({
+          email: email,
+          limit: 10
+        });
+        customers = [...customersByEmail.data];
+      }
+      
+      // Also search by Discord ID in metadata
+      if (discordId) {
+        const allCustomers = await stripe.customers.list({ limit: 100 });
+        const matchingCustomers = allCustomers.data.filter(
+          (c: Stripe.Customer) => c.metadata?.discordId === discordId
+        );
+        matchingCustomers.forEach((c: Stripe.Customer) => {
+          if (!customers.find((existing: Stripe.Customer) => existing.id === c.id)) {
+            customers.push(c);
+          }
+        });
+      }
+
+      // Check each customer for active subscriptions
+      for (const customer of customers) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: 'all',
+          limit: 10
+        });
+
+        // Find active or trialing subscriptions
+        const active = subscriptions.data.find(
+          (sub: Stripe.Subscription) => 
+            sub.status === 'active' || 
+            sub.status === 'trialing' ||
+            sub.status === 'past_due'
+        );
+
+        if (active) {
+          activeSubscription = active;
+          subscriptionCustomer = customer;
+          break;
+        }
       }
     }
 
@@ -1691,9 +1696,11 @@ router.post('/login-after-payment', async (req, res) => {
             // Update with Discord ID if missing
             if (discordId && !user.discordId) {
               const updateData: Partial<import('../services/firebaseService').User> = {
-                discordId: discordId,
-                discordEmail: email && email !== user.email ? email : undefined
+                discordId: discordId
               };
+              if (email && email !== user.email) {
+                updateData.discordEmail = email;
+              }
               if (username) updateData.username = username;
               user = await FirebaseService.updateUser(user.id, updateData) || user;
             }
@@ -1772,9 +1779,11 @@ router.post('/login-after-payment', async (req, res) => {
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
                 const updateData: Partial<import('../services/firebaseService').User> = {
-                  discordId: discordId,
-                  discordEmail: email && email !== user.email ? email : undefined
+                  discordId: discordId
                 };
+                if (email && email !== user.email) {
+                  updateData.discordEmail = email;
+                }
                 if (username) updateData.username = username;
                 user = await FirebaseService.updateUser(user.id, updateData) || user;
               }
@@ -1794,9 +1803,11 @@ router.post('/login-after-payment', async (req, res) => {
                         // If user found by email but doesn't have Discord ID, update it
             if (discordId && !user.discordId) {
                             const updateData: Partial<import('../services/firebaseService').User> = {
-                discordId: discordId,
-                discordEmail: email && email !== user.email ? email : undefined
+                discordId: discordId
               };
+              if (email && email !== user.email) {
+                updateData.discordEmail = email;
+              }
               if (username) updateData.username = username;
               user = await FirebaseService.updateUser(user.id, updateData) || user;
             } else if (discordId && user.discordId && user.discordId !== discordId) {
@@ -1856,9 +1867,11 @@ router.post('/login-after-payment', async (req, res) => {
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
                                 const updateData: Partial<import('../services/firebaseService').User> = {
-                  discordId: discordId,
-                  discordEmail: email && email !== user.email ? email : undefined
+                  discordId: discordId
                 };
+                if (email && email !== user.email) {
+                  updateData.discordEmail = email;
+                }
                 if (username) updateData.username = username;
                 user = await FirebaseService.updateUser(user.id, updateData) || user;
               } else if (discordId && user.discordId && user.discordId !== discordId) {
@@ -1889,9 +1902,11 @@ router.post('/login-after-payment', async (req, res) => {
                 // Update with Discord ID if missing
                 if (discordId && !user.discordId) {
                   const updateData: Partial<import('../services/firebaseService').User> = {
-                    discordId: discordId,
-                    discordEmail: email && email !== user.email ? email : undefined
+                    discordId: discordId
                   };
+                  if (email && email !== user.email) {
+                    updateData.discordEmail = email;
+                  }
                   if (username) updateData.username = username;
                   user = await FirebaseService.updateUser(user.id, updateData) || user;
                 }
@@ -1912,9 +1927,11 @@ router.post('/login-after-payment', async (req, res) => {
               // Update with Discord ID if missing
               if (discordId && !user.discordId) {
                 const updateData: Partial<import('../services/firebaseService').User> = {
-                  discordId: discordId,
-                  discordEmail: email && email !== user.email ? email : undefined
+                  discordId: discordId
                 };
+                if (email && email !== user.email) {
+                  updateData.discordEmail = email;
+                }
                 if (username) updateData.username = username;
                 user = await FirebaseService.updateUser(user.id, updateData) || user;
               }
@@ -1952,7 +1969,6 @@ router.post('/login-after-payment', async (req, res) => {
           const discordEmailFromRequest = req.body.discordEmail;
           
           const userData: Omit<import('../services/firebaseService').User, 'id' | 'createdAt' | 'updatedAt'> = {
-            discordId: discordId || undefined,
             username: username || subscriptionCustomer.metadata?.username || subscriptionCustomer.name || finalEmail.split('@')[0] || 'User',
             email: finalEmail, // Use email from Stripe customer (required)
             isWhitelisted: false,
@@ -1960,6 +1976,11 @@ router.post('/login-after-payment', async (req, res) => {
             termsAccepted: false,
             onboardingCompleted: false
           };
+          
+          // Only include discordId if it exists (Firestore doesn't allow undefined)
+          if (discordId) {
+            userData.discordId = discordId;
+          }
           
           // If Discord email is provided and different from payment email, store it
           if (discordEmailFromRequest && discordEmailFromRequest !== finalEmail) {
@@ -2655,10 +2676,12 @@ router.post('/discord/disconnect', authenticateToken, async (req, res) => {
     }
     
     // Remove Discord ID and Discord email, keep payment email and subscription
+    // Use Firestore's deleteField() to properly remove fields
+    const { FieldValue } = require('firebase-admin/firestore');
     await FirebaseService.updateUser(userId, {
-      discordId: undefined,
-      discordEmail: undefined,
-    });
+      discordId: FieldValue.delete(),
+      discordEmail: FieldValue.delete(),
+    } as any);
     
     res.json({ 
       success: true,

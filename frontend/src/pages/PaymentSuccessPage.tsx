@@ -85,21 +85,26 @@ export function PaymentSuccessPage() {
 
     const loginAfterPayment = async () => {
       setHasCalled(true);
-      // Get payment info from URL params
+      // Get payment info from URL params (from Payment Element form)
       const urlParams = new URLSearchParams(window.location.search);
       const discordId = urlParams.get('discordId');
       const username = urlParams.get('username');
       const email = urlParams.get('email');
+      const customerId = urlParams.get('customerId');
+      const subscriptionId = urlParams.get('subscriptionId');
       
       // Wait 2 seconds for Stripe webhook to process (may not be needed, but safer)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       try {
-        // Call the direct login endpoint (no Discord OAuth needed!)
+        // Call the direct login endpoint with data from Payment Element form
+        // Pass customerId and subscriptionId for more reliable lookup
         const response = await authAPI.loginAfterPayment(
           discordId || undefined,
           email || undefined,
-          username || undefined
+          username || undefined,
+          customerId || undefined,
+          subscriptionId || undefined
         );
         
         if (response.token && response.user) {
@@ -107,18 +112,8 @@ export function PaymentSuccessPage() {
           localStorage.setItem('token', response.token);
           localStorage.setItem('user', JSON.stringify(response.user));
           
-          // After payment, user needs to create password first (step 2 of onboarding)
-          // Redirect to password creation page
-          setStatus('success');
-          setTimeout(() => {
-            const params = new URLSearchParams();
-            if (email) params.set('email', email);
-            navigate(`/onboarding/password?${params.toString()}`);
-          }, 2000);
-          return; // Don't continue to portal redirect
-          
           // Invalidate and refetch ALL 'user' queries (including the one in useAuth hook)
-          // This ensures the useAuth hook picks up the new token
+          // This ensures the useAuth hook picks up the new token and user data
           try {
             // First invalidate to mark queries as stale
             queryClient.invalidateQueries('user');
@@ -132,12 +127,16 @@ export function PaymentSuccessPage() {
           
           setStatus('success');
           
-          // Use window.location instead of navigate to force a full page reload
-          // This ensures the useAuth hook picks up the token from localStorage
-          // and the App.tsx will see the user after the query completes
+          // After payment, user enters onboarding workflow
+          // App.tsx will automatically redirect to the appropriate onboarding step:
+          // 1. Password creation (if needsPassword)
+          // 2. Discord connection (if needsDiscord)
+          // 3. Terms acceptance (if needsTerms)
+          // 4. Portal (if all complete)
+          // Use window.location to force a full page reload so App.tsx can check user state
           setTimeout(() => {
             window.location.href = '/';
-          }, 500);
+          }, 2000);
         } else {
           throw new Error('Invalid response from login endpoint');
         }
@@ -209,7 +208,10 @@ export function PaymentSuccessPage() {
                 ✓ Successfully logged in!
               </p>
               <p className="text-yellow-300 text-xs font-mono">
-                &gt; Redirecting to portal...
+                &gt; Setting up your account...
+              </p>
+              <p className="text-blue-300 text-xs mt-2">
+                You'll be guided through the onboarding process.
               </p>
             </div>
           )}

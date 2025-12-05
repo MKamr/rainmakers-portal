@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import PaymentForm from './PaymentForm'
+import PaymentForm from '../components/PaymentForm'
 
-export function PaymentCheckout() {
+export function PromoCodePage() {
   const [searchParams] = useSearchParams()
-  // Default to 'monthly' if plan is not provided (only plan available)
-  const planParam = searchParams.get('plan')
-  const plan = (planParam === 'monthly' ? 'monthly' : 'monthly') as 'monthly'
+  const plan = 'monthly' as 'monthly'
   const [email, setEmail] = useState<string>('')
   const [discordId, setDiscordId] = useState<string>('')
   const [discordUsername, setDiscordUsername] = useState<string>('')
@@ -49,17 +47,20 @@ export function PaymentCheckout() {
     }
   }, [searchParams])
 
-  // Only show error if plan is explicitly set to something other than 'monthly'
-  if (planParam && planParam !== 'monthly') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center">
-          <p className="text-red-400">Invalid plan. Only monthly subscription is available.</p>
-        </div>
-      </div>
-    )
-  }
-
-  return <PaymentForm plan={plan} email={email || undefined} discordId={discordId || undefined} discordUsername={discordUsername || undefined} />
+  // PaymentForm already has its own container, logo, and header
+  // We just need to pass the hasTrial prop and custom header text
+  return (
+    <PaymentForm 
+      plan={plan} 
+      email={email || undefined} 
+      discordId={discordId || undefined} 
+      discordUsername={discordUsername || undefined}
+      hasTrial={true}
+      customHeader={{
+        title: 'PROMO CODE SUBSCRIPTION',
+        subtitle: '✨ 7-Day Free Trial • Apple Pay & Google Pay Available'
+      }}
+    />
+  )
 }
 

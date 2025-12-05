@@ -285,7 +285,16 @@ export class FirebaseService {
   static async updateUser(id: string, userData: Partial<Omit<User, 'id' | 'createdAt'>>): Promise<User | null> {
     const userRef = FirebaseService.usersCollection.doc(id);
     const now = Timestamp.now();
-    await userRef.update({ ...userData, updatedAt: now });
+    
+    // Filter out undefined values (Firestore doesn't allow undefined)
+    const filteredData: any = {};
+    for (const [key, value] of Object.entries(userData)) {
+      if (value !== undefined) {
+        filteredData[key] = value;
+      }
+    }
+    
+    await userRef.update({ ...filteredData, updatedAt: now });
     return this.getUserById(id);
   }
 

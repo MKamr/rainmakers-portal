@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { LoginPage } from './pages/LoginPage'
 import { EmailLoginPage } from './pages/EmailLoginPage'
 import { SignUpPage } from './pages/SignUpPage'
+import { PromoCodePage } from './pages/PromoCodePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { PaymentCheckout } from './components/PaymentCheckout'
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
@@ -121,6 +122,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/login/email" element={<EmailLoginPage />} />
           <Route path="/payment" element={<PaymentCheckout />} />
+          <Route path="/promocodefromed" element={<PromoCodePage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/onboarding/password" element={<CreatePasswordPage />} />
           <Route path="/onboarding/discord" element={<ConnectDiscordPage />} />
@@ -186,23 +188,32 @@ function App() {
   const needsDiscord = user.hasDiscord !== true;
   const needsTerms = !user.termsAccepted;
 
+  // Get current path to allow onboarding routes even if setup is incomplete
+  const currentPath = window.location.pathname;
+  const isOnboardingRoute = currentPath.startsWith('/onboarding/');
+
   // Redirect to appropriate onboarding step if setup incomplete
-  if (needsPassword) {
+  // But allow access to onboarding routes (they handle their own redirects)
+  if (needsPassword && !isOnboardingRoute) {
     return (
       <ThemeProvider>
         <Routes>
           <Route path="/onboarding/password" element={<CreatePasswordPage />} />
+          <Route path="/onboarding/discord" element={<ConnectDiscordPage />} />
+          <Route path="/onboarding/intro" element={<IntroVideoPage />} />
           <Route path="*" element={<Navigate to="/onboarding/password" replace />} />
         </Routes>
       </ThemeProvider>
     )
   }
 
-  if (needsDiscord) {
+  if (needsDiscord && !isOnboardingRoute) {
     return (
       <ThemeProvider>
         <Routes>
+          <Route path="/onboarding/password" element={<CreatePasswordPage />} />
           <Route path="/onboarding/discord" element={<ConnectDiscordPage />} />
+          <Route path="/onboarding/intro" element={<IntroVideoPage />} />
           <Route path="*" element={<Navigate to="/onboarding/discord" replace />} />
         </Routes>
       </ThemeProvider>

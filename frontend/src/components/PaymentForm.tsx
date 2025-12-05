@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { paymentAPI } from '../services/api';
 
 // Matrix Rain Animation Component
@@ -73,71 +75,123 @@ interface PaymentFormProps {
   email?: string;
   discordId?: string;
   discordUsername?: string;
+  hasTrial?: boolean;
+  customHeader?: {
+    title?: string;
+    subtitle?: string;
+  };
 }
 
-export default function PaymentForm({ plan, email, discordId, discordUsername }: PaymentFormProps) {
-  const [customerEmail, setCustomerEmail] = useState<string>(email || '');
-  const [discordUserValue, setDiscordUserValue] = useState<string>(discordUsername || '');
+// Inner component that uses Stripe hooks
+function PaymentFormInner({ 
+  plan, 
+  email, 
+  discordId, 
+  discordUsername,
+  customerId,
+  hasValidEmail,
+  hasTrial
+}: PaymentFormProps & { customerId: string; hasValidEmail: boolean }) {
+  const stripe = useStripe();
+  const elements = useElements();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Prefill from local storage if available
-  useEffect(() => {
-    if (customerEmail) return;
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) return;
-    try {
-      const user = JSON.parse(savedUser);
-      if (user.email && !customerEmail) {
-        setCustomerEmail(user.email);
-      }
-      if (user.username && !discordUserValue) {
-        setDiscordUserValue(user.username);
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }, [customerEmail, discordUserValue]);
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setIsProcessing(true);
-    setError(null);
-
-    // Validate email
-    if (!customerEmail || !customerEmail.includes('@')) {
-      setError('Please enter a valid email address');
-      setIsProcessing(false);
+    
+    // Legal requirement: User MUST check the terms checkbox
+    if (!termsAccepted) {
+      setError('You must agree to the Terms of Service & Privacy Policy to continue.');
+      return;
+    }
+    
+    if (!stripe || !elements || !customerId) {
+      setError('Payment system not ready. Please wait...');
       return;
     }
 
+    setIsProcessing(true);
+    setError(null);
+
     try {
-      const response = await paymentAPI.createPaymentLink(
+      const emailToUse = email || '';
+      
+      // Get the payment element to confirm setup
+      const paymentElement = elements.getElement(PaymentElement);
+      if (!paymentElement) {
+        setError('Payment form not ready');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Confirm setup intent to save payment method
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || 'Payment setup failed');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) {
+        setError('Failed to save payment method');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Create subscription with the saved payment method
+      const subscriptionResponse = await paymentAPI.createSubscription(
+        setupIntent.payment_method as string,
+        customerId,
+        emailToUse,
         plan,
-        customerEmail,
-        discordId || undefined,
-        discordUserValue || discordUsername || undefined
+        discordId,
+        discordUsername,
+        hasTrial
       );
 
-      // Redirect to Stripe Payment Link
-      if (response.url) {
-        window.location.href = response.url;
-      } else {
-        setError('Failed to get payment link. Please try again.');
-        setIsProcessing(false);
+      // Handle subscription creation - if clientSecret is returned, confirm payment
+      if (subscriptionResponse.clientSecret) {
+        const { error: paymentError } = await stripe.confirmCardPayment(
+          subscriptionResponse.clientSecret
+        );
+
+        if (paymentError) {
+          setError(paymentError.message || 'Payment failed');
+          setIsProcessing(false);
+          return;
+        }
       }
+
+      // Redirect to success page with data from Payment Element form
+      // Pass customerId and subscriptionId for more reliable user lookup
+      const successParams = new URLSearchParams();
+      successParams.set('payment', 'success');
+      successParams.set('customerId', customerId);
+      if (subscriptionResponse.subscriptionId) {
+        successParams.set('subscriptionId', subscriptionResponse.subscriptionId);
+      }
+      if (emailToUse) successParams.set('email', emailToUse);
+      if (discordId) successParams.set('discordId', discordId);
+      if (discordUsername) successParams.set('username', discordUsername);
+      
+      window.location.href = `/payment-success?${successParams.toString()}`;
     } catch (err: any) {
-      let errorMessage = 'Failed to initialize payment';
+      let errorMessage = 'Failed to process payment';
       
       if (err.response) {
         errorMessage = err.response.data?.error || err.response.statusText || `Server error (${err.response.status})`;
       } else if (err.request) {
-        errorMessage = 'Network error: Unable to connect to payment service. Please check your connection.';
+        errorMessage = 'Network error: Unable to connect to payment service.';
       } else {
         errorMessage = err.message || errorMessage;
       }
       
-      console.error('Payment initialization error:', err);
       setError(errorMessage);
       setIsProcessing(false);
     }
@@ -147,11 +201,256 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
   const planPeriod = 'month';
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black">
-      {/* Matrix background */}
-      <MatrixRain />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Stripe Payment Element - always visible with dynamic payment methods */}
+      <div className="payment-element-wrapper">
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+            // Dynamic payment methods - Stripe automatically shows eligible payment methods
+            // based on Dashboard settings, customer location, and AI models
+            // No need to specify wallets or payment methods - Stripe handles this dynamically
+            fields: {
+              billingDetails: {
+                email: hasValidEmail ? 'auto' : 'never',
+              },
+            },
+          }}
+        />
+      </div>
+      
+      {!hasValidEmail && (
+        <div className="bg-yellow-900/50 border border-yellow-500 rounded-lg p-3 text-yellow-200 text-xs text-center">
+          Please enter a valid email address above to complete payment
+        </div>
+      )}
 
-      {/* Main Content */}
+      {error && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 text-red-200 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Terms of Service Checkbox - Required */}
+      <div className="mt-4">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-1 w-4 h-4 text-yellow-400 bg-gray-800 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer"
+            required
+          />
+          <span className="text-xs text-gray-400 group-hover:text-gray-300">
+            I have read and agree to{' '}
+            <a 
+              href="/terms-of-service" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-yellow-400 hover:text-yellow-300 underline"
+            >
+              CRE Media III, LLC's Terms of Service & Privacy Policy
+            </a>
+            <span className="text-red-400 ml-1">*</span>
+          </span>
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        disabled={isProcessing || !stripe || !elements || !hasValidEmail || !termsAccepted}
+        className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed mt-4"
+      >
+        {isProcessing ? 'Processing...' : `Subscribe - ${planPrice}/${planPeriod}`}
+      </button>
+    </form>
+  );
+}
+
+// Main component with Stripe Elements provider
+export default function PaymentForm({ plan, email, discordId, discordUsername, hasTrial, customHeader }: PaymentFormProps) {
+  const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST || 
+                               import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE;
+
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerEmail, setCustomerEmail] = useState<string>(email || '');
+  const [isInitializing, setIsInitializing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Prefill from local storage if available
+  useEffect(() => {
+    if (customerEmail || email) return;
+    const savedUser = localStorage.getItem('user');
+    if (!savedUser) return;
+    try {
+      const user = JSON.parse(savedUser);
+      if (user.email && !customerEmail) {
+        setCustomerEmail(user.email);
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }, [customerEmail, email]);
+
+  // Initialize setup intent immediately on mount (even without email)
+  useEffect(() => {
+    const initializePayment = async () => {
+      // Use provided email, customer email, or a placeholder email
+      const emailToUse = customerEmail || email || 'temp@temp.com';
+      
+      // Don't re-initialize if we already have a clientSecret and email hasn't changed
+      if (clientSecret && emailToUse === (customerEmail || email || 'temp@temp.com')) {
+        return;
+      }
+
+      setIsInitializing(true);
+      setError(null);
+
+      try {
+        const response = await paymentAPI.createSetupIntent(
+          emailToUse,
+          discordId,
+          discordUsername
+        );
+        setClientSecret(response.clientSecret);
+        setCustomerId(response.customerId);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to initialize payment');
+        setClientSecret(null);
+        setCustomerId(null);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    // Initialize immediately on mount
+    initializePayment();
+  }, []); // Only run on mount
+
+  // Re-initialize when email changes to a real email
+  useEffect(() => {
+    const emailToUse = customerEmail || email;
+    // Only re-initialize if we have a real email (not placeholder) and it's different
+    if (!emailToUse || !emailToUse.includes('@') || emailToUse === 'temp@temp.com') {
+      return;
+    }
+
+    // Don't re-initialize if we already have a clientSecret for this email
+    if (clientSecret) {
+      return;
+    }
+
+    const updatePayment = async () => {
+      setIsInitializing(true);
+      setError(null);
+
+      try {
+        const response = await paymentAPI.createSetupIntent(
+          emailToUse,
+          discordId,
+          discordUsername
+        );
+        setClientSecret(response.clientSecret);
+        setCustomerId(response.customerId);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to initialize payment');
+        setClientSecret(null);
+        setCustomerId(null);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    // Add a small delay to debounce email changes
+    const timeoutId = setTimeout(() => {
+      updatePayment();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [customerEmail, email, discordId, discordUsername]);
+
+  // Handle email changes
+  const handleEmailChange = (newEmail: string) => {
+    // Reset clientSecret and customerId when email changes so it re-initializes
+    if (newEmail !== customerEmail) {
+      setClientSecret(null);
+      setCustomerId(null);
+    }
+    setCustomerEmail(newEmail);
+  };
+
+  if (!stripePublishableKey) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-black">
+        <MatrixRain />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="matrix-login-container max-w-lg w-full text-center">
+            <p className="text-red-400">Stripe is not configured. Please contact support.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stripePromise = loadStripe(stripePublishableKey);
+
+  const planPrice = '$49';
+  const planPeriod = 'month';
+
+  const appearance: StripeElementsOptions['appearance'] = {
+    theme: 'night',
+    variables: {
+      colorPrimary: '#FFD700',
+      colorBackground: '#000000',
+      colorText: '#FFFFFF',
+      colorDanger: '#FF4444',
+      fontFamily: 'Courier New, monospace',
+      spacingUnit: '4px',
+      borderRadius: '8px',
+    },
+    rules: {
+      '.Input': {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        border: '1px solid #FFD700',
+        color: '#FFFFFF',
+        fontFamily: 'Courier New, monospace',
+      },
+      '.Input:focus': {
+        borderColor: '#FFA500',
+        boxShadow: '0 0 10px rgba(255, 215, 0, 0.3)',
+      },
+      '.Label': {
+        color: '#FFD700',
+        fontFamily: 'Courier New, monospace',
+      },
+      '.Tab': {
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        border: '1px solid #FFD700',
+        color: '#FFFFFF',
+      },
+      '.Tab--selected': {
+        backgroundColor: 'rgba(255, 215, 0, 0.2)',
+        borderColor: '#FFA500',
+      },
+      '.TabLabel': {
+        color: '#FFFFFF',
+        fontFamily: 'Courier New, monospace',
+      },
+      '.TabLabel--selected': {
+        color: '#FFD700',
+      },
+    },
+  };
+
+  const options: StripeElementsOptions = {
+    appearance,
+    clientSecret: clientSecret || undefined,
+  };
+
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      <MatrixRain />
       <div className="relative z-10 min-h-screen flex items-center justify-center py-4 px-4 sm:py-12 sm:px-6 lg:px-8">
         <div className="matrix-login-container max-w-lg w-full space-y-6">
           {/* Logo */}
@@ -166,17 +465,17 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
           {/* Header */}
           <div className="text-center">
             <div className="matrix-subtitle">
-              <p className="text-yellow-400 font-mono text-xs sm:text-sm mb-2">&gt; SUBSCRIPTION PAYMENT</p>
+              <p className="text-yellow-400 font-mono text-xs sm:text-sm mb-2">&gt; {customHeader?.title || 'SUBSCRIPTION PAYMENT'}</p>
               <p className="text-yellow-400 font-mono text-base sm:text-lg font-bold">
                 {planPrice}/{planPeriod}
               </p>
-              <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">✨ 7-Day Free Trial • Apple Pay Available</p>
+              <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">{customHeader?.subtitle || '✨ Apple Pay & Google Pay Available'}</p>
             </div>
           </div>
 
-          {/* Payment Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email field */}
+          {/* Email and Payment Form Container - always visible together */}
+          <div className="space-y-6">
+            {/* Email field - always visible */}
             <div className="email-field-wrapper">
               <label className="email-field-label">
                 Email Address <span className="text-red-400">*</span>
@@ -184,40 +483,49 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
               <input
                 type="email"
                 value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 placeholder="your.email@example.com"
                 className="email-field-input"
                 required
-                disabled={isProcessing}
+                disabled={isInitializing}
               />
             </div>
 
-            {error && (
+            {/* Payment Element area - always visible */}
+            <div className="payment-element-wrapper">
+              {clientSecret && customerId ? (
+                <Elements stripe={stripePromise} options={options} key={clientSecret}>
+                  <PaymentFormInner 
+                    plan={plan} 
+                    email={customerEmail || email} 
+                    discordId={discordId} 
+                    discordUsername={discordUsername}
+                    customerId={customerId}
+                    hasValidEmail={!!((customerEmail && customerEmail.includes('@') && customerEmail !== 'temp@temp.com') || (email && email.includes('@')))}
+                    hasTrial={hasTrial}
+                  />
+                </Elements>
+              ) : (
+                <div className="payment-placeholder">
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6">
+                    <div className="text-center">
+                      <div className="flex justify-center mb-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+                      </div>
+                      <div className="text-yellow-400 text-sm font-mono">Initializing payment form...</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Show error if initialization failed */}
+            {error && !clientSecret && (
               <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 text-red-200 text-sm">
                 {error}
               </div>
             )}
-
-            <div className="text-xs text-gray-400 text-center mt-4">
-              By continuing, you agree to{' '}
-              <a 
-                href="/terms-of-service" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-yellow-400 hover:text-yellow-300 underline"
-              >
-                CRE Media III, LLC's Terms of Service & Privacy Policy
-              </a>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isProcessing || !customerEmail}
-              className="matrix-button-secondary group relative w-full flex justify-center py-3 px-4 sm:py-4 sm:px-6 text-sm sm:text-lg font-bold rounded-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? 'Redirecting to Payment...' : 'Subscribe - $49/month'}
-            </button>
-          </form>
+          </div>
         </div>
       </div>
 
@@ -244,7 +552,6 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
         }
 
         .matrix-login-container::before {
-          
           position: absolute;
           top: 0;
           left: 0;
@@ -383,6 +690,18 @@ export default function PaymentForm({ plan, email, discordId, discordUsername }:
           border-color: #FFA500;
         }
 
+        /* Payment Element Styling */
+        .payment-element-wrapper {
+          margin-bottom: 1.5rem;
+          min-height: 200px;
+        }
+
+        .payment-placeholder {
+          min-height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       `}</style>
     </div>
   );
