@@ -669,7 +669,7 @@ export function AdminPage() {
   }, [ghlConfig.apiKey])
 
   const updateUserMutation = useMutation(
-    ({ id, data }: { id: string; data: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean } }) => 
+    ({ id, data }: { id: string; data: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean; redirectToWhop?: boolean } }) => 
       adminAPI.updateUser(id, data),
     {
       onSuccess: () => {
@@ -790,7 +790,7 @@ export function AdminPage() {
     }
   }
 
-  const handleUpdateUser = async (userId: string, updates: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean }) => {
+  const handleUpdateUser = async (userId: string, updates: { isWhitelisted?: boolean; isAdmin?: boolean; hasManualSubscription?: boolean; redirectToWhop?: boolean }) => {
     // Prevent duplicate calls
     if (updateUserMutation.isLoading) {
       return
@@ -1202,6 +1202,15 @@ export function AdminPage() {
                             className="rounded border-gray-600 bg-gray-700 text-yellow-600 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                           <span className="ml-2 text-sm text-gray-300" title="Manual subscription access (for users who paid via other methods)">Manual Subscription</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={user.redirectToWhop || false}
+                            onChange={(e) => handleUpdateUser(user.id, { redirectToWhop: e.target.checked })}
+                            className="rounded border-gray-600 bg-gray-700 text-purple-600 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
+                          />
+                          <span className="ml-2 text-sm text-gray-300" title="Redirect to Whop subscription page when clicking subscription fields">Redirect to Whop</span>
                         </label>
                       </div>
                     </div>

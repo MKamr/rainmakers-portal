@@ -393,7 +393,8 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
       email: user.email,
       isAdmin: user.isAdmin,
       isWhitelisted: user.isWhitelisted,
-      hasManualSubscription: user.hasManualSubscription || false
+      hasManualSubscription: user.hasManualSubscription || false,
+      redirectToWhop: user.redirectToWhop || false
     }));
     
     res.json(userList);
@@ -421,6 +422,7 @@ router.get('/users/:id', requireAdmin, async (req: Request, res: Response) => {
       isAdmin: user.isAdmin,
       isWhitelisted: user.isWhitelisted,
       hasManualSubscription: user.hasManualSubscription || false,
+      redirectToWhop: user.redirectToWhop || false,
       createdAt: user.createdAt
     });
   } catch (error: any) {
@@ -689,6 +691,7 @@ router.put('/users/:id', [
   body('isWhitelisted').optional().isBoolean().withMessage('isWhitelisted must be a boolean'),
   body('isAdmin').optional().isBoolean().withMessage('isAdmin must be a boolean'),
   body('hasManualSubscription').optional().isBoolean().withMessage('hasManualSubscription must be a boolean'),
+  body('redirectToWhop').optional().isBoolean().withMessage('redirectToWhop must be a boolean'),
 ], async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -697,7 +700,7 @@ router.put('/users/:id', [
     }
 
     const { id } = req.params;
-    const { isWhitelisted, isAdmin, hasManualSubscription } = req.body;
+    const { isWhitelisted, isAdmin, hasManualSubscription, redirectToWhop } = req.body;
 
     // Prevent user from removing their own admin status
     if (id === req.user!.id && isAdmin === false) {
@@ -708,6 +711,7 @@ router.put('/users/:id', [
     if (isWhitelisted !== undefined) updates.isWhitelisted = isWhitelisted;
     if (isAdmin !== undefined) updates.isAdmin = isAdmin;
     if (hasManualSubscription !== undefined) updates.hasManualSubscription = hasManualSubscription;
+    if (redirectToWhop !== undefined) updates.redirectToWhop = redirectToWhop;
 
     const updatedUser = await FirebaseService.updateUser(id, updates);
     if (!updatedUser) {

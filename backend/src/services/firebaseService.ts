@@ -55,6 +55,7 @@ export interface User {
   isAdmin: boolean;
   isWhitelisted: boolean;
   hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
+  redirectToWhop?: boolean; // For users who paid via Whop and should be redirected to Whop subscription page
   subscriptionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

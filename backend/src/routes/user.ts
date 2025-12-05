@@ -21,6 +21,7 @@ router.get('/profile', async (req: Request, res: Response) => {
       isAdmin: user.isAdmin,
       isWhitelisted: user.isWhitelisted,
       hasManualSubscription: user.hasManualSubscription || false,
+      redirectToWhop: user.redirectToWhop || false,
       createdAt: user.createdAt
     });
   } catch (error) {
@@ -51,6 +52,7 @@ router.put('/profile', async (req: Request, res: Response) => {
       isAdmin: updatedUser.isAdmin,
       isWhitelisted: updatedUser.isWhitelisted,
       hasManualSubscription: updatedUser.hasManualSubscription || false,
+      redirectToWhop: updatedUser.redirectToWhop || false,
       updatedAt: updatedUser.updatedAt
     });
   } catch (error) {

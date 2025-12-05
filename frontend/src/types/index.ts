@@ -8,6 +8,7 @@ export interface User {
   isAdmin: boolean;
   isWhitelisted: boolean;
   hasManualSubscription?: boolean; // For users who paid via other methods (not Stripe)
+  redirectToWhop?: boolean; // For users who paid via Whop and should be redirected to Whop subscription page
   termsAccepted?: boolean; // Default false
   onboardingCompleted?: boolean; // Default false
   hasPassword?: boolean; // Indicates if user has password set

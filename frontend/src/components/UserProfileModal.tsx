@@ -97,6 +97,13 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
   const subscription = subscriptionData?.subscription
   const gracePeriodEndDate = subscription?.gracePeriodEnd ? toDate(subscription.gracePeriodEnd) : null
   const isInGracePeriod = gracePeriodEndDate && gracePeriodEndDate > new Date()
+  
+  // Handle redirect to Whop if user is marked as Whop user
+  const handleSubscriptionClick = () => {
+    if (displayUser.redirectToWhop) {
+      window.open('https://whop.com/rainmakers/', '_blank')
+    }
+  }
 
   const modalContent = (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -271,6 +278,12 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                             Manual Subscription
                           </span>
                         )}
+                        {displayUser.redirectToWhop && (
+                          <span className="inline-flex items-center px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-300 rounded-lg border border-purple-500/30">
+                            <CheckCircle className="h-3 w-3 mr-1.5" />
+                            Redirect to Whop
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -309,7 +322,11 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                 </div>
 
                 {!subscriptionData?.hasSubscription ? (
-                  <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20">
+                  <div 
+                    className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 ${displayUser.redirectToWhop ? 'cursor-pointer hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10' : ''}`}
+                    onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                    title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                  >
                     <div className="flex items-center space-x-4">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
                         <CreditCard className="h-5 w-5 text-orange-400" />
@@ -320,6 +337,9 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                         </label>
                         <p className="text-sm font-medium text-gray-500">
                           No active subscription
+                          {displayUser.redirectToWhop && (
+                            <span className="ml-2 text-xs text-purple-400">(Click to manage on Whop)</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -327,7 +347,11 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                 ) : (
                   <div className="space-y-3">
                     {/* Subscription Status */}
-                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                    <div 
+                      className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10 ${displayUser.redirectToWhop ? 'cursor-pointer' : ''}`}
+                      onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                      title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
                           <CreditCard className="h-5 w-5 text-orange-400" />
@@ -349,13 +373,20 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                                 (Grace Period)
                               </span>
                             )}
+                            {displayUser.redirectToWhop && (
+                              <span className="ml-2 text-xs text-purple-400">(Click to manage on Whop)</span>
+                            )}
                           </p>
                         </div>
                       </div>
                     </div>
 
                     {/* Plan */}
-                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                    <div 
+                      className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10 ${displayUser.redirectToWhop ? 'cursor-pointer' : ''}`}
+                      onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                      title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
                           <Info className="h-5 w-5 text-orange-400" />
@@ -372,7 +403,11 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                     </div>
 
                     {/* Current Period Start */}
-                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                    <div 
+                      className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10 ${displayUser.redirectToWhop ? 'cursor-pointer' : ''}`}
+                      onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                      title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
                           <Calendar className="h-5 w-5 text-orange-400" />
@@ -393,7 +428,11 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
                     </div>
 
                     {/* Current Period End */}
-                    <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+                    <div 
+                      className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10 ${displayUser.redirectToWhop ? 'cursor-pointer' : ''}`}
+                      onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                      title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-yellow-500/20 border border-orange-500/30">
                           <Calendar className="h-5 w-5 text-orange-400" />
@@ -415,7 +454,11 @@ export function UserProfileModal({ userId, isAdminView = false, onClose }: UserP
 
                     {/* Grace Period End */}
                     {gracePeriodEndDate && (
-                      <div className="group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10">
+                      <div 
+                        className={`group relative p-4 bg-gradient-to-r from-gray-800/50 to-gray-800/30 rounded-xl border border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/10 ${displayUser.redirectToWhop ? 'cursor-pointer' : ''}`}
+                        onClick={displayUser.redirectToWhop ? handleSubscriptionClick : undefined}
+                        title={displayUser.redirectToWhop ? 'Click to manage subscription on Whop' : undefined}
+                      >
                         <div className="flex items-center space-x-4">
                           <div className="p-2.5 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
                             <Info className="h-5 w-5 text-yellow-400" />
