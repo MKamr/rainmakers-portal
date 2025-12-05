@@ -162,7 +162,6 @@ export function SignUpPage() {
             <div className="matrix-subtitle">
               <p className="text-yellow-400 font-mono text-xs sm:text-sm mb-2">&gt; WELCOME TO RAINMAKERS PORTAL</p>
               <p className="text-yellow-400 font-mono text-base sm:text-lg font-bold">MEMBERS ONLY</p>
-              <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">✨ $49/month</p>
             </div>
           </div>
 

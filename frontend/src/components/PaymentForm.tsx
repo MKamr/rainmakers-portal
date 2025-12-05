@@ -469,7 +469,9 @@ export default function PaymentForm({ plan, email, discordId, discordUsername, h
               <p className="text-yellow-400 font-mono text-base sm:text-lg font-bold">
                 {planPrice}/{planPeriod}
               </p>
-              <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">{customHeader?.subtitle || '✨ Apple Pay & Google Pay Available'}</p>
+              {customHeader?.subtitle && (
+                <p className="text-green-400 font-mono text-xs sm:text-sm mt-2">{customHeader.subtitle}</p>
+              )}
             </div>
           </div>
 

@@ -1474,7 +1474,7 @@ router.post('/accept-terms', authenticateToken, async (req, res) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     // TOS Version information
-    const TOS_VERSION = '1.0';
+    const TOS_VERSION = '2.0';
     const TOS_VERSION_DATE = '2025-11-28';
     
     // Generate SHA-256 hash of the terms (using a canonical representation)

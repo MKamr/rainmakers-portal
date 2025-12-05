@@ -58,7 +58,7 @@ export function PromoCodePage() {
       hasTrial={true}
       customHeader={{
         title: 'PROMO CODE SUBSCRIPTION',
-        subtitle: '✨ 7-Day Free Trial • Apple Pay & Google Pay Available'
+        subtitle: '✨ 7-Day Free Trial'
       }}
     />
   )

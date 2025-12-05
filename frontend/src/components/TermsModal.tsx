@@ -7,7 +7,7 @@ interface TermsModalProps {
 }
 
 // TOS Version - Update this when Terms change
-const TOS_VERSION = '1.0';
+const TOS_VERSION = '2.0';
 const TOS_EFFECTIVE_DATE = '2025-11-28';
 
 export function TermsModal({ onAccept }: TermsModalProps) {
