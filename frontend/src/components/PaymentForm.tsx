@@ -249,7 +249,16 @@ function PaymentFormInner({
               rel="noopener noreferrer"
               className="text-yellow-400 hover:text-yellow-300 underline"
             >
-              CRE Media III, LLC's Terms of Service & Privacy Policy
+              Terms of Service
+            </a>
+            {' & '}
+            <a 
+              href="/privacy-policy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-yellow-400 hover:text-yellow-300 underline"
+            >
+              Privacy Policy
             </a>
             <span className="text-red-400 ml-1">*</span>
           </span>
